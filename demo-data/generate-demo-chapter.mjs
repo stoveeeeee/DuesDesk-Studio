@@ -242,7 +242,10 @@ function allocate(ob, D) {
 }
 const paidBy = (ob, D) => sum(ob.payments.filter((x) => x.date <= D), (x) => x.amount);
 const owedAt = (ob, D) => (ob.issued <= D ? cents(ob.amount - paidBy(ob, D)) : 0);
-const pastDueAt = (ob, D) => (ob.issued <= D ? sum(allocate(ob, D).filter((s) => s.due < D), (s) => s.amount - s.paid) : 0);
+// DuesDesk ages a charge as a whole: it becomes past due once its due date (the last installment's, for a plan) has
+// passed with money still owing. An overdue installment alone does not make a member delinquent.
+const finalDue = (ob) => ob.slices[ob.slices.length - 1].due;
+const pastDueAt = (ob, D) => (ob.issued <= D && finalDue(ob) < D ? owedAt(ob, D) : 0);
 
 function memberRecord(p) {
   const D = TODAY;
@@ -499,26 +502,10 @@ CHAIRS.forEach((chair, i) => {
   }
 });
 
-// ---------- weekly metric history (what the dashboard trend charts plot) ----------
+// ---------- stat history ----------
+// The Numbers page graphs are calculated by the app from the dated payments and charges above (graduated members
+// included), so the file carries no pre-computed history. Older snapshot-only history is left empty on purpose.
 const metricHistory = [];
-for (let d = '2024-08-25'; d <= TODAY; d = addDays(d, 7)) {
-  const active = people.filter((p) => addDays(TERMS[p.firstTerm].start, -14) <= d && d <= addDays(TERMS[p.lastTerm].end, 30));
-  if (!active.length) continue;
-  const recorded = sum(active, (p) => sum(p.history.filter((h) => h.date <= d), (h) => h.amount));
-  const owed = sum(active, (p) => sum(p.obligations, (ob) => owedAt(ob, d)));
-  const pastDue = sum(active, (p) => sum(p.obligations, (ob) => pastDueAt(ob, d)));
-  const paidMonth = sum(active, (p) => sum(p.history.filter((h) => h.date <= d && h.date.startsWith(d.slice(0, 7))), (h) => h.amount));
-  const pool = recorded + owed;
-  metricHistory.push({
-    date: d,
-    values: {
-      'collection-velocity-run-rate': cents(paidMonth / +d.slice(8, 10)),
-      'net-collection-rate': cents(pool > 0 ? recorded / pool * 100 : 0),
-      'delinquency-default-rate': cents(pool > 0 ? pastDue / pool * 100 : 0),
-      'average-dues-per-member-adpm': cents(recorded / active.length)
-    }
-  });
-}
 
 // ---------- settings + final file ----------
 const settings = {
@@ -573,4 +560,4 @@ console.log(`  members: ${memberRecords.length} current, ${archivedRecords.lengt
 console.log(`  status: ${counts((m) => m.status === 'Paid in Full')} paid in full, ${counts((m) => m.status === 'Payment Plan')} payment plan, ${counts((m) => m.status === 'Delinquent')} delinquent`);
 console.log(`  balance: $${money(sum(memberRecords, (m) => m.totalOwed))} owed, $${money(sum(memberRecords, (m) => m.pastDueBalance))} past due, $${money(sum(memberRecords, (m) => m.paidThisMonth))} paid this month`);
 console.log(`  payments: ${keys.size}   cash flow rows: ${rows.length} (in $${money(inflow)}, out $${money(outflow)}), opening cash $${money(openingCash)}, min balance $${money(openingCash + minRunning)}`);
-console.log(`  pending deposits: ${pending.length}   reminders: ${smsLogs.length}   bills: ${recurringBills.length}   chair terms: ${chairBudgetHistory.length}   metric points: ${metricHistory.length}`);
+console.log(`  pending deposits: ${pending.length}   reminders: ${smsLogs.length}   bills: ${recurringBills.length}   chair terms: ${chairBudgetHistory.length}`);

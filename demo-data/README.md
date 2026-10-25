@@ -6,9 +6,10 @@
 
 - **People:** 50 current members and 16 graduated members (in the archive), across five terms, Fall 2024 to Fall 2026.
 - **Dues:** about 330 payments, with a mix of on-time payers, late payers, split payers and payment plans, plus a few fines. Most payments came in through Venmo, bank transfers and GreekBill and were matched to members, some under a parent's name.
-- **This semester:** 28 paid in full, 9 on payment plans, 13 past due (two of those are manually vouched).
-- **Cash flow:** about 700 transactions (about $484k in and $346k out): dues, house rent, per-capita fees, events, fundraising, sponsorships, utilities, insurance and more. 5 deposits are waiting to be matched on the reconciliation screen.
-- **Also included:** recurring bills with their payment history, house residents and rent, six chair budgets with four closed terms of history, 79 reminder texts, and weekly trend data for the dashboard charts.
+- **This semester:** 28 paid in full, 11 on payment plans (two of them have an overdue installment), 11 past due (two of those are manually vouched).
+- **Cash flow:** about 700 transactions (about $491k in and $353k out): dues, house rent, per-capita fees, events, fundraising, sponsorships, utilities, insurance and more. 5 deposits are waiting to be matched on the reconciliation screen.
+- **Also included:** recurring bills with their payment history, house residents and rent, six chair budgets with four closed terms of history, and 73 reminder texts.
+- **Stat graphs:** the file holds no pre-made graph data. The four graphs on the Numbers page are calculated by the app from the dated payments and charges, including the graduated members, so they cover the full two years.
 
 Dates are fixed, running up to **25 Oct 2026**. If you load it later, newer dates will simply show as overdue.
 

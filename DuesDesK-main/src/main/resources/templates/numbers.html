@@ -320,7 +320,7 @@
                         <button type="submit" class="btn btn-dark btn-sm w-100">Update range</button>
                     </div>
                 </form>
-                <p class="small text-secondary mb-2">History is recorded once per day when DuesDesk saves data. Earlier activity is not backfilled.</p>
+                <p class="small text-secondary mb-2">History is calculated from the dated payments and charges in the ledger, including graduated members, so it covers everything the ledger holds.</p>
                 <div id="metricHistoryMessage" class="small text-secondary mb-2" role="status"></div>
                 <canvas id="metricHistoryChart" class="metric-chart" aria-label="Stat history graph"></canvas>
             </div>
@@ -472,8 +472,8 @@
                 if (!response.ok) throw new Error(result.error || 'History could not be loaded.');
                 draw(result.points, selectedMetric);
                 message.textContent = result.points.length
-                    ? result.points.length + ' saved daily ' + (result.points.length === 1 ? 'snapshot' : 'snapshots') + ' in this range.'
-                    : 'No saved history for this stat in the selected date range.';
+                    ? result.points.length + (result.points.length === 1 ? ' data point' : ' data points') + ' in this range.'
+                    : 'No ledger entries cover the selected date range.';
             } catch (error) {
                 draw([], selectedMetric);
                 message.textContent = error.message || 'History could not be loaded.';

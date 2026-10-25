@@ -292,14 +292,23 @@ public class DashboardController {
                     .body(Map.of("error", "This stat does not have historical data available."));
         }
 
-        List<MetricHistoryPoint> points = store.getMetricHistory().stream()
-                .filter(snapshot -> snapshot.date() != null
-                        && snapshot.date().compareTo(startDate.toString()) >= 0
-                        && snapshot.date().compareTo(endDate.toString()) <= 0)
-                .filter(snapshot -> snapshot.values().containsKey(metric))
-                .map(snapshot -> new MetricHistoryPoint(snapshot.date(), snapshot.values().get(metric)))
-                .sorted(java.util.Comparator.comparing(MetricHistoryPoint::date))
+        // The graph is worked out from the ledger's dated payments and charges, so it covers all the history the ledger
+        // holds (imported data included). Daily snapshots saved by older versions only fill in when the ledger has no
+        // dated entries to calculate from.
+        List<MetricHistoryPoint> points = MetricHistoryCalculator.history(metric, store.getMembers(),
+                        store.getArchivedMembers(), startDate, endDate, LocalDate.now()).stream()
+                .map(point -> new MetricHistoryPoint(point.date(), point.value()))
                 .toList();
+        if (points.isEmpty()) {
+            points = store.getMetricHistory().stream()
+                    .filter(snapshot -> snapshot.date() != null
+                            && snapshot.date().compareTo(startDate.toString()) >= 0
+                            && snapshot.date().compareTo(endDate.toString()) <= 0)
+                    .filter(snapshot -> snapshot.values().containsKey(metric))
+                    .map(snapshot -> new MetricHistoryPoint(snapshot.date(), snapshot.values().get(metric)))
+                    .sorted(java.util.Comparator.comparing(MetricHistoryPoint::date))
+                    .toList();
+        }
         return org.springframework.http.ResponseEntity.ok(new MetricHistoryResponse(metric, points));
     }
 
