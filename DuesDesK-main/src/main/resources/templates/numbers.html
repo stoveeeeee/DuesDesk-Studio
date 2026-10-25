@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Overview | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg-canvas); color:var(--text-secondary); }
+        .banner { background:var(--bg-surface); border-bottom:1px solid var(--border-subtle); padding:1rem 0; }
+        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
+        .metric-card { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:1.1rem;height:100%;animation:enter .4s ease backwards;transition:transform .2s ease,box-shadow .2s ease; }
+        /* Only cards you can click lift on hover; cards that hold forms or results stay still (no jitter while working in them). */
+        button.metric-card:hover { transform:translateY(-2px);box-shadow: var(--shadow-hover); }
+        .metric-card.is-static { cursor:default; }
+        .untracked-toggle { display:inline-flex;align-items:center;gap:.4rem;border:0;background:transparent;padding:0;color:var(--text-muted);font-size:.84rem;font-weight:600;cursor:pointer; }
+        .untracked-toggle:hover { color:var(--text-primary); }
+        .untracked-toggle .bi-chevron-down { transition:transform .25s var(--ease-snappy);font-size:.75rem; }
+        .untracked-toggle[aria-expanded="true"] .bi-chevron-down { transform:rotate(180deg); }
+        .untracked-box { padding:.7rem 1.25rem; }
+        .untracked-list { list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.5rem 1.25rem; }
+        .untracked-list li { padding:.55rem 0;border-top:1px solid var(--border-subtle); }
+        .untracked-list .name { color:var(--text-primary);font-weight:600;font-size:.86rem; }
+        .untracked-list .why { color:var(--text-muted);font-size:.78rem;line-height:1.45; }
+        button.metric-card { color:inherit;text-decoration:none;cursor:pointer;text-align:left;font:inherit; }
+        button.metric-card:focus-visible { outline:3px solid var(--focus-ring);outline-offset:2px; }
+        .metric-chart { width:100%;height:clamp(180px,38vh,300px);display:block; }
+        .metric-value { color:var(--text-primary);font-size:1.35rem;font-weight:700;letter-spacing:-.03em; }
+        .metric-description { color:var(--text-muted);font-size:.82rem;line-height:1.5; }
+        .metric-status { font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;font-weight:700; }
+        .advice-stat { background:var(--bg-canvas);border:1px solid var(--border-subtle);border-radius:10px;padding:.85rem;height:100%; }
+        .advice-stat-label { color:var(--text-muted);font-size:.75rem;font-weight:600; }
+        .advice-stat-value { color:var(--text-primary);font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums; }
+        #calculatorResult .small { font-size:.98rem;line-height:1.65; }
+        #calculatorResult li { margin-bottom:.45rem; }
+        #calculatorResult li:last-child { margin-bottom:0; }
+        #calculatorResult .advice-stat-label { font-size:.9rem;font-weight:600;line-height:1.45; }
+        #calculatorResult .advice-stat-value { font-size:1.25rem; }
+        .calculator-result.is-fullscreen {
+            box-sizing:border-box;position:fixed;top:calc(var(--desktop-header-h, 0px) + .75rem);
+            right:.75rem;bottom:.75rem;left:.75rem;z-index:1100;overflow-y:auto;
+            overscroll-behavior:contain;margin:0!important;padding:clamp(1rem,3vw,2rem);
+            background:var(--bg-surface);box-shadow:var(--shadow-modal);border-radius:14px;
+        }
+        .calculator-result.is-fullscreen .metric-description { font-size:1rem;line-height:1.7; }
+        .calculator-result.is-fullscreen .small { font-size:1.05rem;line-height:1.75; }
+        .calculator-result.is-fullscreen .advice-stat-label { font-size:1rem; }
+        .calculator-result.is-fullscreen .advice-stat-value { font-size:1.4rem; }
+        @keyframes enter { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
+        #metricHistoryModal .modal-content { max-height: calc(100vh - 2rem); }
+        #metricHistoryModal .modal-body { overflow-y: auto; }
+        @media (max-width:575px) {
+            #metricHistoryModal .modal-dialog { margin: .5rem; }
+            .metric-chart { height:clamp(160px,32vh,240px); }
+        }
+        @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important; } }
+    </style>
+<th:block th:replace="~{fragments :: navStyles}"></th:block>
+<script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+    <div class="app-header-stack">
+    <header class="banner">
+    <div class="container-xxl px-3 px-md-4 header-grid">
+        <div></div>
+        <div class="d-flex align-items-center gap-3 justify-content-center">
+            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
+            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
+        </div>
+        <div></div>
+    </div>
+</header>
+<nav th:replace="~{fragments :: nav('numbers')}"></nav>
+</div>
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Finance</div>
+            <h2 class="page-title">Financial Overview</h2>
+            <p class="page-lede">Cash on hand, what is safe to spend, and how collections, roster economics and recovery are trending.</p>
+        </div>
+        <div class="page-actions">
+            <span class="small text-muted">As of <span class="tabular-nums" th:text="${financialSnapshot.asOf}"></span></span>
+            <a href="/numbers/flow" class="btn btn-fintech-outline btn-sm">Open Cash Flow</a>
+        </div>
+    </div>
+    <section class="mb-4" aria-labelledby="cashSnapshotTitle">
+        <div class="tier-heading mt-0">
+            <h2 id="cashSnapshotTitle">Cash &amp; spending outlook</h2>
+            <p>Recorded cash, committed obligations, and dues expected within one week.</p>
+        </div>
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <div class="metric-card">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <h4 class="h6 fw-semibold mb-0">Overall cash available</h4>
+                        <i class="bi bi-wallet2 text-primary" aria-hidden="true"></i>
+                    </div>
+                    <div class="metric-value mb-2" th:classappend="${financialSnapshot.overallCash < 0} ? 'text-danger'"
+                         th:text="(${financialSnapshot.overallCash < 0} ? '-$' : '$') + ${#numbers.formatDecimal(financialSnapshot.overallCash < 0 ? -financialSnapshot.overallCash : financialSnapshot.overallCash, 1, 'COMMA', 2, 'POINT')}"></div>
+                    <p class="metric-description mb-0">Opening cash + recorded inflows − recorded outflows.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="metric-card">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <h4 class="h6 fw-semibold mb-0">Cash available to spend</h4>
+                        <i class="bi bi-cash-coin text-success" aria-hidden="true"></i>
+                    </div>
+                    <div class="metric-value mb-2" th:classappend="${financialSnapshot.spendableCash < 0} ? 'text-danger' : 'text-success'"
+                         th:text="(${financialSnapshot.spendableCash < 0} ? '-$' : '$') + ${#numbers.formatDecimal(financialSnapshot.spendableCash < 0 ? -financialSnapshot.spendableCash : financialSnapshot.spendableCash, 1, 'COMMA', 2, 'POINT')}"></div>
+                    <p class="metric-description">Overall cash − scheduled fees − remaining IHQ bill.</p>
+                    <div class="small text-muted">
+                        <div>Scheduled fees: <strong>$<span th:text="${#numbers.formatDecimal(financialSnapshot.scheduledFees, 1, 'COMMA', 2, 'POINT')}"></span></strong>
+                            (upcoming bills $<span th:text="${#numbers.formatDecimal(financialSnapshot.upcomingBillFees, 1, 'COMMA', 2, 'POINT')}"></span>
+                            + recurring bills $<span th:text="${#numbers.formatDecimal(financialSnapshot.recurringBillFees, 1, 'COMMA', 2, 'POINT')}"></span>)</div>
+                        <div>IHQ remaining: <strong>$<span th:text="${#numbers.formatDecimal(financialSnapshot.ihqRemaining, 1, 'COMMA', 2, 'POINT')}"></span></strong></div>
+                        <div th:if="${financialSnapshot.spendableCash < 0}" class="text-danger fw-semibold mt-1">Scheduled obligations exceed recorded cash.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="metric-card">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <h4 class="h6 fw-semibold mb-0">Expected dues within one week</h4>
+                        <i class="bi bi-calendar-week text-primary" aria-hidden="true"></i>
+                    </div>
+                    <div class="metric-value mb-2"
+                         th:text="'$' + ${#numbers.formatDecimal(financialSnapshot.scheduledDuesNextWeek, 1, 'COMMA', 2, 'POINT')}"></div>
+                    <p class="metric-description mb-0">Unpaid installments due from <span th:text="${financialSnapshot.asOf}"></span> through <span th:text="${financialSnapshot.scheduledDuesThrough}"></span>. This is expected income, not yet collected, and is not included in either cash balance above.</p>
+                </div>
+            </div>
+        </div>
+        <!-- Accuracy reminder: kept with the balances it qualifies, but compact so the numbers lead -->
+        <div class="alert alert-warning small mt-3 mb-0 py-2" role="note">
+            <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
+                <div>
+                    <strong>All transactions must be up to date for these balances to be accurate.</strong>
+                    Record every payment and expense, reconcile imported activity, and verify the opening cash balance, scheduled bills, and IHQ settings before making spending decisions.
+                    <a href="/numbers/flow" class="fw-semibold ms-1">Review Cash Flow</a>
+                    <span th:if="${financialSnapshot.pendingTransactions > 0}" class="ms-2 fw-semibold"
+                          th:text="'· ' + ${financialSnapshot.pendingTransactions} + (${financialSnapshot.pendingTransactions == 1} ? ' transaction needs reconciliation' : ' transactions need reconciliation')"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="mb-4" id="spendCalculator">
+        <div class="metric-card">
+            <h3 class="h5 fw-bold mb-1"><i class="bi bi-calculator me-2 text-primary"></i>Should we spend it?</h3>
+            <p class="metric-description mb-3">Tell us what the purchase is for and how soon it is needed. The calculator checks the description against your cash, scheduled bills, IHQ balance, and dues trends, then gives a recommendation and a practical next-step plan.</p>
+            <form th:action="@{/numbers}" method="get" class="row g-2 align-items-end mb-0">
+                <div class="col-12 col-sm-6 col-md-4">
+                    <label class="form-label small fw-semibold" for="expenseInput">Expense amount ($)</label>
+                    <input id="expenseInput" type="number" min="0.01" step="0.01" name="expense" class="form-control"
+                           th:value="${expenseInput != null ? expenseInput : expense}" placeholder="e.g. 500" required>
+                </div>
+                <div class="col-12 col-sm-6 col-md-8">
+                    <label class="form-label small fw-semibold" for="expensePurpose">What is this purchase for?</label>
+                    <input id="expensePurpose" type="text" name="purpose" class="form-control" maxlength="160"
+                           th:value="${expensePurpose}" placeholder="Describe the item, service, or problem" required>
+                </div>
+                <div class="col-12 form-text">Be specific (for example, “repair a leaking chapter-house pipe”). The calculator uses common terms to categorize the purpose.</div>
+                <div class="col-12 col-sm-8 col-md-6">
+                    <label class="form-label small fw-semibold" for="expenseUrgency">How urgent is it?</label>
+                    <select id="expenseUrgency" name="urgency" class="form-select" required>
+                        <option value="routine" th:selected="${expenseUrgency == 'routine'}">Routine — can wait</option>
+                        <option value="soon" th:selected="${expenseUrgency == 'soon'}">Needed soon</option>
+                        <option value="urgent" th:selected="${expenseUrgency == 'urgent'}">Urgent — deadline or essential operations</option>
+                        <option value="emergency" th:selected="${expenseUrgency == 'emergency'}">Emergency — safety or critical operations</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-dark">Check expense</button>
+                </div>
+            </form>
+            <div th:if="${expenseError}" class="alert alert-warning mt-3 mb-0 small" th:text="${expenseError}"></div>
+            <div th:if="${advice}" id="calculatorResult" class="calculator-result mt-3 p-3 rounded-3 border"
+                 th:classappend="${advice.approve()} ? 'border-success-subtle bg-success-subtle' : 'border-danger-subtle bg-danger-subtle'" role="status">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="bi fs-3" th:classappend="${advice.approve()} ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-danger'" aria-hidden="true"></i>
+                        <div>
+                            <div class="small text-uppercase fw-bold text-secondary mb-1">Recommendation</div>
+                            <h4 class="h5 fw-bold mb-1" th:text="${advice.recommendation()}"></h4>
+                            <p class="small text-secondary mb-0">
+                                <span th:text="${advice.purposeCategory()}"></span>
+                                <span aria-hidden="true"> · </span>
+                                <span th:text="${advice.urgency() == 'emergency' ? 'Emergency' : advice.urgency() == 'urgent' ? 'Urgent' : advice.urgency() == 'soon' ? 'Needed soon' : 'Routine'}"></span>
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap"
+                            data-fullscreen-target="calculatorResult" data-fullscreen-portal="true"
+                            data-fullscreen-open-label="View calculator result full screen"
+                            data-fullscreen-close-label="Exit calculator result full screen"
+                            aria-label="View calculator result full screen">
+                        <i class="bi bi-arrows-fullscreen me-1" aria-hidden="true"></i><span>Full screen</span>
+                    </button>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-12 col-sm-4">
+                        <div class="advice-stat">
+                            <div class="advice-stat-label">Purchase amount</div>
+                            <div class="advice-stat-value" th:text="'$' + ${#numbers.formatDecimal(advice.expense(), 1, 'COMMA', 2, 'POINT')}"></div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-4" th:if="${advice.balanceAware()}">
+                        <div class="advice-stat">
+                            <div class="advice-stat-label">Spendable cash after purchase</div>
+                            <div class="advice-stat-value" th:classappend="${advice.projectedCash() < 0} ? 'text-danger'"
+                                 th:text="(${advice.projectedCash() < 0} ? '-$' : '$') + ${#numbers.formatDecimal(advice.projectedCash() < 0 ? -advice.projectedCash() : advice.projectedCash(), 1, 'COMMA', 2, 'POINT')}"></div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-4" th:if="${advice.recoveryAmount() > 0}">
+                        <div class="advice-stat">
+                            <div class="advice-stat-label">Minimum confirmed funding gap</div>
+                            <div class="advice-stat-value text-danger"
+                                 th:text="'$' + ${#numbers.formatDecimal(advice.recoveryAmount(), 1, 'COMMA', 2, 'POINT')}"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <h5 class="h6 fw-bold">Why this is the recommendation</h5>
+                    <ul class="small mb-0 ps-3">
+                        <li th:each="reason : ${advice.reasons()}" th:text="${reason}"></li>
+                    </ul>
+                </div>
+                <div th:if="${advice.balanceAware() and advice.recoveryAmount() > 0}" class="mt-3">
+                    <h5 class="h6 fw-bold">Recommended plan to restore positive operating cash</h5>
+                    <ol class="small mb-3 ps-3">
+                        <li th:each="action : ${advice.recoveryActions()}" th:text="${action}"></li>
+                    </ol>
+                    <h5 class="h6 fw-bold">If you decide to proceed anyway</h5>
+                    <p class="small text-secondary">This does not make an unaffordable purchase financially safe. First get the required approval and identify how the gap will be covered.</p>
+                    <ol class="small mb-0 ps-3">
+                        <li th:each="action : ${advice.proceedActions()}" th:text="${action}"></li>
+                    </ol>
+                </div>
+                <div th:if="${advice.balanceAware() and advice.recoveryAmount() == 0}" class="mt-3">
+                    <h5 class="h6 fw-bold" th:text="${advice.approve()} ? 'Before committing' : 'If you still want to pursue this purchase'"></h5>
+                    <p th:if="${!advice.approve()}" class="small text-secondary">
+                        These checks do not override the recommendation above. Resolve the stated concerns and get chapter approval before committing.
+                    </p>
+                    <ol class="small mb-0 ps-3">
+                        <li th:each="action : ${advice.proceedActions()}" th:text="${action}"></li>
+                    </ol>
+                </div>
+                <p class="small text-muted border-top pt-2 mt-3 mb-0">
+                    This is a rules-based budgeting aid, not individualized professional financial advice or chapter authorization.
+                    It cannot verify the quote, urgency, or description. Confirm those details and the current reconciled transactions with your treasurer.
+                    <span th:if="${financialSnapshot.pendingTransactions > 0}"
+                          th:text="' ' + ${financialSnapshot.pendingTransactions} + (${financialSnapshot.pendingTransactions == 1} ? ' transaction still needs reconciliation.' : ' transactions still need reconciliation.')"></span>
+                </p>
+            </div>
+        </div>
+    </section>
+    <!-- Detailed metrics: the ones with real data lead; the ones the ledger can't measure yet are folded away per group -->
+    <section th:each="group, groupStat : ${metricGroups}" class="mb-4"
+             th:with="tracked=${group.metrics.?[value != '—']},untracked=${group.metrics.?[value == '—']}">
+        <div class="tier-heading" th:classappend="${groupStat.first} ? 'mt-2'">
+            <h2 th:text="${group.name}"></h2>
+            <p th:text="${#lists.isEmpty(tracked)} ? 'Nothing in this group can be measured from the current ledger yet' : 'Select a stat to view its saved history and date range'"></p>
+        </div>
+        <div class="row g-3" th:unless="${#lists.isEmpty(tracked)}">
+            <div class="col-12 col-md-6 col-xl-4" th:each="metric : ${tracked}">
+                <button type="button" class="metric-card metric-chart-trigger"
+                        th:attr="data-metric-key=${metric.key},data-metric-name=${metric.name},data-metric-value=${metric.value}">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <h4 class="h6 fw-semibold mb-0" th:text="${metric.name}"></h4>
+                        <span class="metric-status badge rounded-pill text-bg-primary">View history</span>
+                    </div>
+                    <div class="metric-value mb-2 tabular-nums" th:text="${metric.value}"></div>
+                    <p class="metric-description mb-0" th:text="${metric.description}"></p>
+                </button>
+            </div>
+        </div>
+        <div class="surface-card untracked-box mt-3" th:unless="${#lists.isEmpty(untracked)}">
+            <button type="button" class="untracked-toggle" data-bs-toggle="collapse" aria-expanded="false"
+                    th:attr="data-bs-target='#untracked-' + ${groupStat.index},aria-controls='untracked-' + ${groupStat.index}">
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                <span th:text="${#lists.size(untracked)} + (${#lists.size(untracked) == 1} ? ' metric' : ' metrics') + ' not tracked yet'"></span>
+            </button>
+            <div class="collapse" th:id="'untracked-' + ${groupStat.index}">
+                <ul class="untracked-list mt-2">
+                    <li th:each="metric : ${untracked}">
+                        <div class="name" th:text="${metric.name}"></div>
+                        <div class="why" th:text="${metric.description}"></div>
+                    </li>
+                </ul>
+                <p class="small text-muted mt-2 mb-0">These need invoice schedules, historical term data, expenses, fees, or reminder-linked payment data that the current ledger does not collect. They are intentionally not estimated.</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div class="modal fade" id="metricHistoryModal" tabindex="-1" aria-labelledby="metricHistoryTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title fs-5" id="metricHistoryTitle">Stat history</h2>
+                    <p class="section-subtitle mt-1 mb-0" id="metricHistoryCurrent"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="metricHistoryRange" class="row g-2 align-items-end mb-3">
+                    <div class="col-6 col-md-4">
+                        <label for="metricHistoryStart" class="form-label small fw-semibold">From</label>
+                        <input type="date" id="metricHistoryStart" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label for="metricHistoryEnd" class="form-label small fw-semibold">Through</label>
+                        <input type="date" id="metricHistoryEnd" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <button type="submit" class="btn btn-dark btn-sm w-100">Update range</button>
+                    </div>
+                </form>
+                <p class="small text-secondary mb-2">History is recorded once per day when DuesDesk saves data. Earlier activity is not backfilled.</p>
+                <div id="metricHistoryMessage" class="small text-secondary mb-2" role="status"></div>
+                <canvas id="metricHistoryChart" class="metric-chart" aria-label="Stat history graph"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script>
+    (function () {
+        const modalElement = document.getElementById('metricHistoryModal');
+        const modal = new bootstrap.Modal(modalElement);
+        const form = document.getElementById('metricHistoryRange');
+        const startInput = document.getElementById('metricHistoryStart');
+        const endInput = document.getElementById('metricHistoryEnd');
+        const message = document.getElementById('metricHistoryMessage');
+        const canvas = document.getElementById('metricHistoryChart');
+        let selectedMetric = '';
+        let currentPoints = [];
+
+        function localDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        function draw(points, metric) {
+            currentPoints = points;
+            const bounds = canvas.getBoundingClientRect();
+            const ratio = window.devicePixelRatio || 1;
+            canvas.width = Math.max(1, Math.round(bounds.width * ratio));
+            canvas.height = Math.max(1, Math.round(bounds.height * ratio));
+            const context = canvas.getContext('2d');
+            context.scale(ratio, ratio);
+            const width = bounds.width;
+            const height = bounds.height;
+            context.clearRect(0, 0, width, height);
+            if (!points.length) return;
+
+            const values = points.map(point => point.value);
+            let min = Math.min(...values);
+            let max = Math.max(...values);
+            if (min === max) {
+                const padding = Math.abs(min) * .1 || 1;
+                min -= padding;
+                max += padding;
+            } else {
+                const padding = (max - min) * .12;
+                min -= padding;
+                max += padding;
+            }
+            const inset = { left: 58, right: 16, top: 18, bottom: 42 };
+            const chartWidth = Math.max(1, width - inset.left - inset.right);
+            const chartHeight = Math.max(1, height - inset.top - inset.bottom);
+            const x = index => inset.left + (points.length === 1 ? chartWidth / 2 : index / (points.length - 1) * chartWidth);
+            const y = value => inset.top + (max - value) / (max - min) * chartHeight;
+            const styles = getComputedStyle(document.documentElement);
+            // Fallbacks keep the chart drawing even if a token goes missing (an empty color makes addColorStop throw).
+            const textColor = styles.getPropertyValue('--bs-secondary-color').trim() || '#64748b';
+            const lineColor = styles.getPropertyValue('--chart-primary').trim() || '#2563eb';
+            const areaTop = styles.getPropertyValue('--chart-area-top').trim() || 'rgba(37, 99, 235, 0.22)';
+            const areaBottom = styles.getPropertyValue('--chart-area-bottom').trim() || 'rgba(37, 99, 235, 0)';
+            const baselineColor = styles.getPropertyValue('--chart-baseline').trim() || '#94a3b8';
+
+            context.font = '12px Inter, sans-serif';
+            context.textAlign = 'right';
+            context.textBaseline = 'middle';
+            context.fillStyle = textColor;
+            for (let tick = 0; tick <= 4; tick++) {
+                const value = max - tick / 4 * (max - min);
+                const position = inset.top + tick / 4 * chartHeight;
+                context.strokeStyle = baselineColor;
+                context.globalAlpha = .28;
+                context.beginPath();
+                context.moveTo(inset.left, position);
+                context.lineTo(width - inset.right, position);
+                context.stroke();
+                context.globalAlpha = 1;
+                context.fillText(formatValue(value, metric), inset.left - 8, position);
+            }
+            const gradient = context.createLinearGradient(0, inset.top, 0, inset.top + chartHeight);
+            gradient.addColorStop(0, areaTop);
+            gradient.addColorStop(1, areaBottom);
+            context.beginPath();
+            points.forEach((point, index) => {
+                if (index === 0) context.moveTo(x(index), y(point.value));
+                else context.lineTo(x(index), y(point.value));
+            });
+            context.lineTo(x(points.length - 1), inset.top + chartHeight);
+            context.lineTo(x(0), inset.top + chartHeight);
+            context.closePath();
+            context.fillStyle = gradient;
+            context.fill();
+            context.strokeStyle = lineColor;
+            context.lineWidth = 2.5;
+            context.beginPath();
+            points.forEach((point, index) => {
+                if (index === 0) context.moveTo(x(index), y(point.value));
+                else context.lineTo(x(index), y(point.value));
+            });
+            context.stroke();
+            context.fillStyle = lineColor;
+            points.forEach((point, index) => {
+                context.beginPath();
+                context.arc(x(index), y(point.value), points.length > 80 ? 1.5 : 3, 0, Math.PI * 2);
+                context.fill();
+            });
+            context.textAlign = 'center';
+            context.textBaseline = 'top';
+            context.fillStyle = textColor;
+            const labelCount = Math.min(5, points.length);
+            for (let i = 0; i < labelCount; i++) {
+                const index = labelCount === 1 ? 0 : Math.round(i * (points.length - 1) / (labelCount - 1));
+                context.fillText(points[index].date, x(index), height - inset.bottom + 12);
+            }
+        }
+
+        function formatValue(value, metric) {
+            return metric === 'net-collection-rate' || metric === 'delinquency-default-rate'
+                ? value.toFixed(1) + '%'
+                : '$' + value.toFixed(2);
+        }
+
+        async function loadHistory() {
+            const start = startInput.value;
+            const end = endInput.value;
+            if (!start || !end || start > end) {
+                message.textContent = 'Choose a valid date range with the start on or before the end.';
+                draw([], selectedMetric);
+                return;
+            }
+            message.textContent = 'Loading history…';
+            try {
+                const query = new URLSearchParams({ metric: selectedMetric, start: start, end: end });
+                const response = await fetch('/numbers/history?' + query.toString(), {
+                    headers: { Accept: 'application/json' }
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'History could not be loaded.');
+                draw(result.points, selectedMetric);
+                message.textContent = result.points.length
+                    ? result.points.length + ' saved daily ' + (result.points.length === 1 ? 'snapshot' : 'snapshots') + ' in this range.'
+                    : 'No saved history for this stat in the selected date range.';
+            } catch (error) {
+                draw([], selectedMetric);
+                message.textContent = error.message || 'History could not be loaded.';
+            }
+        }
+
+        document.querySelectorAll('.metric-chart-trigger').forEach(button => {
+            button.addEventListener('click', function () {
+                selectedMetric = button.dataset.metricKey;
+                document.getElementById('metricHistoryTitle').textContent = button.dataset.metricName;
+                document.getElementById('metricHistoryCurrent').textContent = 'Current value: ' + button.dataset.metricValue;
+                const today = new Date();
+                endInput.value = localDate(today);
+                today.setDate(today.getDate() - 90);
+                startInput.value = localDate(today);
+                modal.show();
+            });
+        });
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            loadHistory();
+        });
+        modalElement.addEventListener('shown.bs.modal', function () { loadHistory(); });
+        window.addEventListener('resize', function () {
+            if (modalElement.classList.contains('show')) draw(currentPoints, selectedMetric);
+        });
+    })();
+</script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script th:replace="~{fragments :: tableFullscreenScript}"></script>
+</body>
+</html>

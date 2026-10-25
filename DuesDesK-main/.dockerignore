@@ -1,0 +1,14 @@
+target/
+.git/
+.github/
+.idea/
+.vscode/
+.env
+.env.*
+store_data.json
+*.dmg
+*.msi
+*.md
+packaging/
+Dockerfile
+compose.yaml

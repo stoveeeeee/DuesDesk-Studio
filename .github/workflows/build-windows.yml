@@ -1,0 +1,71 @@
+name: Build DuesDesk for Windows
+
+on:
+  workflow_dispatch:        # adds a "Run workflow" button in the Actions tab
+  push:
+    tags: ['v*']            # also runs when you push a tag like v1.0.1
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: DuesDesK-main   # the app lives in a subfolder of the repo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: DuesDesK-main/pom.xml
+
+      # jpackage needs WiX 3.x to build .exe/.msi installers on Windows
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: |
+          choco install wixtoolset -y --no-progress
+          $wix = (Get-ChildItem "C:\Program Files (x86)\WiX Toolset*\bin" | Select-Object -First 1).FullName
+          Add-Content $env:GITHUB_PATH $wix
+
+      # Building on Windows makes Maven pull the Windows JavaFX natives (-win jars)
+      - name: Build jar
+        run: mvn -B -DskipTests clean package
+
+      - name: Stage jar
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item target/dues-manager-1.0.0.jar dist/
+
+      - name: Package .exe installer
+        shell: pwsh
+        run: |
+          & "$env:JAVA_HOME\bin\jpackage.exe" --type exe --name DuesDesk --app-version 1.0.0 `
+            --input dist --main-jar dues-manager-1.0.0.jar `
+            --main-class org.springframework.boot.loader.launch.JarLauncher `
+            --runtime-image "$env:JAVA_HOME" `
+            --icon DuesDesk.ico `
+            --win-menu --win-shortcut --win-per-user-install `
+            --win-upgrade-uuid C616A48C-E221-4BA2-A02C-7835AABE05BC `
+            --dest installers
+
+      # Portable copy: no installer, just a folder with DuesDesk.exe inside
+      - name: Package portable app
+        shell: pwsh
+        run: |
+          & "$env:JAVA_HOME\bin\jpackage.exe" --type app-image --name DuesDesk --app-version 1.0.0 `
+            --input dist --main-jar dues-manager-1.0.0.jar `
+            --main-class org.springframework.boot.loader.launch.JarLauncher `
+            --runtime-image "$env:JAVA_HOME" `
+            --icon DuesDesk.ico `
+            --dest portable
+          Compress-Archive -Path portable/DuesDesk -DestinationPath DuesDesk-portable.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DuesDesk-windows
+          path: |
+            DuesDesK-main/installers/*.exe
+            DuesDesK-main/DuesDesk-portable.zip

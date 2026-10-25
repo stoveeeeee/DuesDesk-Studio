@@ -1,0 +1,14 @@
+target/
+.DS_Store
+.idea/
+.vscode/
+*.iml
+.env
+.env.*
+store_data.json
+application-local.properties
+*.dmg
+.github/modernize/
+
+# Promo video production (demo data, recordings, renders)
+/promo-video-studio/

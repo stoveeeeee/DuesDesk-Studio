@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root { --guest-male:#3B82F6; --guest-female:#EC4899; }
+        body { font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg-canvas);color:var(--text-secondary); }
+        .banner { background:var(--bg-surface);border-bottom:1px solid var(--border-subtle);padding:1rem 0; }
+        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
+
+        /* Shared look with the Dues and Rent pages: card header strips, stat cards and ledger tables */
+        .card-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border-subtle); display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:.75rem; }
+        .card-body-pad { padding:1rem 1.25rem; }
+        @media (min-width: 768px) { .card-head { padding:1.15rem 1.5rem; } .card-body-pad { padding:1.25rem 1.5rem; } }
+        .section-title { font-size:.95rem; font-weight:600; color:var(--text-primary); margin:0; }
+        .section-subtitle { font-size:.8rem; color:var(--text-muted); margin:0; }
+        .kpi-sub { font-size:.8rem; color:var(--text-muted); margin-top:.4rem; }
+        .form-label-fintech { font-size:.78rem; font-weight:600; color:var(--text-secondary); margin-bottom:.35rem; }
+        .drawer { background:var(--bg-canvas); border-bottom:1px solid var(--border-subtle); }
+        .table-fintech { margin-bottom:0; }
+        .table-fintech thead th { background-color:var(--bg-canvas); color:var(--text-muted); font-size:.72rem; font-weight:600; text-transform:uppercase;
+            letter-spacing:.05em; padding:.7rem 1rem; border-bottom:1px solid var(--border-subtle); white-space:nowrap; }
+        .table-fintech tbody td { padding:.75rem 1rem; border-bottom:1px solid var(--bg-subtle); font-size:.875rem; vertical-align:middle; }
+        .table-fintech tbody tr:last-child td { border-bottom:none; }
+        .table-fintech tbody tr:hover { background-color:var(--bg-canvas); }
+        .empty-note { padding:2rem 1rem; text-align:center; color:var(--text-muted); font-size:.86rem; }
+        .empty-note .bi { display:block; font-size:1.6rem; margin-bottom:.4rem; opacity:.7; }
+        .campaign-meta { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.45rem; }
+        .btn-remove { width:1.9rem; height:1.9rem; padding:0; display:inline-grid; place-items:center; }
+
+        /* Event dashboard: header, key numbers, activity tabs and side panels in one container */
+        .event-dash { overflow:hidden; }
+        .event-dash > .card-head { background:var(--bg-surface); }
+        .dash-kpis { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); border-top:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); background:var(--bg-canvas); }
+        .dash-kpi { padding:1rem 1.25rem; min-width:0; }
+        .dash-kpi + .dash-kpi { border-left:1px solid var(--border-subtle); }
+        .dash-body { display:grid; grid-template-columns:minmax(0, 1fr) 340px; }
+        .dash-main { min-width:0; }
+        .dash-side { border-left:1px solid var(--border-subtle); min-width:0; background:var(--bg-surface); }
+        .dash-panel + .dash-panel { border-top:1px solid var(--border-subtle); }
+        .dash-panel > .card-head { border-bottom:0; padding-bottom:0; }
+        .dash-tabs { display:flex; gap:.25rem; padding:.6rem 1rem 0; border-bottom:1px solid var(--border-subtle); overflow-x:auto; }
+        .dash-tab { border:0; background:transparent; padding:.55rem .85rem; margin-bottom:-1px; border-bottom:2px solid transparent; color:var(--text-muted); font-size:.86rem; font-weight:600; white-space:nowrap; cursor:pointer; transition:color .15s ease, border-color .15s ease; }
+        .dash-tab:hover { color:var(--text-primary); }
+        .dash-tab.is-active { color:var(--btn-primary-bg); border-bottom-color:var(--btn-primary-bg); }
+        .dash-tab:focus-visible { outline:none; box-shadow:0 0 0 3px var(--focus-ring); border-radius:6px; }
+        .dash-tab__count { display:inline-block; min-width:1.35rem; margin-left:.25rem; padding:.02rem .4rem; border-radius:999px; background:var(--bg-subtle); color:var(--text-secondary); font-size:.72rem; text-align:center; font-variant-numeric:tabular-nums; }
+        .dash-tab.is-active .dash-tab__count { background:var(--status-info-bg); color:var(--status-info-text); }
+        .dash-pane[hidden] { display:none; }
+        .dash-pane > .card-head { border-bottom:0; }
+        .dash-pane .table-responsive { border-top:1px solid var(--border-subtle); }
+        @media (max-width: 1199px) {
+            .dash-body { grid-template-columns:minmax(0, 1fr); }
+            .dash-side { border-left:0; border-top:1px solid var(--border-subtle); }
+        }
+        @media (max-width: 991px) {
+            .dash-kpis { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+            .dash-kpi:nth-child(3) { border-left:0; }
+            .dash-kpi:nth-child(n+3) { border-top:1px solid var(--border-subtle); }
+        }
+        @media (max-width: 575px) {
+            .dash-kpis { grid-template-columns:minmax(0, 1fr); }
+            .dash-kpi + .dash-kpi { border-left:0; border-top:1px solid var(--border-subtle); }
+        }
+
+        /* Event picker: one tab per event, soonest first; finished events fold away below */
+        .event-tabs { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:.6rem; }
+        .event-tab { display:flex; flex-direction:column; gap:.2rem; padding:.7rem .85rem; border:1px solid var(--border-subtle); border-left:4px solid var(--tab-accent, var(--border-strong));
+            border-radius:10px; background:var(--bg-surface); color:var(--text-secondary); text-decoration:none; min-width:0;
+            transition:border-color .15s ease, box-shadow .2s var(--ease-snappy), background-color .15s ease; }
+        .event-tab:hover { border-color:var(--border-strong); border-left-color:var(--tab-accent, var(--border-strong)); box-shadow:var(--shadow-hover); color:var(--text-secondary); }
+        .event-tab.active { background:var(--status-info-bg); border-color:var(--btn-primary-bg); border-left-color:var(--tab-accent, var(--btn-primary-bg)); }
+        .event-tab__name { color:var(--text-primary); font-weight:600; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .event-tab__meta { display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; font-size:.76rem; color:var(--text-muted); }
+        .event-tab__when { font-weight:600; }
+        .event-tab.tone-today { --tab-accent:var(--status-success-text); } .event-tab.tone-today .event-tab__when { color:var(--status-success-text); }
+        .event-tab.tone-soon { --tab-accent:var(--status-warning-text); } .event-tab.tone-soon .event-tab__when { color:var(--status-warning-text); }
+        .event-tab.tone-later { --tab-accent:var(--btn-primary-bg); }
+        .event-tab.tone-past .event-tab__when { color:var(--status-danger-text); }
+        .event-tab.tone-done { --tab-accent:var(--border-strong); }
+        .event-legend { display:flex; flex-wrap:wrap; gap:.3rem 1rem; font-size:.74rem; color:var(--text-muted); }
+        .event-legend span::before { content:''; display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:.35rem; background:var(--tab-accent); vertical-align:0; }
+        .completed-toggle { display:inline-flex; align-items:center; gap:.4rem; border:0; background:transparent; padding:0; color:var(--text-secondary); font-size:.84rem; font-weight:600; cursor:pointer; }
+        .completed-toggle .bi-chevron-down { transition:transform .25s var(--ease-snappy); font-size:.75rem; }
+        .completed-toggle[aria-expanded="true"] .bi-chevron-down { transform:rotate(180deg); }
+        .completed-banner { display:flex; align-items:center; gap:.6rem; padding:.7rem .9rem; border-radius:10px;
+            background:var(--status-info-bg); color:var(--status-info-text); border:1px solid var(--status-info-border); font-size:.86rem; }
+
+        /* Leaderboard */
+        .prize-banner { display:flex; align-items:center; gap:.65rem; padding:.7rem .85rem; margin-bottom:.9rem; border-radius:10px;
+            background:var(--status-warning-bg); color:var(--status-warning-text); border:1px solid var(--status-warning-border); font-size:12.5px; }
+        .prize-banner .bi { font-size:1.15rem; }
+        .leader-list { list-style:none; margin:0; padding:0; }
+        .leader-list li { display:flex; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid var(--border-subtle);
+            animation: peekRowIn .26s var(--ease-snappy) both; }
+        .leader-list li:last-child { border-bottom:0; }
+        .leader-rank { flex:0 0 2rem; height:2rem; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:12.5px;
+            background:var(--bg-subtle); color:var(--text-muted); border:1px solid var(--border-subtle); }
+        /* Medal colors come from theme tokens (or mix with the surface), so they read in light and dark mode. */
+        .leader-rank.rank-1 { background:var(--status-warning-bg); color:var(--status-warning-text); border-color:var(--status-warning-border); }
+        .leader-rank.rank-2 { background:var(--status-neutral-bg); color:var(--status-neutral-text); border-color:var(--border-strong); }
+        .leader-rank.rank-3 { --bronze:#C2410C; background:color-mix(in srgb, var(--bronze) 14%, var(--bg-surface)); color:var(--bronze); border-color:color-mix(in srgb, var(--bronze) 40%, var(--bg-surface)); }
+        .leader-name { color:var(--text-primary); font-weight:600; font-size:13.5px; }
+        .leader-sub { font-size:11.5px; color:var(--text-muted); }
+        .leader-bar { height:4px; border-radius:2px; background:var(--bg-subtle); margin-top:.3rem; overflow:hidden; }
+        .leader-bar > span { display:block; height:100%; background:var(--btn-primary-bg); border-radius:2px; }
+        .leader-revenue { margin-left:auto; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+        .sale-total { font-size:12.5px; color:var(--text-muted); }
+        .sale-total strong { color:var(--text-primary); font-variant-numeric:tabular-nums; font-size:.95rem; }
+
+        /* Sale lines: several items can be logged together */
+        .sale-line { padding:.75rem; margin-bottom:.6rem; border:1px solid var(--border-subtle); border-radius:10px; background:var(--bg-canvas); }
+        .sale-line__sub { font-size:12.5px; color:var(--text-muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .sale-line__sub strong { color:var(--text-primary); }
+
+        /* Male / female choice: two outlined buttons that are clear to tap before anything is chosen */
+        .guest-choice { display:flex; gap:.4rem; }
+        .guest-btn { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; min-height:var(--control-h-sm, 31px); padding:.2rem .6rem; border:1px solid var(--border-strong);
+            border-radius:8px; background:var(--bg-surface); color:var(--text-secondary); font-size:.82rem; font-weight:500; cursor:pointer;
+            transition:background-color .15s ease, border-color .15s ease, color .15s ease; }
+        .guest-btn::before { content:''; width:9px; height:9px; border-radius:50%; background:var(--guest-color); opacity:.55; transition:opacity .15s ease; }
+        .guest-btn:hover { border-color:var(--guest-color); color:var(--text-primary); }
+        .guest-btn:hover::before { opacity:1; }
+        .guest-btn:focus-visible { outline:none; box-shadow:0 0 0 3px var(--focus-ring); }
+        .guest-btn[aria-pressed="true"] { border-color:var(--guest-color); background:color-mix(in srgb, var(--guest-color) 14%, var(--bg-surface)); color:var(--text-primary); font-weight:600; }
+        .guest-btn[aria-pressed="true"]::before { opacity:1; }
+        .guest-btn.is-male { --guest-color:var(--guest-male); }
+        .guest-btn.is-female { --guest-color:var(--guest-female); }
+        .guest-choice.is-invalid .guest-btn:not([aria-pressed="true"]) { border-color:var(--status-danger-text); box-shadow:0 0 0 2px var(--status-danger-bg); }
+
+        /* Who's buying */
+        .audience + .audience { margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border-subtle); }
+        .audience-split { display:flex; height:10px; border-radius:5px; overflow:hidden; background:var(--bg-subtle); margin:.45rem 0 .5rem; }
+        .audience-split > span { display:block; height:100%; transition:width .5s var(--ease-snappy); }
+        .audience-split .male { background:var(--guest-male); }
+        .audience-split .female { background:var(--guest-female); }
+        .audience-legend { display:flex; flex-wrap:wrap; gap:.25rem 1.1rem; font-size:12.5px; }
+        .audience-legend .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:.35rem; }
+        .audience-legend .is-male .dot { background:var(--guest-male); }
+        .audience-legend .is-female .dot { background:var(--guest-female); }
+        .audience-legend strong { color:var(--text-primary); font-variant-numeric:tabular-nums; }
+    </style>
+    <th:block th:replace="~{fragments :: navStyles}"></th:block>
+    <script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+<div class="app-header-stack">
+    <header class="banner">
+        <div class="container-xxl px-3 px-md-4 header-grid">
+            <div></div>
+            <div class="d-flex align-items-center gap-3 justify-content-center">
+                <div class="brand-icon"><i class="bi bi-bank2"></i></div><h1 class="h6 fw-bold mb-0">DuesDesk</h1>
+            </div>
+            <div></div>
+        </div>
+    </header>
+    <nav th:replace="~{fragments :: nav('presales')}"></nav>
+</div>
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="6000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <div class="page-eyebrow">Events</div>
+            <h2 class="page-title">Events</h2>
+            <p class="page-lede">Sell tickets, wristbands and merch for each event, track its expenses, and see who is selling the most.</p>
+        </div>
+        <button type="button" class="btn btn-fintech-primary d-inline-flex align-items-center gap-1"
+                data-bs-toggle="collapse" data-bs-target="#newCampaign" aria-controls="newCampaign" th:attr="aria-expanded=${#lists.isEmpty(campaigns)}">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i><span>New event</span>
+        </button>
+    </div>
+
+    <!-- Event picker + new event -->
+    <section class="surface-card mb-4" aria-labelledby="eventTabsTitle">
+        <div class="card-head">
+            <div>
+                <h3 class="section-title" id="eventTabsTitle">Your events</h3>
+                <p class="section-subtitle" th:text="${#lists.isEmpty(activeEvents)} ? 'Nothing open right now' : ${#lists.size(activeEvents)} + (${#lists.size(activeEvents) == 1} ? ' open event' : ' open events') + ', soonest first'"></p>
+            </div>
+            <div class="event-legend" aria-hidden="true" th:if="${!#lists.isEmpty(activeEvents)}">
+                <span style="--tab-accent:var(--status-success-text)">Today</span>
+                <span style="--tab-accent:var(--status-warning-text)">This week</span>
+                <span style="--tab-accent:var(--btn-primary-bg)">Later</span>
+                <span style="--tab-accent:var(--border-strong)">No date / ended</span>
+            </div>
+        </div>
+        <div class="collapse drawer" id="newCampaign" th:classappend="${#lists.isEmpty(campaigns)} ? 'show'">
+            <form th:action="@{/presales}" method="post" class="row g-2 align-items-end card-body-pad m-0" data-duplicate-guard>
+                <div class="col-12"><h4 class="section-title mb-1">New event</h4></div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label-fintech" for="newName">Event name</label>
+                    <input id="newName" name="name" class="form-control form-control-sm" maxlength="100" placeholder="Fall Formal" required>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label-fintech" for="newDate">Event date</label>
+                    <input id="newDate" name="eventDate" type="date" class="form-control form-control-sm">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label-fintech" for="newPrice">Ticket price ($)</label>
+                    <input id="newPrice" name="ticketPrice" type="number" min="0" step="0.01" class="form-control form-control-sm" placeholder="Optional">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label-fintech" for="newGoal">Revenue goal ($)</label>
+                    <input id="newGoal" name="revenueGoal" type="number" min="0" step="0.01" class="form-control form-control-sm" placeholder="Optional">
+                </div>
+                <div class="col-6 col-md-2 d-grid">
+                    <button type="submit" class="btn btn-fintech-primary btn-sm" data-loading-label="Creating…">Create event</button>
+                </div>
+                <div class="col-12 col-md-8">
+                    <label class="form-label-fintech" for="newPrize">Top seller prize (optional)</label>
+                    <input id="newPrize" name="prize" class="form-control form-control-sm" maxlength="200" placeholder="e.g. Free formal ticket and the chapter's bragging rights">
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label-fintech" for="newChair">Chair position (optional)</label>
+                    <select id="newChair" name="chairBudgetId" class="form-select form-select-sm">
+                        <option value="">No chair</option>
+                        <option th:each="chair : ${chairs}" th:value="${chair.id}" th:text="${chair.chairName}"></option>
+                    </select>
+                    <div class="form-text">Sales count as that chair's money raised; expenses come out of its budget.</div>
+                </div>
+            </form>
+        </div>
+        <div class="card-body-pad">
+            <nav class="event-tabs" aria-labelledby="eventTabsTitle" th:if="${!#lists.isEmpty(activeEvents)}">
+                <a th:each="tab : ${activeEvents}" class="event-tab" th:classappend="'tone-' + ${tab.tone} + (${campaign != null and tab.campaign.id == campaign.id} ? ' active' : '')"
+                   th:href="@{/presales(campaign=${tab.campaign.id})}"
+                   th:attr="aria-current=${campaign != null and tab.campaign.id == campaign.id} ? 'page' : null">
+                    <span class="event-tab__name" th:text="${tab.campaign.name}"></span>
+                    <span class="event-tab__meta">
+                        <span class="event-tab__when" th:text="${tab.when}"></span>
+                        <span class="tabular-nums" th:text="'$' + ${#numbers.formatDecimal(tab.campaign.grossRevenue, 1, 'COMMA', 0, 'POINT')} + ' sold'"></span>
+                    </span>
+                    <span class="event-tab__meta" th:if="${!#strings.isEmpty(tab.campaign.eventDate)}" th:text="${tab.campaign.eventDate}"></span>
+                </a>
+            </nav>
+            <div class="empty-note py-3" th:if="${#lists.isEmpty(activeEvents)}">
+                <i class="bi bi-calendar2-plus" aria-hidden="true"></i>
+                <span th:text="${#lists.isEmpty(completedEvents)} ? 'No events yet. Use New event to create your first one.' : 'No open events. Create a new one, or open a completed event below.'"></span>
+            </div>
+            <div class="mt-3 pt-3 border-top" th:if="${!#lists.isEmpty(completedEvents)}">
+                <button type="button" class="completed-toggle" data-bs-toggle="collapse" data-bs-target="#completedEvents"
+                        aria-controls="completedEvents" th:attr="aria-expanded=${campaign != null and campaign.completed}">
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                    <span th:text="'Completed events (' + ${#lists.size(completedEvents)} + ')'"></span>
+                </button>
+                <div class="collapse" id="completedEvents" th:classappend="${campaign != null and campaign.completed} ? 'show'">
+                    <div class="event-tabs mt-2">
+                        <a th:each="tab : ${completedEvents}" class="event-tab tone-done" th:classappend="${campaign != null and tab.campaign.id == campaign.id} ? 'active'"
+                           th:href="@{/presales(campaign=${tab.campaign.id})}"
+                           th:attr="aria-current=${campaign != null and tab.campaign.id == campaign.id} ? 'page' : null">
+                            <span class="event-tab__name" th:text="${tab.campaign.name}"></span>
+                            <span class="event-tab__meta">
+                                <span class="event-tab__when" th:text="${tab.when}"></span>
+                                <span class="tabular-nums" th:text="'$' + ${#numbers.formatDecimal(tab.campaign.netProfit, 1, 'COMMA', 0, 'POINT')} + ' net'"></span>
+                            </span>
+                            <span class="event-tab__meta" th:if="${!#strings.isEmpty(tab.campaign.completedDate)}" th:text="${tab.campaign.completedDate}"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <th:block th:if="${campaign != null}">
+        <!-- Selected event: name, details and actions -->
+        <section class="surface-card event-dash mb-4" aria-labelledby="campaignTitle">
+            <div class="card-head" th:classappend="${campaign.completed} ? '' : 'border-bottom-0'">
+                <div class="min-w-0">
+                    <h3 class="h5 fw-bold mb-0 text-dark" id="campaignTitle" th:text="${campaign.name}">Fall Formal</h3>
+                    <div class="campaign-meta">
+                        <span class="flow-chip info" th:if="${campaign.completed}">
+                            <i class="bi bi-check2-circle" aria-hidden="true"></i><span th:text="${#strings.isEmpty(campaign.completedDate)} ? 'Completed' : 'Completed ' + ${campaign.completedDate}"></span>
+                        </span>
+                        <span class="flow-chip net" th:if="${!#strings.isEmpty(campaign.eventDate)}">
+                            <i class="bi bi-calendar-event" aria-hidden="true"></i><span th:text="${campaign.eventDate}"></span>
+                        </span>
+                        <span class="flow-chip net" th:if="${campaign.ticketPrice > 0}" th:text="'Tickets $' + ${#numbers.formatDecimal(campaign.ticketPrice, 1, 'COMMA', 2, 'POINT')}"></span>
+                        <span class="flow-chip net" th:if="${campaign.revenueGoal > 0}"
+                              th:text="'Goal $' + ${#numbers.formatDecimal(campaign.revenueGoal, 1, 'COMMA', 2, 'POINT')}"></span>
+                        <span class="flow-chip net" th:if="${!#strings.isEmpty(campaign.prize)}">
+                            <i class="bi bi-gift" aria-hidden="true"></i><span th:text="'Prize: ' + ${campaign.prize}"></span>
+                        </span>
+                        <a class="flow-chip info text-decoration-none" th:if="${campaign.chairBudgetId != null and chairNames[campaign.chairBudgetId] != null}"
+                           th:href="'/chair-budgeting#budget-' + ${campaign.chairBudgetId}"
+                           th:title="'Sales and expenses count on the ' + ${chairNames[campaign.chairBudgetId]} + ' chair budget'">
+                            <i class="bi bi-person-badge" aria-hidden="true"></i><span th:text="'Chair: ' + ${chairNames[campaign.chairBudgetId]}"></span>
+                        </a>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                            data-bs-toggle="collapse" data-bs-target="#editCampaign" aria-controls="editCampaign" aria-expanded="false">
+                        <i class="bi bi-pencil" aria-hidden="true"></i><span>Edit details</span>
+                    </button>
+                    <form th:action="@{/presales/{id}/complete(id=${campaign.id})}" method="post" class="m-0">
+                        <input type="hidden" name="completed" th:value="${!campaign.completed}">
+                        <button type="submit" class="btn btn-sm d-inline-flex align-items-center gap-1"
+                                th:classappend="${campaign.completed} ? 'btn-fintech-primary' : 'btn-fintech-outline'">
+                            <i class="bi" th:classappend="${campaign.completed} ? 'bi-arrow-counterclockwise' : 'bi-check2-circle'" aria-hidden="true"></i>
+                            <span th:text="${campaign.completed} ? 'Reopen event' : 'Mark complete'"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="collapse drawer border-top" id="editCampaign">
+                <form th:action="@{/presales}" method="post" class="row g-2 align-items-end card-body-pad m-0">
+                    <input type="hidden" name="id" th:value="${campaign.id}">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label-fintech" for="editName">Event name</label>
+                        <input id="editName" name="name" class="form-control form-control-sm" maxlength="100" th:value="${campaign.name}" required>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label-fintech" for="editDate">Event date</label>
+                        <input id="editDate" name="eventDate" type="date" class="form-control form-control-sm" th:value="${campaign.eventDate}">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label-fintech" for="editPrice">Ticket price ($)</label>
+                        <input id="editPrice" name="ticketPrice" type="number" min="0" step="0.01" class="form-control form-control-sm" placeholder="Optional"
+                               th:value="${campaign.ticketPrice > 0 ? #numbers.formatDecimal(campaign.ticketPrice, 1, 2, 'POINT') : ''}">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label-fintech" for="editGoal">Revenue goal ($)</label>
+                        <input id="editGoal" name="revenueGoal" type="number" min="0" step="0.01" class="form-control form-control-sm"
+                               th:value="${campaign.revenueGoal > 0 ? #numbers.formatDecimal(campaign.revenueGoal, 1, 2, 'POINT') : ''}" placeholder="Optional">
+                    </div>
+                    <div class="col-6 col-md-2 d-grid">
+                        <button type="submit" class="btn btn-fintech-primary btn-sm">Save changes</button>
+                    </div>
+                    <div class="col-12 col-md-8">
+                        <label class="form-label-fintech" for="editPrize">Top seller prize (optional)</label>
+                        <input id="editPrize" name="prize" class="form-control form-control-sm" maxlength="200" th:value="${campaign.prize}">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label-fintech" for="editChair">Chair position (optional)</label>
+                        <select id="editChair" name="chairBudgetId" class="form-select form-select-sm">
+                            <option value="">No chair</option>
+                            <option th:each="chair : ${chairs}" th:value="${chair.id}" th:text="${chair.chairName}"
+                                    th:selected="${chair.id == campaign.chairBudgetId}"></option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="card-body-pad pt-0" th:if="${campaign.completed}">
+                <div class="completed-banner mt-3">
+                    <i class="bi bi-archive" aria-hidden="true"></i>
+                    <span>This event is complete. Its sales, expenses and leaderboard stay here to look through; reopen it to log anything new.</span>
+                </div>
+            </div>
+        <!-- Key numbers: one joined strip inside the dashboard -->
+        <div class="dash-kpis" role="group" aria-label="Event totals">
+            <div class="dash-kpi">
+                <div class="kpi-label"><span>Gross revenue</span></div>
+                <div class="kpi-value text-success" th:text="'$' + ${#numbers.formatDecimal(campaign.grossRevenue, 1, 'COMMA', 2, 'POINT')}"></div>
+                <div class="kpi-sub" th:if="${campaign.revenueGoal <= 0}"
+                     th:text="${campaign.ticketsSold} + (${campaign.ticketsSold == 1} ? ' ticket' : ' tickets') + ' · ' + ${campaign.wristbandsSold} + (${campaign.wristbandsSold == 1} ? ' wristband' : ' wristbands') + ' · ' + ${campaign.merchSold} + ' other'"></div>
+                <th:block th:if="${campaign.revenueGoal > 0}">
+                    <div class="kpi-sub" th:text="(${goalPercent >= 100} ? 'Goal reached' : ${#numbers.formatDecimal(goalPercent, 1, 0, 'POINT')} + '%') + ' of the $' + ${#numbers.formatDecimal(campaign.revenueGoal, 1, 'COMMA', 0, 'POINT')} + ' goal'"></div>
+                    <div class="progress-slim mt-2">
+                        <div class="progress-fill" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Revenue toward goal"
+                             th:classappend="${goalPercent >= 100} ? 'tone-success'"
+                             th:attr="aria-valuenow=${goalPercent > 100 ? 100 : goalPercent}"
+                             th:style="'width: ' + ${goalPercent > 100 ? 100 : goalPercent} + '%;'"></div>
+                    </div>
+                </th:block>
+            </div>
+            <div class="dash-kpi">
+                <div class="kpi-label"><span>Event expenses</span></div>
+                <div class="kpi-value text-danger" th:text="'$' + ${#numbers.formatDecimal(campaign.expenseTotal, 1, 'COMMA', 2, 'POINT')}"></div>
+                <div class="kpi-sub" th:text="${#lists.size(campaign.expenses)} + (${#lists.size(campaign.expenses) == 1} ? ' expense logged' : ' expenses logged')"></div>
+            </div>
+            <div class="dash-kpi">
+                <div class="kpi-label"><span>Net profit</span></div>
+                <div class="kpi-value" th:classappend="${campaign.netProfit >= 0} ? 'text-success' : 'text-danger'"
+                     th:text="(${campaign.netProfit < 0} ? '-$' : '$') + ${#numbers.formatDecimal(campaign.netProfit < 0 ? -campaign.netProfit : campaign.netProfit, 1, 'COMMA', 2, 'POINT')}"></div>
+                <div class="kpi-sub" th:text="${campaign.netProfit >= 0} ? 'Revenue minus expenses' : 'Expenses exceed revenue so far'"></div>
+            </div>
+            <div class="dash-kpi">
+                <div class="kpi-label"><span>Profit margin</span></div>
+                <div class="kpi-value" th:classappend="${campaign.grossRevenue > 0 and campaign.marginPercent < 0} ? 'text-danger'"
+                     th:text="${campaign.grossRevenue > 0} ? ${#numbers.formatDecimal(campaign.marginPercent, 1, 1, 'POINT')} + '%' : '—'"></div>
+                <div class="kpi-sub" th:text="${campaign.grossRevenue > 0} ? 'Of gross revenue' : 'Shows once sales come in'"></div>
+            </div>
+        </div>
+
+        <div class="dash-body">
+            <!-- Main column: tabs for logging, sales and expenses -->
+            <div class="dash-main">
+                <div class="dash-tabs" role="tablist" aria-label="Event activity">
+                    <button type="button" class="dash-tab" role="tab" data-pane="paneLog" th:unless="${campaign.completed}">Log a sale</button>
+                    <button type="button" class="dash-tab" role="tab" data-pane="paneSales">Sales <span class="dash-tab__count" th:text="${#lists.size(sales)}"></span></button>
+                    <button type="button" class="dash-tab" role="tab" data-pane="paneExpenses">Expenses <span class="dash-tab__count" th:text="${#lists.size(expenses)}"></span></button>
+                </div>
+                <section class="dash-pane" id="paneLog" role="tabpanel" aria-labelledby="logSaleTitle" th:unless="${campaign.completed}" hidden>
+                    <div class="card-head">
+                        <div>
+                            <h3 class="section-title" id="logSaleTitle">Log a sale</h3>
+                            <p class="section-subtitle">Add everything one buyer picked up. Tickets and wristbands also record male or female.</p>
+                        </div>
+                    </div>
+                    <form th:action="@{/presales/{id}/sales/multi(id=${campaign.id})}" method="post" data-duplicate-guard id="saleForm" class="card-body-pad"
+                          th:attr="data-ticket-price=${campaign.ticketPrice > 0 ? #numbers.formatDecimal(campaign.ticketPrice, 1, 2, 'POINT') : ''}">
+                        <div class="row g-2 align-items-end mb-3">
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-fintech" for="saleDate">Date</label>
+                                <input id="saleDate" name="date" type="date" class="form-control form-control-sm" th:value="${today}" required>
+                            </div>
+                            <div class="col-6 col-md-5">
+                                <label class="form-label-fintech" for="saleSeller">Sold by</label>
+                                <select id="saleSeller" name="sellerMemberId" class="form-select form-select-sm">
+                                    <option value="">Not credited (walk-up / door)</option>
+                                    <option th:each="m : ${members}" th:value="${m.id}" th:text="${m.name}"></option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="saleBuyer">Buyer (optional)</label>
+                                <input id="saleBuyer" name="buyerName" class="form-control form-control-sm" maxlength="120" placeholder="Name">
+                            </div>
+                        </div>
+                        <datalist id="customItemList">
+                            <option th:each="name : ${customItems}" th:value="${name}"></option>
+                        </datalist>
+                        <div id="saleLines" aria-label="Items in this sale"></div>
+                        <template id="saleLineTemplate">
+                            <div class="sale-line" data-line>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label-fintech" data-for="item">Item</label>
+                                        <select name="items" data-field="item" class="form-select form-select-sm" data-native-select>
+                                            <option value="Ticket">Ticket</option>
+                                            <option value="Wristband">Wristband</option>
+                                            <option value="Merch">Merch</option>
+                                            <option value="Custom">Custom item…</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-4" data-guest-col>
+                                        <span class="form-label-fintech d-block" data-guest-label>Ticket for</span>
+                                        <div class="guest-choice" role="group" data-guest-group>
+                                            <button type="button" class="guest-btn is-male" data-guest="Male" aria-pressed="false">Male</button>
+                                            <button type="button" class="guest-btn is-female" data-guest="Female" aria-pressed="false">Female</button>
+                                        </div>
+                                        <input type="hidden" name="guestTypes" data-field="guest" value="">
+                                    </div>
+                                    <div class="col-12 col-md-4" data-description-col hidden>
+                                        <label class="form-label-fintech" data-for="description" data-description-label>What (optional)</label>
+                                        <input name="descriptions" data-field="description" class="form-control form-control-sm" maxlength="120" placeholder="T-shirt (L)" autocomplete="off">
+                                    </div>
+                                    <div class="col-4 col-md-1">
+                                        <label class="form-label-fintech" data-for="quantity">Qty</label>
+                                        <input name="quantities" data-field="quantity" type="number" min="1" max="10000" step="1" value="1" class="form-control form-control-sm" required>
+                                    </div>
+                                    <div class="col-5 col-md-2">
+                                        <label class="form-label-fintech" data-for="price">Each ($)</label>
+                                        <input name="unitPrices" data-field="price" type="number" min="0" step="0.01" class="form-control form-control-sm" placeholder="0.00" required>
+                                    </div>
+                                    <div class="col-3 col-md-2 d-flex flex-column align-items-end justify-content-end">
+                                        <button type="button" class="btn btn-ghost btn-sm btn-remove mb-1" data-remove-line aria-label="Remove this item" title="Remove this item"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                                        <span class="sale-line__sub"><strong data-line-total>$0.00</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-1">
+                            <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1" id="addSaleLine">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i><span>Add another item</span>
+                            </button>
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <span class="sale-total" aria-live="polite">Sale total <strong id="saleTotal">$0.00</strong></span>
+                                <button type="submit" class="btn btn-fintech-primary btn-sm d-inline-flex align-items-center gap-1" data-loading-label="Logging…"><i class="bi bi-check-lg" aria-hidden="true"></i><span>Log sale</span></button>
+                            </div>
+                        </div>
+                        <div class="small text-danger mt-2" id="saleError" role="alert" hidden></div>
+                    </form>
+                </section>
+
+                <!-- Sales ledger: same toolbar, full screen, copy and PDF export as the other ledgers -->
+                <section class="dash-pane fullscreen-card" id="paneSales" role="tabpanel" aria-labelledby="salesTitle" hidden>
+                    <div class="ledger-fullscreen" id="salesLedgerView">
+                        <div class="card-head">
+                            <div>
+                                <h3 class="section-title" id="salesTitle">Sales</h3>
+                                <p class="section-subtitle" th:text="${#lists.size(sales)} + (${#lists.size(sales) == 1} ? ' sale' : ' sales') + ' · $' + ${#numbers.formatDecimal(campaign.grossRevenue, 1, 'COMMA', 2, 'POINT')}"></p>
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center gap-2" th:unless="${#lists.isEmpty(sales)}">
+                                <span class="table-count" data-table-count="salesTable" aria-live="polite"></span>
+                                <select class="form-select form-select-sm" style="width:auto; min-width: 150px;" aria-label="Filter sales" data-table-filter-select="salesTable">
+                                    <option value="all">All sales</option>
+                                    <optgroup label="Item">
+                                        <option value="ticket">Tickets</option>
+                                        <option value="wristband">Wristbands</option>
+                                        <option value="merch">Merch &amp; other</option>
+                                    </optgroup>
+                                    <optgroup label="Guest">
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </optgroup>
+                                    <optgroup label="Credit">
+                                        <option value="uncredited">Not credited</option>
+                                    </optgroup>
+                                </select>
+                                <div class="search-box" style="min-width: 190px;">
+                                    <i class="bi bi-search position-absolute text-muted" style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem;" aria-hidden="true"></i>
+                                    <input type="search" class="form-control form-control-sm ps-4" placeholder="Search sales..."
+                                           aria-label="Search sales by buyer, seller or item" data-table-search="salesTable" data-search-shortcut>
+                                    <kbd class="search-kbd" aria-hidden="true">/</kbd>
+                                </div>
+                                <span class="fs-only" role="group" aria-label="Export this table">
+                                    <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                            data-copy-table="#salesTable" title="Copy the rows shown, ready to paste into a spreadsheet">
+                                        <i class="bi bi-clipboard" aria-hidden="true"></i><span>Copy table</span>
+                                    </button>
+                                    <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                            data-export-table="#salesTable" th:attr="data-export-title=${campaign.name} + ' sales'" title="Save the rows shown as a PDF">
+                                        <i class="bi bi-filetype-pdf" aria-hidden="true"></i><span>Export PDF</span>
+                                    </button>
+                                </span>
+                                <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                        data-fullscreen-target="salesLedgerView" aria-label="View sales table full screen">
+                                    <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i><span>Full screen</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div th:if="${#lists.isEmpty(sales)}" class="empty-note">
+                            <i class="bi bi-ticket-perforated" aria-hidden="true"></i>No sales logged yet.
+                        </div>
+                        <div class="table-responsive" th:unless="${#lists.isEmpty(sales)}">
+                            <table class="table table-fintech align-middle" id="salesTable" data-table-tools>
+                                <thead><tr>
+                                    <th data-sort="text">Date</th><th data-sort="text">Buyer</th><th data-sort="text">Item</th><th data-sort="text">Guest</th>
+                                    <th class="text-end" data-sort="number">Qty</th><th class="text-end" data-sort="number">Amount</th>
+                                    <th data-sort="text">Sold by</th><th class="text-end" data-export-skip><span class="visually-hidden">Remove</span></th>
+                                </tr></thead>
+                                <tbody>
+                                <tr th:each="s : ${sales}" data-row
+                                    th:with="seller=${s.sellerMemberId == null ? '' : (memberNames[s.sellerMemberId] ?: 'Removed member')}"
+                                    th:attr="data-tags=${(s.ticket ? 'ticket' : (s.wristband ? 'wristband' : 'merch')) + (#strings.isEmpty(s.guestType) ? '' : ' ' + #strings.toLowerCase(s.guestType)) + (s.sellerMemberId == null ? ' uncredited' : '')},data-search=${#strings.toLowerCase(s.buyerName + ' ' + seller + ' ' + s.item + ' ' + s.description + ' ' + s.guestType)}">
+                                    <td class="tabular-nums text-nowrap" th:text="${s.date}"></td>
+                                    <td th:text="${#strings.isEmpty(s.buyerName)} ? '—' : ${s.buyerName}" th:classappend="${#strings.isEmpty(s.buyerName)} ? 'text-muted'"></td>
+                                    <td class="text-dark fw-semibold" th:text="${s.label}"></td>
+                                    <td th:classappend="${#strings.isEmpty(s.guestType)} ? 'text-muted'">
+                                        <span th:if="${#strings.isEmpty(s.guestType)}">—</span>
+                                        <span th:unless="${#strings.isEmpty(s.guestType)}" class="audience-legend d-inline-flex"><span class="d-inline-flex align-items-center"
+                                              th:classappend="${s.guestType == 'Male'} ? 'is-male' : 'is-female'"><span class="dot"></span><span th:text="${s.guestType}"></span></span></span>
+                                    </td>
+                                    <td class="text-end tabular-nums" th:attr="data-sort-value=${s.quantity}" th:text="${s.quantity}"></td>
+                                    <td class="text-end tabular-nums text-success fw-semibold" th:attr="data-sort-value=${s.amount}" th:text="'$' + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')}"></td>
+                                    <td th:text="${#strings.isEmpty(seller)} ? 'Not credited' : ${seller}" th:classappend="${#strings.isEmpty(seller)} ? 'text-muted'"></td>
+                                    <td class="text-end">
+                                        <form th:action="@{/presales/{id}/sales/{saleId}/delete(id=${campaign.id},saleId=${s.id})}" method="post" class="m-0"
+                                              onsubmit="return window.confirm('Remove this sale? It comes off the revenue and the leaderboard.');">
+                                            <button type="submit" class="btn btn-ghost btn-sm btn-remove" aria-label="Remove this sale" title="Remove sale"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <tr data-table-empty class="table-empty-row" hidden><td colspan="8">No sales match your search or filter. Press Esc to clear it.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Expenses ledger, with its own "Log expense" drawer -->
+                <section class="dash-pane" id="paneExpenses" role="tabpanel" aria-labelledby="expensesTitle" hidden>
+                    <div class="card-head">
+                        <div>
+                            <h3 class="section-title" id="expensesTitle">Expenses</h3>
+                            <p class="section-subtitle" th:text="${#lists.size(expenses)} + (${#lists.size(expenses) == 1} ? ' expense' : ' expenses') + ' · $' + ${#numbers.formatDecimal(campaign.expenseTotal, 1, 'COMMA', 2, 'POINT')}"></p>
+                        </div>
+                        <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1" th:unless="${campaign.completed}"
+                                data-bs-toggle="collapse" data-bs-target="#logExpense" aria-controls="logExpense" aria-expanded="false">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i><span>Log expense</span>
+                        </button>
+                    </div>
+                    <div class="collapse drawer" id="logExpense" th:unless="${campaign.completed}">
+                        <form th:action="@{/presales/{id}/expenses(id=${campaign.id})}" method="post" class="row g-2 align-items-end card-body-pad m-0" data-duplicate-guard>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-fintech" for="expenseDate">Date</label>
+                                <input id="expenseDate" name="date" type="date" class="form-control form-control-sm" th:value="${today}" required>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label-fintech" for="expenseAmount">Amount ($)</label>
+                                <input id="expenseAmount" name="amount" type="number" min="0.01" step="0.01" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <label class="form-label-fintech" for="expenseDescription">Description</label>
+                                <input id="expenseDescription" name="description" class="form-control form-control-sm" maxlength="200" placeholder="Venue deposit, DJ, decorations" required>
+                            </div>
+                            <div class="col-12 col-md-2 d-grid">
+                                <button type="submit" class="btn btn-fintech-primary btn-sm" data-loading-label="Saving…">Save expense</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div th:if="${#lists.isEmpty(expenses)}" class="empty-note">
+                        <i class="bi bi-receipt" aria-hidden="true"></i>No expenses logged yet.
+                    </div>
+                    <div class="table-responsive" th:unless="${#lists.isEmpty(expenses)}">
+                        <table class="table table-fintech align-middle">
+                            <thead><tr><th>Date</th><th>Description</th><th class="text-end">Amount</th><th class="text-end"><span class="visually-hidden">Remove</span></th></tr></thead>
+                            <tbody>
+                            <tr th:each="e : ${expenses}">
+                                <td class="tabular-nums text-nowrap" th:text="${e.date}"></td>
+                                <td th:text="${e.description}"></td>
+                                <td class="text-end tabular-nums text-danger fw-semibold" th:text="'-$' + ${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}"></td>
+                                <td class="text-end">
+                                    <form th:action="@{/presales/{id}/expenses/{expenseId}/delete(id=${campaign.id},expenseId=${e.id})}" method="post" class="m-0"
+                                          onsubmit="return window.confirm('Remove this expense?');">
+                                        <button type="submit" class="btn btn-ghost btn-sm btn-remove" aria-label="Remove this expense" title="Remove expense"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Side column: leaderboard and who's buying -->
+            <div class="dash-side">
+                <section class="dash-panel" aria-labelledby="leaderboardTitle">
+                    <div class="card-head">
+                        <h3 class="section-title" id="leaderboardTitle"><i class="bi bi-trophy me-1" aria-hidden="true"></i>Seller leaderboard</h3>
+                        <span class="small text-muted" th:text="${#lists.size(leaderboard)} + (${#lists.size(leaderboard) == 1} ? ' seller' : ' sellers')"></span>
+                    </div>
+                    <div class="card-body-pad">
+                        <div class="prize-banner" th:if="${!#strings.isEmpty(campaign.prize)}">
+                            <i class="bi bi-gift" aria-hidden="true"></i>
+                            <div>
+                                <div><strong>Prize:</strong> <span th:text="${campaign.prize}"></span></div>
+                                <div th:if="${!#lists.isEmpty(leaderboard)}"
+                                     th:with="leaders=${leaderboard.?[rank == 1]}"
+                                     th:text="${#lists.size(leaders) > 1} ? 'Tied for the lead: ' + ${#strings.listJoin(leaders.![name], ', ')} : 'Currently leading: ' + ${leaders[0].name}"></div>
+                            </div>
+                        </div>
+                        <div th:if="${#lists.isEmpty(leaderboard)}" class="empty-note py-2">
+                            <i class="bi bi-trophy" aria-hidden="true"></i>No credited sales yet. Pick a member under "Sold by" to put them on the board.
+                        </div>
+                        <ol class="leader-list" th:unless="${#lists.isEmpty(leaderboard)}">
+                            <li th:each="row, it : ${leaderboard}" th:style="'animation-delay: ' + ${it.index * 30} + 'ms'">
+                                <span class="leader-rank" th:classappend="${row.rank <= 3} ? 'rank-' + ${row.rank}" th:text="${row.rank}"
+                                      th:attr="aria-label='Rank ' + ${row.rank}"></span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="leader-name text-truncate" th:text="${row.name}"></div>
+                                    <div class="leader-sub" th:text="${row.admissions} + (${row.admissions == 1} ? ' ticket/wristband' : ' tickets/wristbands') + ' · ' + ${row.sales} + (${row.sales == 1} ? ' sale' : ' sales')"></div>
+                                    <div class="leader-bar" aria-hidden="true"><span th:style="'width: ' + ${leaderboard[0].revenue > 0 ? row.revenue * 100 / leaderboard[0].revenue : 0} + '%'"></span></div>
+                                </div>
+                                <span class="leader-revenue" th:text="'$' + ${#numbers.formatDecimal(row.revenue, 1, 'COMMA', 2, 'POINT')}"></span>
+                            </li>
+                        </ol>
+                        <div class="small text-muted mt-3" th:if="${campaign.uncreditedRevenue > 0}"
+                             th:text="'Not credited to anyone (walk-ups, door sales): $' + ${#numbers.formatDecimal(campaign.uncreditedRevenue, 1, 'COMMA', 2, 'POINT')}"></div>
+                    </div>
+                </section>
+
+                <!-- Who's buying: male / female split of tickets and wristbands -->
+                <section class="dash-panel" aria-labelledby="audienceTitle">
+                    <div class="card-head">
+                        <h3 class="section-title" id="audienceTitle"><i class="bi bi-people me-1" aria-hidden="true"></i>Who's buying</h3>
+                    </div>
+                    <div class="card-body-pad">
+                        <div th:if="${ticketAudience.total() == 0 and wristbandAudience.total() == 0}" class="empty-note py-2">
+                            <i class="bi bi-gender-ambiguous" aria-hidden="true"></i>The male / female split shows once tickets or wristbands sell.
+                        </div>
+                        <div class="audience" th:each="audience : ${ {ticketAudience, wristbandAudience} }" th:if="${audience.total() > 0}">
+                            <div class="d-flex justify-content-between align-items-baseline">
+                                <span class="fw-semibold text-dark" th:text="${audience.item} + 's'"></span>
+                                <span class="small text-muted" th:text="${audience.total()} + ' sold'"></span>
+                            </div>
+                            <div class="audience-split" role="img"
+                                 th:attr="aria-label=${audience.item} + 's sold: ' + ${audience.male} + ' male, ' + ${audience.female} + ' female'">
+                                <span class="male" th:style="'width: ' + ${audience.malePercent()} + '%'"></span>
+                                <span class="female" th:style="'width: ' + ${audience.femalePercent()} + '%'"></span>
+                            </div>
+                            <div class="audience-legend">
+                                <span class="is-male"><span class="dot"></span>Male <strong th:text="${audience.male}"></strong>
+                                    <span class="text-muted" th:text="'(' + ${#numbers.formatDecimal(audience.malePercent(), 1, 0, 'POINT')} + '%) · $' + ${#numbers.formatDecimal(audience.maleRevenue, 1, 'COMMA', 2, 'POINT')}"></span></span>
+                                <span class="is-female"><span class="dot"></span>Female <strong th:text="${audience.female}"></strong>
+                                    <span class="text-muted" th:text="'(' + ${#numbers.formatDecimal(audience.femalePercent(), 1, 0, 'POINT')} + '%) · $' + ${#numbers.formatDecimal(audience.femaleRevenue, 1, 'COMMA', 2, 'POINT')}"></span></span>
+                            </div>
+                            <div class="small mt-2 text-dark" th:if="${audience.male + audience.female > 0}"
+                                 th:text="${#strings.isEmpty(audience.leader())} ? 'Male and female are even.' : ${audience.leader()} + ' is buying more ' + ${#strings.toLowerCase(audience.item)} + 's (' + ${audience.leader() == 'Male' ? audience.male : audience.female} + ' vs ' + ${audience.leader() == 'Male' ? audience.female : audience.male} + ').'"></div>
+                            <div class="small text-muted mt-1" th:if="${audience.unspecified > 0}"
+                                 th:text="${audience.unspecified} + ' sold before male/female was recorded are not in this split.'"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+        </section>
+    </th:block>
+</main>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script th:replace="~{fragments :: tableFullscreenScript}"></script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+
+    // Dashboard tabs (Log a sale / Sales / Expenses). The last tab used is remembered so logging several sales in a row
+    // doesn't need a click each time; a completed event has no "Log a sale" tab and opens on Sales.
+    (function () {
+        var tabs = Array.prototype.slice.call(document.querySelectorAll('.dash-tab'));
+        if (!tabs.length) return;
+        var KEY = 'duesdesk.eventTab';
+        function show(id) {
+            var match = tabs.filter(function (tab) { return tab.dataset.pane === id; })[0] || tabs.filter(function (tab) { return tab.dataset.pane === 'paneSales'; })[0] || tabs[0];
+            tabs.forEach(function (tab) {
+                var active = tab === match;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', String(active));
+                tab.tabIndex = active ? 0 : -1;
+                document.getElementById(tab.dataset.pane).hidden = !active;
+            });
+            return match;
+        }
+        var saved = null;
+        try { saved = window.sessionStorage.getItem(KEY); } catch (e) { saved = null; }
+        show(window.location.hash === '#log' ? 'paneLog' : saved);
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                show(tab.dataset.pane);
+                try { window.sessionStorage.setItem(KEY, tab.dataset.pane); } catch (e) { /* the choice just isn't remembered */ }
+            });
+            tab.addEventListener('keydown', function (event) {
+                var step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+                if (!step) return;
+                var next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length];
+                next.focus();
+                next.click();
+            });
+        });
+    })();
+
+    // Sale form: a sale is one or more item lines logged together. Tickets and wristbands ask male or female (shown only
+    // for those items); merch asks what was sold (optional); a custom item asks for its name. Tickets start at the event's
+    // ticket price when it has one, and the line and sale totals update live.
+    (function () {
+        var form = document.getElementById('saleForm');
+        if (!form) return;
+        var lines = document.getElementById('saleLines');
+        var template = document.getElementById('saleLineTemplate');
+        var total = document.getElementById('saleTotal');
+        var error = document.getElementById('saleError');
+        var ticketPrice = form.dataset.ticketPrice || '';
+        var money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        var counter = 0;
+
+        function field(line, name) { return line.querySelector('[data-field="' + name + '"]'); }
+        function lineAmount(line) {
+            var q = parseInt(field(line, 'quantity').value, 10);
+            var p = parseFloat(field(line, 'price').value);
+            return isFinite(q) && isFinite(p) && q > 0 && p >= 0 ? q * p : 0;
+        }
+        function update() {
+            var sum = 0;
+            lines.querySelectorAll('[data-line]').forEach(function (line) {
+                var amount = lineAmount(line);
+                sum += amount;
+                line.querySelector('[data-line-total]').textContent = money.format(amount);
+            });
+            total.textContent = money.format(sum);
+            var removes = lines.querySelectorAll('[data-remove-line]');
+            removes.forEach(function (button) { button.disabled = removes.length === 1; });
+        }
+        function apply(line) {
+            var kind = field(line, 'item').value;
+            var admission = kind === 'Ticket' || kind === 'Wristband';
+            var guestCol = line.querySelector('[data-guest-col]');
+            var descriptionCol = line.querySelector('[data-description-col]');
+            var description = field(line, 'description');
+            guestCol.hidden = !admission;
+            descriptionCol.hidden = admission;
+            line.querySelector('[data-guest-label]').textContent = kind === 'Wristband' ? 'Wristband for' : 'Ticket for';
+            description.required = kind === 'Custom';
+            line.querySelector('[data-description-label]').textContent = kind === 'Custom' ? 'Item name' : 'What (optional)';
+            description.placeholder = kind === 'Custom' ? 'e.g. Koozie' : 'T-shirt (L)';
+            if (kind === 'Custom') description.setAttribute('list', 'customItemList'); else description.removeAttribute('list');
+            if (admission) {
+                description.value = '';
+            } else {
+                // Male/female only applies to tickets and wristbands: forget a choice made before switching away.
+                setGuest(line, '');
+            }
+        }
+        function setGuest(line, value) {
+            field(line, 'guest').value = value;
+            line.querySelectorAll('[data-guest]').forEach(function (button) {
+                button.setAttribute('aria-pressed', String(button.dataset.guest === value));
+            });
+            line.querySelector('[data-guest-group]').classList.remove('is-invalid');
+        }
+        function addLine() {
+            var line = template.content.firstElementChild.cloneNode(true);
+            counter++;
+            line.querySelectorAll('[data-for]').forEach(function (label) {
+                var control = field(line, label.dataset.for);
+                control.id = 'sale-' + label.dataset.for + '-' + counter;
+                label.htmlFor = control.id;
+            });
+            var item = field(line, 'item');
+            var price = field(line, 'price');
+            price.value = ticketPrice;
+            item.addEventListener('change', function () {
+                apply(line);
+                if (item.value === 'Ticket') {
+                    if (!price.value) price.value = ticketPrice;
+                } else if (ticketPrice && price.value === ticketPrice) {
+                    price.value = '';
+                }
+                if (item.value === 'Merch' || item.value === 'Custom') field(line, 'description').focus();
+                update();
+            });
+            line.querySelectorAll('[data-guest]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    setGuest(line, button.getAttribute('aria-pressed') === 'true' ? '' : button.dataset.guest);
+                    error.hidden = true;
+                });
+            });
+            line.querySelector('[data-remove-line]').addEventListener('click', function () {
+                line.remove();
+                update();
+            });
+            line.addEventListener('input', update);
+            lines.appendChild(line);
+            apply(line);
+            update();
+            return line;
+        }
+
+        document.getElementById('addSaleLine').addEventListener('click', function () {
+            var line = addLine();
+            field(line, 'item').focus();
+        });
+        // Every ticket and wristband needs a male/female choice; point at the first one that is missing.
+        form.addEventListener('submit', function (event) {
+            var missing = Array.prototype.filter.call(lines.querySelectorAll('[data-line]'), function (line) {
+                return !line.querySelector('[data-guest-col]').hidden && !field(line, 'guest').value;
+            });
+            if (!missing.length) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            missing.forEach(function (line) { line.querySelector('[data-guest-group]').classList.add('is-invalid'); });
+            error.textContent = 'Choose Male or Female for each ticket and wristband.';
+            error.hidden = false;
+            missing[0].querySelector('[data-guest]').focus();
+        }, true);
+        addLine();
+    })();
+</script>
+</body>
+</html>

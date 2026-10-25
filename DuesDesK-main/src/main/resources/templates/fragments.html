@@ -1,0 +1,2732 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<style th:fragment="navStyles">
+    /* =====================================================================
+       DuesDesk design tokens: Light + Dark. Component rules below reference
+       ONLY these custom properties (no hardcoded colors in components).
+       ===================================================================== */
+    :root,
+    html[data-theme="light"],
+    body.light-mode {
+        color-scheme: light;
+        /* Surfaces */
+        --bg-canvas: #E8ECF1;
+        --bg-surface: #F6F7F9;
+        --bg-elevated: #F6F7F9;
+        --bg-subtle: #E0E5EC;
+        --bg-hover: #EDF0F4;
+        --bg-active: #D8DEE6;
+        --bg-input: #FBFBFC;
+        --bg-input-readonly: #E0E5EC;
+
+        /* Borders & Focus */
+        --border-subtle: #D4DAE2;
+        --border-strong: #B9C2CE;
+        --border-focus: #2563EB;
+        --focus-ring: rgba(37, 99, 235, 0.16);
+
+        /* Typography */
+        --text-primary: #0F172A;
+        --text-secondary: #334155;
+        --text-muted: #64748B;
+        --text-placeholder: #94A3B8;
+
+        /* Buttons */
+        --btn-primary-bg: #2563EB;
+        --btn-primary-hover: #1D4ED8;
+        --btn-primary-text: #FFFFFF;
+        --btn-secondary-bg: #F6F7F9;
+        --btn-secondary-hover: #ECEFF3;
+        --btn-secondary-text: #334155;
+        --btn-secondary-border: #B9C2CE;
+        --btn-ghost-bg: #EDF0F4;
+        --btn-ghost-hover: #E1E6ED;
+
+        /* Semantic Status Pills */
+        --status-success-bg: #D5ECDD;
+        --status-success-text: #15803D;
+        --status-success-border: #86EFAC;
+        --status-warning-bg: #F3E8C6;
+        --status-warning-text: #B45309;
+        --status-warning-border: #FDE68A;
+        --status-danger-bg: #F4DADA;
+        --status-danger-text: #B91C1C;
+        --status-danger-border: #FECACA;
+        --status-neutral-bg: #E0E5EC;
+        --status-neutral-text: #475569;
+        --status-neutral-border: #D4DAE2;
+
+        /* Reward Glows & Spring Physics */
+        --glow-primary: 0 0 14px rgba(37, 99, 235, 0.28);
+        --glow-success: 0 0 14px rgba(22, 163, 74, 0.25);
+        --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+        --shadow-btn: 0 1px 2px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        --ease-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+
+        /* Extended roles (same system) */
+        --status-info-bg: #E1EAF6;
+        --status-info-text: #1D4ED8;
+        --status-info-border: #BFDBFE;
+        --bg-selected: rgba(37, 99, 235, 0.06);
+        --highlight-flash: rgba(37, 99, 235, 0.18);
+        --shadow-hover: 0 4px 12px rgba(15, 23, 42, 0.06);
+        --shadow-pop: 0 8px 22px rgba(15, 23, 42, 0.08);
+        --shadow-modal: 0 20px 50px rgba(15, 23, 42, 0.15);
+        --progress-track: #D9E0E9;
+        --progress-track-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+        --progress-primary: linear-gradient(90deg, #60A5FA 0%, #2563EB 100%);
+        --progress-success: linear-gradient(90deg, #4ADE80 0%, #16A34A 100%);
+        --progress-warning: linear-gradient(90deg, #FCD34D 0%, #D97706 100%);
+        --progress-glow-primary: 0 0 10px rgba(37, 99, 235, 0.35);
+        --progress-glow-success: 0 0 10px rgba(22, 163, 74, 0.32);
+        --progress-glow-warning: 0 0 10px rgba(217, 119, 6, 0.3);
+        --progress-danger: linear-gradient(90deg, #FCA5A5 0%, #DC2626 100%);
+        --progress-glow-danger: 0 0 10px rgba(220, 38, 38, 0.32);
+        /* Stat history chart (Numbers page) */
+        --chart-primary: #2563EB;
+        --chart-area-top: rgba(37, 99, 235, 0.22);
+        --chart-area-bottom: rgba(37, 99, 235, 0);
+        --chart-baseline: #94A3B8;
+        /* Solid destructive button (white text stays readable in both themes) */
+        --btn-danger-bg: #DC2626;
+        --btn-danger-hover: #B91C1C;
+        --control-h: 36px;
+        --control-h-sm: 30px;
+        --radius-control: 8px;
+        --radius-card: 12px;
+    }
+
+    html[data-theme="dark"],
+    html[data-bs-theme="dark"],
+    html.dark,
+    body[data-theme="dark"],
+    body.dark-mode,
+    body.dark {
+        color-scheme: dark;
+        /* Surfaces */
+        --bg-canvas: #0B0F19;
+        --bg-surface: #111827;
+        --bg-elevated: #1E293B;
+        --bg-subtle: #1E293B;
+        --bg-hover: #1E293B;
+        --bg-active: #334155;
+        --bg-input: #0F172A;
+        --bg-input-readonly: #1E293B;
+
+        /* Borders & Focus */
+        --border-subtle: #1E293B;
+        --border-strong: #334155;
+        --border-focus: #3B82F6;
+        --focus-ring: rgba(59, 130, 246, 0.25);
+
+        /* Typography */
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #94A3B8;
+        --text-placeholder: #64748B;
+
+        /* Buttons */
+        --btn-primary-bg: #3B82F6;
+        --btn-primary-hover: #2563EB;
+        --btn-primary-text: #FFFFFF;
+        --btn-secondary-bg: #1E293B;
+        --btn-secondary-hover: #334155;
+        --btn-secondary-text: #F1F5F9;
+        --btn-secondary-border: #334155;
+        --btn-ghost-bg: rgba(255, 255, 255, 0.03);
+        --btn-ghost-hover: #334155;
+
+        /* Semantic Status Pills (Dark-Safe Luminous Badges) */
+        --status-success-bg: rgba(34, 197, 94, 0.14);
+        --status-success-text: #4ADE80;
+        --status-success-border: rgba(74, 222, 128, 0.35);
+        --status-warning-bg: rgba(245, 158, 11, 0.14);
+        --status-warning-text: #FBBF24;
+        --status-warning-border: rgba(251, 191, 36, 0.32);
+        --status-danger-bg: rgba(239, 68, 68, 0.14);
+        --status-danger-text: #F87171;
+        --status-danger-border: rgba(248, 113, 113, 0.32);
+        --status-neutral-bg: rgba(148, 163, 184, 0.12);
+        --status-neutral-text: #CBD5E1;
+        --status-neutral-border: rgba(148, 163, 184, 0.24);
+
+        /* Reward Glows & Spring Physics */
+        --glow-primary: 0 0 18px rgba(59, 130, 246, 0.42);
+        --glow-success: 0 0 16px rgba(74, 222, 128, 0.32);
+        --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.35);
+        --shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+        /* Extended roles */
+        --status-info-bg: rgba(59, 130, 246, 0.14);
+        --status-info-text: #60A5FA;
+        --status-info-border: rgba(96, 165, 250, 0.35);
+        --bg-selected: rgba(59, 130, 246, 0.14);
+        --highlight-flash: rgba(96, 165, 250, 0.28);
+        --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.45);
+        --shadow-pop: 0 10px 28px rgba(0, 0, 0, 0.55);
+        --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+        --progress-track: #1A2335;
+        --progress-track-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+        --progress-primary: linear-gradient(90deg, #93C5FD 0%, #3B82F6 100%);
+        --progress-success: linear-gradient(90deg, #86EFAC 0%, #22C55E 100%);
+        --progress-warning: linear-gradient(90deg, #FDE68A 0%, #F59E0B 100%);
+        --progress-glow-primary: 0 0 12px rgba(59, 130, 246, 0.55);
+        --progress-glow-success: 0 0 12px rgba(74, 222, 128, 0.45);
+        --progress-glow-warning: 0 0 12px rgba(251, 191, 36, 0.4);
+        --progress-danger: linear-gradient(90deg, #FECACA 0%, #EF4444 100%);
+        --progress-glow-danger: 0 0 12px rgba(248, 113, 113, 0.45);
+        --chart-primary: #60A5FA;
+        --chart-area-top: rgba(96, 165, 250, 0.28);
+        --chart-area-bottom: rgba(96, 165, 250, 0);
+        --chart-baseline: #475569;
+        --btn-danger-bg: #DC2626;
+        --btn-danger-hover: #EF4444;
+    }
+
+    /* Legacy variable names used by individual pages, mapped onto the tokens */
+    :root {
+        --canvas: var(--bg-canvas);
+        --surface: var(--bg-surface);
+        --fill-subtle: var(--bg-subtle);
+        --border: var(--border-subtle);
+        --row-hairline: var(--border-subtle);
+        --text-faint: var(--text-placeholder);
+        --navy: var(--text-primary);
+        --ink: var(--text-primary);
+        --muted: var(--text-muted);
+        --line: var(--border-subtle);
+        --blue: var(--btn-primary-bg);
+        --blue-hover: var(--btn-primary-hover);
+        --positive-text: var(--status-success-text); --positive-bg: var(--status-success-bg); --positive-border: var(--status-success-border); --positive-dot: var(--status-success-text);
+        --warning-text: var(--status-warning-text); --warning-bg: var(--status-warning-bg); --warning-border: var(--status-warning-border); --warning-dot: var(--status-warning-text);
+        --negative-text: var(--status-danger-text); --negative-bg: var(--status-danger-bg); --negative-border: var(--status-danger-border); --negative-dot: var(--status-danger-text);
+        --neutral-text: var(--status-neutral-text); --neutral-bg: var(--status-neutral-bg); --neutral-border: var(--status-neutral-border); --neutral-dot: var(--text-placeholder);
+        --slate-50: var(--bg-canvas); --slate-100: var(--bg-subtle); --slate-200: var(--border-subtle); --slate-300: var(--border-strong);
+        --slate-400: var(--text-placeholder); --slate-500: var(--text-muted); --slate-600: var(--text-secondary); --slate-700: var(--text-secondary);
+        --slate-800: var(--text-secondary); --slate-900: var(--text-primary);
+        --primary-600: var(--btn-primary-bg); --primary-700: var(--btn-primary-hover);
+        --emerald-50: var(--status-success-bg); --emerald-600: var(--status-success-text); --emerald-700: var(--status-success-text);
+        --rose-50: var(--status-danger-bg); --rose-600: var(--status-danger-text); --rose-700: var(--status-danger-text);
+        --amber-50: var(--status-warning-bg); --amber-600: var(--status-warning-text); --amber-700: var(--status-warning-text);
+        --polish-shadow: var(--shadow-card);
+        --polish-ring: 0 0 0 3px var(--focus-ring);
+
+        /* Bootstrap 5.3 variables follow the tokens so stock components theme correctly */
+        --bs-body-bg: var(--bg-canvas);
+        --bs-body-color: var(--text-secondary);
+        --bs-emphasis-color: var(--text-primary);
+        --bs-secondary-color: var(--text-muted);
+        --bs-tertiary-color: var(--text-muted);
+        --bs-secondary-bg: var(--bg-subtle);
+        --bs-tertiary-bg: var(--bg-subtle);
+        --bs-border-color: var(--border-subtle);
+        --bs-link-color: var(--btn-primary-bg);
+        --bs-link-hover-color: var(--btn-primary-hover);
+        --bs-heading-color: var(--text-primary);
+    }
+
+    @keyframes duesdesk-page-enter { from { opacity: .92; } to { opacity: 1; } }
+    @keyframes subtleSlideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes rewardToastIn {
+        0% { opacity: 0; transform: translateY(-10px) scale(.96); }
+        60% { opacity: 1; transform: translateY(2px) scale(1.01); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes rewardCheckPop {
+        0% { opacity: 0; transform: scale(0) rotate(-25deg); }
+        55% { opacity: 1; transform: scale(1.35) rotate(6deg); }
+        100% { opacity: 1; transform: scale(1) rotate(0); }
+    }
+    @keyframes rewardGlowPulse { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes rewardSpark {
+        0% { opacity: 1; transform: translate(0, 0) scale(1); }
+        100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.2); }
+    }
+    @keyframes rewardTick { 0% { transform: scale(.8); } 60% { transform: scale(1.14); } 100% { transform: scale(1); } }
+    @keyframes navIndicatorIn { from { transform: scaleX(.2); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+    /* Only a "from" frame: each bar grows from empty to its own inline width. */
+    @keyframes progressGrow { from { width: 0; } }
+    @keyframes progressShine { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+
+    * { box-sizing: border-box; }
+    html, body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg-canvas); color: var(--text-secondary);
+        font-size: 13px; line-height: 1.45;
+    }
+    /* Text can only be highlighted where it can be edited: form fields and editable areas. */
+    body { -webkit-user-select: none; user-select: none; }
+    input, textarea, [contenteditable="true"], [contenteditable=""] { -webkit-user-select: text; user-select: text; }
+    input[type="checkbox"], input[type="radio"], input[type="range"], input[type="color"], input[type="button"], input[type="submit"] { -webkit-user-select: none; user-select: none; }
+
+    /* In the desktop app the page header doubles as the window's title bar (drag area plus the minimize, maximize and
+       close buttons), so anything laid over the whole window starts below it. The app sets --desktop-header-h. */
+    .modal { padding-top: var(--desktop-header-h, 0px); }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    h1,h2,h3,h4,h5,h6 { color: var(--text-primary); letter-spacing: -0.015em; }
+    .view-title { font-size: 18px; font-weight: 600; letter-spacing: -0.015em; color: var(--text-primary); }
+    .card-title, .section-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-primary); }
+    .card-sub { font-size: 12px; color: var(--text-placeholder); }
+    .form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+    .table thead th { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+    .tabular-nums, .table td, .kpi-value, .metric-value { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+
+    /* Bootstrap utilities that hardcode light/dark colors, made token-driven */
+    .text-dark { color: var(--text-primary) !important; }
+    .text-secondary, .text-muted { color: var(--text-muted) !important; }
+    .text-primary { color: var(--btn-primary-bg) !important; }
+    .text-success { color: var(--status-success-text) !important; }
+    .text-danger { color: var(--status-danger-text) !important; }
+    .text-warning { color: var(--status-warning-text) !important; }
+    .text-info { color: var(--status-info-text) !important; }
+    .bg-white { background-color: var(--bg-surface) !important; }
+    .bg-light, .text-bg-light { background-color: var(--bg-subtle) !important; color: var(--text-secondary) !important; }
+    .border, .border-top, .border-bottom, .border-start, .border-end { border-color: var(--border-subtle) !important; }
+    code { color: var(--text-primary); background: var(--bg-subtle); border-radius: 4px; padding: 1px 5px; }
+    hr { border-color: var(--border-subtle); opacity: 1; }
+
+    body > main { animation: duesdesk-page-enter .12s ease-out; }
+    .app-header-stack { position: sticky; top: 0; z-index: 1030; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); }
+    .app-header-stack .app-navbar { margin-bottom: 0 !important; }
+    .app-header-stack .section-nav { margin-top: 0; margin-bottom: 0; border-bottom: 0; }
+    .app-header-stack + main { padding-top: 1.5rem; }
+    .app-navbar, .banner { background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); padding-top: .9rem; padding-bottom: .9rem; }
+    .brand-icon { width: 36px; height: 36px; background: var(--btn-primary-bg); color: var(--btn-primary-text); border-radius: var(--radius-control); display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; box-shadow: var(--shadow-btn); }
+
+    /* ---- Section navigation ---- */
+    .section-nav { position: relative; z-index: 1; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); overflow: visible; }
+    .section-nav > .container-xxl { display: flex; gap: 0.25rem; align-items: center; padding-top: .25rem; padding-bottom: .25rem; flex-wrap: wrap; justify-content: center; }
+    .section-nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500; padding: .5rem .75rem; border-radius: 6px; transition: background .08s ease, color .08s ease; position: relative; }
+    .section-nav a:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .section-nav a[aria-current="page"] { color: var(--btn-primary-bg); }
+    /* Active-tab bar. Dropdown toggles keep ::after for their chevron, so their bar uses ::before. */
+    .section-nav a[aria-current="page"]:not(.dropdown-toggle)::after,
+    .section-nav a.dropdown-toggle[aria-current="page"]::before { content: ''; position: absolute; display: block; left: .75rem; right: .75rem; bottom: -0.25rem; height: 2px; margin: 0; border: 0; background: var(--btn-primary-bg); border-radius: 1px; pointer-events: none; animation: navIndicatorIn .3s var(--spring-bounce) both; }
+    .section-nav .dropdown-toggle { cursor: pointer; }
+    .section-nav .dropdown { position: relative; padding-bottom: .25rem; margin-bottom: -.25rem; }
+    /* ---- Dropdown menus: one surface, one motion ----
+       Bootstrap-toggled menus (appearance, stat picker) animate in on .show. The hover menus
+       (section nav, table actions) stay mounted and transition between hidden and open.
+       Motion uses the individual translate/scale properties so it never fights the inline
+       transform Popper writes to position a menu. */
+    @keyframes dropdownIn { from { opacity: 0; translate: 0 -6px; scale: .97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+    @keyframes dropdownInUp { from { opacity: 0; translate: 0 6px; scale: .97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+    @keyframes dropdownItemIn { from { opacity: 0; translate: -4px 0; } to { opacity: 1; translate: 0 0; } }
+
+    .dropdown-menu {
+        --bs-dropdown-bg: var(--bg-elevated);
+        --bs-dropdown-color: var(--text-secondary);
+        --bs-dropdown-border-color: var(--border-subtle);
+        --bs-dropdown-link-color: var(--text-secondary);
+        --bs-dropdown-link-hover-bg: var(--bg-hover);
+        --bs-dropdown-link-hover-color: var(--text-primary);
+        --bs-dropdown-link-active-bg: var(--status-info-bg);
+        --bs-dropdown-link-active-color: var(--status-info-text);
+        --bs-dropdown-link-disabled-color: var(--text-placeholder);
+        --bs-dropdown-header-color: var(--text-muted);
+        --bs-dropdown-divider-bg: var(--border-subtle);
+        --bs-dropdown-min-width: 10rem;
+        --bs-dropdown-padding-x: .3rem;
+        --bs-dropdown-padding-y: .3rem;
+        --bs-dropdown-item-padding-x: .65rem;
+        --bs-dropdown-item-padding-y: .42rem;
+        --bs-dropdown-font-size: 13px;
+        border: 1px solid var(--border-subtle); border-radius: 10px; box-shadow: var(--shadow-pop);
+        font-size: 13px; transform-origin: top left;
+    }
+    .dropdown-menu-end { transform-origin: top right; }
+    .dropdown-menu[data-popper-placement="top-start"] { transform-origin: bottom left; }
+    .dropdown-menu[data-popper-placement="top-end"] { transform-origin: bottom right; }
+    .dropdown-menu.show { animation: dropdownIn .2s var(--ease-snappy) both; }
+    .dropdown-menu.show[data-popper-placement^="top"] { animation-name: dropdownInUp; }
+
+    .dropdown-item {
+        display: flex; align-items: center; gap: .55rem; border-radius: 6px; font-weight: 500;
+        transition: background-color .1s ease, color .1s ease, box-shadow .12s ease;
+    }
+    .dropdown-item > .bi:first-child { color: var(--text-placeholder); transition: color .1s ease; }
+    .dropdown-item:hover > .bi:first-child, .dropdown-item:focus > .bi:first-child, .dropdown-item.active > .bi:first-child { color: currentColor; }
+    .dropdown-item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--focus-ring); }
+    .dropdown-item.text-danger:hover, .dropdown-item.text-danger:focus { background: var(--status-danger-bg); }
+    .dropdown-item:disabled, .dropdown-item.disabled { opacity: .6; cursor: not-allowed; }
+    .dropdown-divider { margin: .3rem .2rem; }
+    .dropdown-header { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: .4rem .65rem .2rem; }
+
+    /* Items cascade in just behind the panel. */
+    .dropdown-menu.show > *,
+    .section-nav .dropdown.is-open > .dropdown-menu > *,
+    .table-actions-menu:hover > .dropdown-menu > *,
+    .table-actions-menu:focus-within > .dropdown-menu > * {
+        animation: dropdownItemIn .22s var(--ease-snappy) both; animation-delay: calc(var(--item-i, 0) * 22ms + 30ms);
+    }
+    .dropdown-menu > :nth-child(2) { --item-i: 1; }
+    .dropdown-menu > :nth-child(3) { --item-i: 2; }
+    .dropdown-menu > :nth-child(4) { --item-i: 3; }
+    .dropdown-menu > :nth-child(5) { --item-i: 4; }
+    .dropdown-menu > :nth-child(n+6) { --item-i: 5; }
+
+    /* Chevron caret that flips while its menu is open. */
+    .dropdown-toggle::after {
+        width: .4em; height: .4em; margin-left: .45em; vertical-align: .22em;
+        border: 0; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+        transform: rotate(45deg); opacity: .6;
+        transition: rotate .26s var(--spring-bounce), opacity .12s ease;
+    }
+    .dropdown-toggle.show::after,
+    .section-nav .dropdown.is-open > .dropdown-toggle::after { rotate: 180deg; opacity: 1; }
+
+    .section-nav .dropdown-menu,
+    .table-actions-menu > .dropdown-menu {
+        display: block; visibility: hidden; opacity: 0; pointer-events: none; translate: 0 -6px; scale: .97;
+        transition: opacity .12s ease, translate .16s var(--ease-snappy), scale .16s var(--ease-snappy), visibility .16s;
+    }
+    .section-nav .dropdown.is-open > .dropdown-menu,
+    .table-actions-menu:hover > .dropdown-menu,
+    .table-actions-menu:focus-within > .dropdown-menu,
+    .table-actions-menu.show > .dropdown-menu {
+        visibility: visible; opacity: 1; pointer-events: auto; translate: 0 0; scale: 1;
+        transition-duration: .16s, .24s, .24s, 0s;
+    }
+    .section-nav .dropdown-menu { margin-top: .25rem; }
+    .section-nav .dropdown-item { padding: var(--bs-dropdown-item-padding-y) var(--bs-dropdown-item-padding-x); font-size: 13px; color: var(--bs-dropdown-link-color); }
+    .section-nav .dropdown-item:hover, .section-nav .dropdown-item:focus { background: var(--bs-dropdown-link-hover-bg); color: var(--bs-dropdown-link-hover-color); }
+    .section-nav .dropdown-item.active { background: var(--bs-dropdown-link-active-bg); color: var(--bs-dropdown-link-active-color); }
+
+    .dropdown-item .check { margin-left: auto; padding-left: .5rem; opacity: 0; transform: scale(.4); transition: opacity .12s ease, transform .22s var(--spring-bounce); }
+    .dropdown-item.active .check, .dropdown-item[aria-selected="true"] .check { opacity: 1; transform: scale(1); }
+    .theme-toggle > .btn { background: var(--btn-ghost-bg); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+    .theme-toggle > .btn:hover { background: var(--btn-ghost-hover); color: var(--text-primary); }
+
+    .table-actions-menu { position: relative; display: inline-block; }
+    .table-actions-menu > .dropdown-menu { left: auto; right: 0; transform-origin: top right; }
+    .table-actions-menu > .dropdown-menu.show { animation: none; }
+
+    /* Themed select menus (see the select enhancer in themeScript). The native <select> stays in
+       the form, hidden, while a button + listbox drawn with the shared dropdown styles stands in. */
+    @keyframes dropdownOut { to { opacity: 0; scale: .98; } }
+    .form-select.dd-select-trigger {
+        position: relative; display: block; text-align: left; cursor: pointer; background-image: none;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dd-select-trigger::after {
+        content: ''; position: absolute; right: 12px; top: 50%; width: .4em; height: .4em; margin-top: -.3em;
+        border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+        transform: rotate(45deg); opacity: .55; pointer-events: none;
+        transition: rotate .26s var(--spring-bounce), opacity .12s ease;
+    }
+    .dd-select-trigger.is-open::after { rotate: 180deg; opacity: 1; }
+    .form-select.dd-select-trigger.is-open { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--focus-ring); }
+    .form-select.dd-select-trigger.is-placeholder { color: var(--text-placeholder); }
+    .form-select.dd-select-trigger.is-invalid { border-color: var(--status-danger-text); box-shadow: 0 0 0 3px var(--status-danger-bg); }
+    .form-select.dd-select-trigger:disabled { cursor: not-allowed; }
+    .form-select.dd-select-native {
+        position: absolute !important; width: 1px !important; height: 1px !important; min-height: 0 !important;
+        padding: 0 !important; margin: 0 !important; border: 0 !important; opacity: 0; pointer-events: none;
+    }
+    .dropdown-menu.dd-select-menu { position: fixed; z-index: 1090; margin: 0; max-height: 280px; overflow-y: auto; overscroll-behavior: contain; }
+    .dd-select-menu .dropdown-item { white-space: normal; cursor: pointer; }
+    .dd-select-menu .dropdown-item.is-active { background: var(--bs-dropdown-link-hover-bg); color: var(--bs-dropdown-link-hover-color); }
+    .dd-select-menu .dropdown-item[aria-selected="true"] { color: var(--status-info-text); font-weight: 600; }
+    .dd-select-menu .dropdown-item.disabled { cursor: not-allowed; }
+    .dropdown-menu.dd-select-menu.is-closing { animation: dropdownOut .12s ease forwards; pointer-events: none; }
+    .table-actions-menu > .dropdown-toggle::after { display: none; }
+    .table-actions-menu > .dropdown-toggle { min-width: 2.2rem; font-weight: 700; letter-spacing: .08em; }
+
+    /* Date fields (see the date picker in themeScript): a typeable box plus a pop-up month calendar. The real
+       <input type="date"> stays in the form, hidden, holding the yyyy-mm-dd value. */
+    .dp-field { position: relative; display: block; }
+    .dp-field > .form-control.dp-input { padding-right: 2.2rem; }
+    .dp-toggle {
+        position: absolute; top: 50%; right: .3rem; translate: 0 -50%; width: 1.65rem; height: 1.65rem; padding: 0;
+        display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted);
+        cursor: pointer; transition: background-color .12s ease, color .12s ease;
+    }
+    .dp-toggle:hover, .dp-toggle[aria-expanded="true"] { background: var(--bg-hover); color: var(--btn-primary-bg); }
+    .dp-toggle:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+    .dp-toggle:disabled { opacity: .45; cursor: not-allowed; background: transparent; }
+    .form-control-sm + .dp-toggle { width: 1.45rem; height: 1.45rem; font-size: .8rem; }
+    input.dp-native {
+        position: absolute !important; left: 0; bottom: 0; width: 1px !important; height: 1px !important; min-height: 0 !important;
+        padding: 0 !important; margin: 0 !important; border: 0 !important; opacity: 0; pointer-events: none;
+    }
+    .form-control.dp-input.is-invalid { border-color: var(--status-danger-text); box-shadow: 0 0 0 3px var(--status-danger-bg); }
+    .dp-popup {
+        position: fixed; z-index: 1090; width: 17.25rem; padding: .65rem; background: var(--bg-elevated); color: var(--text-secondary);
+        border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: var(--shadow-pop); font-size: 13px;
+        animation: dropdownIn .18s var(--ease-snappy) both;
+    }
+    .dp-popup[data-placement="top"] { animation-name: dropdownInUp; }
+    .dp-popup.is-closing { animation: dropdownOut .12s ease forwards; pointer-events: none; }
+    .dp-head { display: flex; align-items: center; justify-content: space-between; gap: .25rem; margin-bottom: .35rem; }
+    .dp-title { font-weight: 600; font-size: 13.5px; color: var(--text-primary); }
+    .dp-nav {
+        width: 1.9rem; height: 1.9rem; padding: 0; display: grid; place-items: center; border: 0; border-radius: 8px;
+        background: transparent; color: var(--text-secondary); transition: background-color .1s ease, color .1s ease;
+    }
+    .dp-nav:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .dp-nav:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-ring); }
+    .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .dp-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); padding: .15rem 0 .3rem; }
+    .dp-day {
+        height: 2.1rem; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--text-primary);
+        font-size: 12.5px; font-variant-numeric: tabular-nums; cursor: pointer;
+        transition: background-color .1s ease, color .1s ease, scale .12s var(--spring-bounce);
+    }
+    .dp-day:hover { background: var(--bg-hover); }
+    .dp-day:active { scale: .92; }
+    .dp-day.is-outside { color: var(--text-placeholder); }
+    .dp-day.is-today { box-shadow: inset 0 0 0 1.5px var(--btn-primary-bg); color: var(--btn-primary-bg); font-weight: 600; }
+    .dp-day.is-selected { background: var(--btn-primary-bg); color: var(--btn-primary-text); font-weight: 600; box-shadow: none; }
+    .dp-day:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-ring); }
+    .dp-day.is-selected:focus-visible { box-shadow: 0 0 0 2px var(--bg-elevated), 0 0 0 4px var(--btn-primary-bg); }
+    .dp-day:disabled { opacity: .35; cursor: not-allowed; background: transparent; }
+    .dp-foot { display: flex; justify-content: space-between; align-items: center; margin-top: .45rem; padding-top: .45rem; border-top: 1px solid var(--border-subtle); }
+    .dp-link { border: 0; background: transparent; color: var(--btn-primary-bg); font-weight: 600; font-size: 12.5px; padding: .25rem .45rem; border-radius: 6px; }
+    .dp-link:hover { background: var(--bg-hover); }
+    .dp-link:disabled { opacity: .45; cursor: not-allowed; background: transparent; }
+    .dp-link:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-ring); }
+    .dp-hint { font-size: 11px; color: var(--text-muted); }
+    @media (prefers-reduced-motion: reduce) { .dp-popup { animation: none; } }
+
+    /* ---- Hover preview + expanding panel (calendar days, chair budgets) ----
+       A preview unfolds out of the side of its trigger on hover; clicking it morphs into a near full-screen
+       panel. Behaviour lives in window.duesDeskPeek (themeScript). */
+    .hover-peek {
+        position: fixed; z-index: 1060; top: 0; left: 0; width: 300px; max-width: calc(100vw - 24px);
+        background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: var(--shadow-pop);
+        padding: .8rem .85rem .7rem; cursor: pointer; text-align: left; color: var(--text-secondary);
+        opacity: 0; visibility: hidden; pointer-events: none; transform: scale(.94);
+        /* The window "extends" out of its trigger: a clip reveal sweeping away from it, plus a small grow. */
+        clip-path: inset(0 100% 0 0); -webkit-clip-path: inset(0 100% 0 0); transform-origin: left top;
+        transition: opacity .14s ease, transform .3s var(--ease-snappy), clip-path .34s var(--ease-snappy), -webkit-clip-path .34s var(--ease-snappy), visibility 0s linear .34s;
+    }
+    .hover-peek[data-side="left"] { transform-origin: right top; clip-path: inset(0 0 0 100%); -webkit-clip-path: inset(0 0 0 100%); }
+    .hover-peek[data-side="below"] { transform-origin: center top; clip-path: inset(0 0 100% 0); -webkit-clip-path: inset(0 0 100% 0); }
+    .hover-peek[data-side="above"] { transform-origin: center bottom; clip-path: inset(100% 0 0 0); -webkit-clip-path: inset(100% 0 0 0); }
+    .hover-peek.is-open {
+        opacity: 1; visibility: visible; pointer-events: auto; transform: none;
+        clip-path: inset(-40px); -webkit-clip-path: inset(-40px);
+        transition: opacity .16s ease, transform .32s var(--ease-snappy), clip-path .38s var(--ease-snappy), -webkit-clip-path .38s var(--ease-snappy), visibility 0s;
+    }
+    /* Sliding between neighbouring triggers while open. */
+    .hover-peek.is-open.is-moving { transition: opacity .16s ease, top .24s var(--ease-snappy), left .24s var(--ease-snappy), visibility 0s; }
+    .hover-peek:hover { border-color: var(--border-strong); }
+    .hover-peek:focus-visible { outline: none; box-shadow: var(--shadow-pop), 0 0 0 3px var(--focus-ring); }
+    .peek-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; margin-bottom: .5rem; }
+    .peek-title { font-weight: 600; color: var(--text-primary); font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .peek-count { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+    .peek-totals { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .55rem; }
+    .peek-list { list-style: none; margin: 0; padding: 0; }
+    .peek-list li { display: flex; justify-content: space-between; gap: .6rem; padding: .3rem 0; border-top: 1px solid var(--border-subtle); font-size: 12.5px; animation: peekRowIn .26s var(--ease-snappy) both; }
+    .peek-list li:nth-child(2) { animation-delay: .03s; } .peek-list li:nth-child(3) { animation-delay: .06s; } .peek-list li:nth-child(4) { animation-delay: .09s; }
+    .peek-list .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+    .peek-more, .peek-note { font-size: 11.5px; color: var(--text-muted); padding-top: .35rem; }
+    .peek-foot { display: flex; align-items: center; gap: .35rem; margin-top: .55rem; padding-top: .5rem; border-top: 1px solid var(--border-subtle); font-size: 11.5px; font-weight: 500; color: var(--status-info-text); }
+    .flow-chip { display: inline-flex; align-items: center; gap: .25rem; border-radius: 999px; padding: .12rem .5rem; font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; border: 1px solid transparent; }
+    .flow-chip.in { background: var(--status-success-bg); color: var(--status-success-text); border-color: var(--status-success-border); }
+    .flow-chip.out { background: var(--status-danger-bg); color: var(--status-danger-text); border-color: var(--status-danger-border); }
+    .flow-chip.net { background: var(--status-neutral-bg); color: var(--status-neutral-text); border-color: var(--status-neutral-border); }
+    .flow-chip.info { background: var(--status-info-bg); color: var(--status-info-text); border-color: var(--status-info-border); }
+    .amt { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+    .amt.in { color: var(--status-success-text); } .amt.out { color: var(--status-danger-text); }
+    @keyframes peekRowIn { from { opacity: 0; translate: -6px 0; } to { opacity: 1; translate: 0 0; } }
+
+    body.expand-active { overflow: hidden; }
+    .expand-backdrop { position: fixed; inset: 0; z-index: 1070; background: rgba(2, 6, 23, .45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); opacity: 0; transition: opacity .28s ease; }
+    .expand-backdrop.is-open { opacity: 1; }
+    .expand-panel {
+        position: fixed; z-index: 1071; display: flex; flex-direction: column; overflow: hidden;
+        background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; box-shadow: var(--shadow-modal);
+        transition: top .42s var(--ease-snappy), left .42s var(--ease-snappy), width .42s var(--ease-snappy), height .42s var(--ease-snappy), border-radius .42s var(--ease-snappy), opacity .2s ease;
+    }
+    .expand-panel.no-anim { transition: none; }
+    .expand-inner { display: flex; flex-direction: column; min-height: 0; height: 100%; opacity: 0; transition: opacity .18s ease; }
+    .expand-panel.is-open .expand-inner { opacity: 1; transition: opacity .24s ease .16s; }
+    .expand-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+    .expand-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
+    .expand-sub { font-size: 12.5px; color: var(--text-muted); margin-top: .15rem; }
+    .expand-close { display: inline-flex; align-items: center; gap: .45rem; flex-shrink: 0; }
+    .expand-close kbd { font: inherit; font-size: 11px; padding: .05rem .35rem; border-radius: 4px; border: 1px solid var(--border-strong); color: var(--text-muted); background: var(--bg-subtle); }
+    .expand-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 1.1rem 1.25rem; }
+    .expand-totals { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .expand-totals .flow-chip { font-size: 13px; padding: .25rem .7rem; }
+    .expand-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; align-items: start; }
+    .expand-col { border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; }
+    .expand-col > h3 { display: flex; justify-content: space-between; align-items: center; margin: 0; padding: .65rem .9rem; font-size: 13px; font-weight: 600; color: var(--text-primary); background: var(--bg-subtle); border-bottom: 1px solid var(--border-subtle); }
+    .expand-list { list-style: none; margin: 0; padding: 0; }
+    .expand-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: .65rem .9rem; border-bottom: 1px solid var(--border-subtle); animation: peekRowIn .3s var(--ease-snappy) both; }
+    .expand-list li:last-child { border-bottom: 0; }
+    .expand-list .who { font-weight: 500; color: var(--text-primary); }
+    .expand-list .what { font-size: 12px; color: var(--text-muted); }
+    .expand-empty { padding: 1.25rem .9rem; color: var(--text-muted); font-size: 12.5px; text-align: center; }
+    .expand-note { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; padding: .6rem .8rem; margin-bottom: 1rem; border: 1px solid var(--status-info-border); border-radius: 10px; background: var(--status-info-bg); color: var(--status-info-text); font-size: 12.5px; }
+    .expand-footer { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; padding: .85rem 1.25rem; border-top: 1px solid var(--border-subtle); background: var(--bg-subtle); }
+    @media (max-width: 575px) { .expand-close .label, .expand-close kbd { display: none; } .expand-cols { grid-template-columns: 1fr; } }
+    @media (hover: none) { .hover-peek { display: none; } }
+
+    /* ---- Shared page layout: every page uses the same header, card header strip, labels and empty states ----
+       Top tier: .page-header then KPIs / alerts. Middle tier: the main card with its toolbar in .card-head.
+       Bottom tier: .tier-heading introduces secondary tools (collapsible cards, settings, bulk actions). */
+    .page-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1rem; margin-bottom: 1.5rem; }
+    .page-eyebrow { color: var(--btn-primary-bg); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .45rem; }
+    .page-title { font-size: 1.65rem; font-weight: 700; color: var(--text-primary); letter-spacing: -.02em; line-height: 1.2; margin: 0 0 .3rem; }
+    .page-lede { color: var(--text-muted); font-size: .9rem; margin: 0; max-width: 62rem; }
+    .page-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    /* Titles take the free width and shrink first, so actions and switches stay on the right instead of wrapping below. */
+    .page-header > div:first-child { flex: 1 1 26rem; min-width: 0; }
+    .card-head > div:first-child:not(:only-child) { flex: 1 1 16rem; min-width: 0; }
+    .tier-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: 2rem 0 .85rem; }
+    .tier-heading h2 { font-size: .78rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-muted); margin: 0; }
+    .tier-heading p { font-size: .8rem; color: var(--text-muted); margin: 0; }
+    .card-head { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; }
+    .card-body-pad { padding: 1rem 1.25rem; }
+    .drawer-panel { background: var(--bg-canvas); border-bottom: 1px solid var(--border-subtle); }
+    @media (min-width: 768px) { .card-head { padding: 1.15rem 1.5rem; } .card-body-pad { padding: 1.25rem 1.5rem; } }
+    .card-head .section-title, .card-head h3.section-title { margin: 0; }
+    /* A badge or icon tile stays beside its title; the text takes the remaining width instead of wrapping below. */
+    .card-head > .step-badge + div, .card-head > .icon-tile + div { flex: 1 1 12rem; min-width: 0; }
+    .section-subtitle { font-size: .8rem; color: var(--text-muted); margin: 0; }
+    .form-label-fintech { display: inline-block; font-size: .78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: .35rem; }
+    .kpi-sub { font-size: .8rem; color: var(--text-muted); margin-top: .4rem; }
+    .empty-note { padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: .86rem; }
+    .empty-note .bi { display: block; font-size: 1.6rem; margin-bottom: .4rem; opacity: .7; }
+    .step-badge { display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; flex: 0 0 1.6rem; border-radius: 50%; background: var(--status-info-bg); color: var(--status-info-text); font-size: .78rem; font-weight: 700; }
+    .icon-tile--danger { background: var(--status-danger-bg) !important; color: var(--status-danger-text) !important; }
+    .icon-tile { display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: 0 0 2.25rem; border-radius: 10px; background: var(--status-info-bg); color: var(--status-info-text); font-size: 1.05rem; }
+
+    /* ---- Cards ---- */
+    .surface-card, .metric-card, .panel, .surface {
+        background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card); color: var(--text-secondary);
+    }
+    .surface-card { transition: border-color .12s ease, box-shadow .12s ease; }
+    .surface-card:focus-within { border-color: var(--border-strong); box-shadow: var(--shadow-hover); }
+    .metric-card { transition: transform .22s var(--spring-bounce), box-shadow .18s var(--ease-snappy), border-color .12s ease; }
+    .metric-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-hover); }
+    .metric-description, .muted { color: var(--text-muted); }
+
+    .kpi-card { padding: 1.1rem 1.25rem; transition: border-color .12s ease, box-shadow .18s var(--ease-snappy), transform .22s var(--spring-bounce); }
+    .kpi-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+    /* ---- Expandable cards: preview on hover, pin open by clicking the header or working inside ---- */
+    .hover-expand-card { scroll-margin-top: 7rem; }
+    .hover-expand-card__header { padding: 1rem; transition: padding-bottom .28s var(--ease-snappy); }
+    .hover-expand-card__toggle {
+        display: flex; align-items: center; justify-content: space-between; gap: .75rem; width: 100%;
+        border: 0; padding: 0; background: transparent; color: var(--text-primary); font: inherit; text-align: left; cursor: pointer;
+    }
+    .hover-expand-card__toggle:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 4px; border-radius: 4px; }
+    .hover-expand-card__icon { flex-shrink: 0; color: var(--text-muted); font-size: .85rem; transition: transform .28s var(--ease-snappy); }
+    .hover-expand-card__content {
+        display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden;
+        transition: grid-template-rows .28s var(--ease-snappy), opacity .16s ease, visibility 0s linear .28s;
+    }
+    .hover-expand-card__inner { min-height: 0; overflow: hidden; }
+    .hover-expand-card__body { padding: 0 1rem 1rem; }
+    .hover-expand-card.is-expanded .hover-expand-card__header { padding-bottom: 0; }
+    .hover-expand-card.is-expanded .hover-expand-card__content {
+        grid-template-rows: 1fr; opacity: 1; visibility: visible;
+        transition: grid-template-rows .32s var(--ease-snappy), opacity .2s ease .05s, visibility 0s;
+    }
+    .hover-expand-card.is-expanded .hover-expand-card__icon { transform: rotate(180deg); }
+    @media (min-width: 768px) {
+        .hover-expand-card__header { padding: 1.5rem; }
+        .hover-expand-card__body { padding: 0 1.5rem 1.5rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { .hover-expand-card__content { transition-delay: 0s !important; } }
+
+    .kpi-label { font-size: 12.5px; letter-spacing: 0; font-weight: 500; line-height: 1.3; color: var(--text-muted); text-transform: none; margin-bottom: .45rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .kpi-value { font-size: 1.55rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; color: var(--text-primary); }
+
+    /* ---- Buttons: one geometry, one set of states ---- */
+    .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+        border-radius: var(--radius-control); font-weight: 500; font-size: 13px; line-height: 1.25;
+        min-height: var(--control-h); height: auto; padding: .4rem .8rem; position: relative;
+        transition: background-color .12s var(--ease-snappy), border-color .12s var(--ease-snappy), box-shadow .2s var(--ease-snappy), transform .22s var(--spring-bounce), color .12s ease;
+    }
+    .btn:active:not(:disabled):not(.disabled) { transform: translateY(0) scale(.97); transition-duration: .06s; }
+    .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+    .btn:disabled, .btn.disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+    .btn.is-busy { cursor: progress; }
+    .btn-fintech-primary, .btn-dark, .btn-primary {
+        background: var(--btn-primary-bg); color: var(--btn-primary-text); border: 1px solid var(--btn-primary-bg);
+        box-shadow: var(--shadow-btn);
+    }
+    .btn-fintech-primary:hover:not(:disabled), .btn-dark:hover:not(:disabled), .btn-primary:hover:not(:disabled) {
+        background: var(--btn-primary-hover); border-color: var(--btn-primary-hover); color: var(--btn-primary-text);
+        box-shadow: var(--shadow-btn), var(--glow-primary); transform: translateY(-1px);
+    }
+    .btn-fintech-primary:focus-visible, .btn-dark:focus-visible, .btn-primary:focus-visible { box-shadow: var(--shadow-btn), 0 0 0 3px var(--focus-ring); }
+    .btn-fintech-outline, .btn-outline-secondary, .btn-secondary {
+        background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--btn-secondary-border);
+        box-shadow: var(--shadow-card);
+    }
+    .btn-fintech-outline:hover:not(:disabled), .btn-outline-secondary:hover:not(:disabled), .btn-secondary:hover:not(:disabled) {
+        background: var(--btn-secondary-hover); color: var(--text-primary); border-color: var(--border-strong);
+    }
+    .btn-outline-secondary.active, .btn-secondary.active, .btn-fintech-outline.active {
+        background: var(--status-info-bg); color: var(--status-info-text); border-color: var(--border-focus);
+    }
+    .btn-fintech-danger, .btn-danger, .btn-outline-danger {
+        background: var(--btn-secondary-bg); color: var(--status-danger-text); border: 1px solid var(--btn-secondary-border);
+    }
+    .btn-fintech-danger:hover:not(:disabled), .btn-danger:hover:not(:disabled), .btn-outline-danger:hover:not(:disabled) {
+        background: var(--status-danger-bg); color: var(--status-danger-text); border-color: var(--status-danger-border);
+    }
+    /* Quiet call to action: tinted instead of solid, for repeated list actions like "Review". */
+    /* Bootstrap's own outline variants, mapped onto the theme so they match light and dark mode like the fintech buttons. */
+    .btn-outline-primary { background: transparent; color: var(--btn-primary-bg); border: 1px solid var(--btn-primary-bg); }
+    .btn-outline-primary:hover:not(:disabled), .btn-outline-primary:focus-visible { background: var(--status-info-bg); color: var(--status-info-text); border-color: var(--btn-primary-bg); }
+    .btn-outline-danger { background: transparent; color: var(--status-danger-text); border: 1px solid var(--status-danger-border); }
+    .btn-outline-danger:hover:not(:disabled), .btn-outline-danger:focus-visible { background: var(--status-danger-bg); color: var(--status-danger-text); border-color: var(--status-danger-text); }
+    .btn-fintech-soft {
+        background: var(--status-info-bg); color: var(--status-info-text); border: 1px solid var(--status-info-border);
+        font-weight: 500; box-shadow: none;
+    }
+    .btn-fintech-soft:hover:not(:disabled) { background: var(--status-info-bg); border-color: var(--border-focus); color: var(--status-info-text); }
+    .btn-action-sm, .btn-sm { min-height: var(--control-h-sm); height: auto; padding: .2rem .6rem; font-size: 12px; }
+    .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid transparent; }
+    .btn-ghost:hover:not(:disabled) { background: var(--btn-ghost-hover); color: var(--text-primary); }
+    html[data-bs-theme="dark"] .btn-close, html[data-theme="dark"] .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+
+    /* ---- Form controls ---- */
+    .form-control, .form-select {
+        min-height: var(--control-h); height: var(--control-h); border-radius: var(--radius-control); border: 1px solid var(--btn-secondary-border);
+        background-color: var(--bg-input); color: var(--text-primary); font-size: 13px; padding: 0 10px;
+        transition: border-color .12s ease, box-shadow .12s ease, background-color .12s ease;
+    }
+    .form-select { padding-right: 2rem; }
+    textarea.form-control { height: auto; min-height: 84px; padding: 8px 10px; line-height: 1.45; }
+    .form-control::placeholder { color: var(--text-placeholder); opacity: 1; }
+    .form-control:hover:not(:disabled):not([readonly]), .form-select:hover:not(:disabled) { border-color: var(--border-strong); }
+    .form-control:focus, .form-select:focus {
+        background-color: var(--bg-input); color: var(--text-primary);
+        border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--focus-ring); outline: none;
+    }
+    .form-control:read-only, .form-control[readonly], .form-control:disabled, .form-select:disabled {
+        background-color: var(--bg-input-readonly); color: var(--text-muted);
+    }
+    .form-control-sm, .form-select-sm { min-height: var(--control-h-sm); height: var(--control-h-sm); font-size: 12px; }
+    textarea.form-control-sm { height: auto; min-height: 72px; }
+    .form-control:-webkit-autofill { -webkit-text-fill-color: var(--text-primary); box-shadow: 0 0 0 1000px var(--bg-input) inset; }
+    input[type="file"].form-control { padding: 6px 10px; height: auto; min-height: var(--control-h); }
+    input[type="file"].form-control::file-selector-button { background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--btn-secondary-border); border-radius: 6px; padding: 2px 10px; margin-right: 10px; }
+    .input-group-text { height: var(--control-h); background: var(--bg-subtle); border: 1px solid var(--btn-secondary-border); color: var(--text-muted); font-size: 13px; padding: 0 10px; }
+    .form-check-input { width: 16px; height: 16px; border: 1px solid var(--border-strong); background-color: var(--bg-input); }
+    .form-check-input:checked { background-color: var(--btn-primary-bg); border-color: var(--btn-primary-bg); animation: rewardTick .28s var(--spring-bounce); }
+    .form-check-input:focus { box-shadow: 0 0 0 3px var(--focus-ring); border-color: var(--border-focus); }
+    .form-check-label { color: var(--text-secondary); }
+    .form-text { color: var(--text-muted); }
+
+    /* Inputs the user has interacted with that are out of range (e.g. a negative amount) */
+    .form-control:user-invalid { border-color: var(--status-danger-text); box-shadow: 0 0 0 3px var(--status-danger-bg); }
+
+    /* ---- Sortable table headers (table tools in themeScript, or server-sorted links on Dues) ---- */
+    .th-sort {
+        display: inline-flex; align-items: center; gap: .3rem; padding: 0; margin: 0; border: 0; background: none;
+        color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-decoration: none;
+        cursor: pointer; border-radius: 4px; transition: color .12s ease;
+    }
+    .th-sort:hover, th[aria-sort="ascending"] .th-sort, th[aria-sort="descending"] .th-sort { color: var(--text-primary); }
+    .th-sort:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+    .sort-icon {
+        display: inline-block; width: .42em; height: .42em; margin-left: .1rem;
+        border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+        transform: translateY(-.12em) rotate(45deg); opacity: 0; transition: opacity .12s ease, transform .22s var(--spring-bounce);
+    }
+    .th-sort:hover .sort-icon { opacity: .4; }
+    th[aria-sort="descending"] .sort-icon { opacity: 1; }
+    th[aria-sort="ascending"] .sort-icon { opacity: 1; transform: translateY(.12em) rotate(-135deg); }
+
+    /* "/" hint inside search boxes; hidden while typing */
+    .search-box { position: relative; }
+    .search-kbd {
+        position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none;
+        font: 600 10.5px/1 Inter, sans-serif; padding: .15rem .35rem; border-radius: 4px;
+        border: 1px solid var(--border-strong); color: var(--text-muted); background: var(--bg-subtle);
+    }
+    .search-box input:focus ~ .search-kbd, .search-box input:not(:placeholder-shown) ~ .search-kbd { display: none; }
+    .table-empty-row td { padding: 1.5rem; text-align: center; color: var(--text-muted); }
+    .table-count { font-size: 12px; color: var(--text-muted); }
+
+    /* Copy-to-clipboard confirmation */
+    .btn.is-copied {
+        background: var(--status-success-bg); color: var(--status-success-text); border-color: var(--status-success-border);
+        box-shadow: var(--glow-success); animation: rewardTick .3s var(--spring-bounce);
+    }
+
+    /* Keyboard shortcuts dialog */
+    .shortcut-list { list-style: none; margin: 0; padding: 0; }
+    .shortcut-list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 13px; }
+    .shortcut-list li:last-child { border-bottom: 0; }
+    .shortcut-list kbd {
+        font: 600 11.5px/1 Inter, sans-serif; padding: .25rem .45rem; border-radius: 5px; white-space: nowrap;
+        border: 1px solid var(--border-strong); border-bottom-width: 2px; color: var(--text-primary); background: var(--bg-subtle);
+    }
+
+    /* ---- Tables ---- */
+    .table {
+        --bs-table-bg: transparent;
+        --bs-table-color: var(--text-secondary);
+        --bs-table-border-color: var(--border-subtle);
+        --bs-table-striped-bg: var(--bg-hover);
+        --bs-table-hover-bg: var(--bg-hover);
+        color: var(--text-secondary); font-size: 13px;
+    }
+    .table thead th { background: var(--bg-subtle); border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 10; vertical-align: middle; }
+    .table tbody td { border-bottom: 1px solid var(--border-subtle); padding: 9px 14px; vertical-align: middle; }
+    .table tbody tr { transition: background .08s ease; }
+    .table tbody tr:hover { background: var(--bg-hover); }
+    .table tbody tr:hover td:first-child { box-shadow: inset 2px 0 0 var(--btn-primary-bg); }
+    .table tbody tr.is-selected { background: var(--bg-selected); }
+    .table tbody tr.is-processing { background: var(--bg-selected); }
+    .table-responsive { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); overflow: auto; }
+    .table-responsive > .table { margin-bottom: 0; }
+    .roster-table-container {
+        height: auto; min-height: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 0;
+    }
+    .roster-table-container > table thead th { position: static; z-index: auto; }
+    /* Sticky headers: the roster scrolls inside its own pane so the column titles stay in view; static headers let the
+       whole table flow with the page. The "Headers" button on the Dues and Rent rosters switches between them. */
+    .roster-table-container.headers-sticky {
+        max-height: calc(100vh - var(--desktop-header-h, 0px) - 15rem); min-height: 14rem; overflow-y: auto;
+    }
+    .roster-table-container.headers-sticky > table thead th { position: sticky; top: 0; z-index: 10; box-shadow: inset 0 -1px 0 var(--border-subtle); }
+    .ledger-fullscreen.is-fullscreen > .roster-table-container {
+        flex: 0 1 auto; min-height: 0; max-height: 100%;
+        overflow: auto;
+    }
+    #rosterTable, #rentTable { height: auto; margin-bottom: 0; }
+    #rosterTable tbody tr:only-child, #rentTable tbody tr:only-child { height: auto; }
+
+    /* ---- Status pills ---- */
+    .status-pill, .badge-status {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; line-height: 1.4;
+        border: 1px solid var(--status-neutral-border); background: var(--status-neutral-bg); color: var(--status-neutral-text);
+    }
+    .badge-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; pointer-events: none; }
+    .badge-paid, .badge-success { color: var(--status-success-text); background: var(--status-success-bg); border-color: var(--status-success-border); }
+    .badge-plan, .badge-info { color: var(--status-info-text); background: var(--status-info-bg); border-color: var(--status-info-border); }
+    .badge-delinquent, .badge-danger { color: var(--status-danger-text); background: var(--status-danger-bg); border-color: var(--status-danger-border); }
+    .badge-warning { color: var(--status-warning-text); background: var(--status-warning-bg); border-color: var(--status-warning-border); }
+    .badge-neutral { color: var(--status-neutral-text); background: var(--status-neutral-bg); border-color: var(--status-neutral-border); }
+    .badge.text-bg-primary, .badge.text-bg-info { background-color: var(--status-info-bg) !important; color: var(--status-info-text) !important; border: 1px solid var(--status-info-border); }
+    .badge.text-bg-warning { background-color: var(--status-warning-bg) !important; color: var(--status-warning-text) !important; border: 1px solid var(--status-warning-border); }
+    .badge.text-bg-success { background-color: var(--status-success-bg) !important; color: var(--status-success-text) !important; border: 1px solid var(--status-success-border); }
+    .badge.text-bg-danger { background-color: var(--status-danger-bg) !important; color: var(--status-danger-text) !important; border: 1px solid var(--status-danger-border); }
+    .badge.text-bg-light { background-color: var(--status-neutral-bg) !important; color: var(--status-neutral-text) !important; border: 1px solid var(--status-neutral-border); }
+
+    /* ---- Progress bars: inset track, gradient fill with a soft glow, grows in on page load ----
+       Markup: <div class="progress-slim"><div class="progress-fill tone-success" role="progressbar" style="width: 42%"></div></div>
+       The fill animates from 0 each time it's shown, including when a modal holding one opens. */
+    .progress, .progress-slim {
+        position: relative; height: 8px; border-radius: 999px; overflow: hidden;
+        background: var(--progress-track); box-shadow: var(--progress-track-shadow);
+    }
+    .progress-fill, .progress-bar {
+        position: relative; height: 100%; max-width: 100%; border-radius: inherit; overflow: hidden;
+        background: var(--progress-primary); box-shadow: var(--progress-glow-primary);
+        animation: progressGrow 1s var(--ease-snappy) .12s both;
+        transition: width .5s var(--ease-snappy);
+    }
+    .progress-fill.tone-success, .progress-bar.success { background: var(--progress-success); box-shadow: var(--progress-glow-success); }
+    .progress-fill.tone-warning { background: var(--progress-warning); box-shadow: var(--progress-glow-warning); }
+    .progress-fill.tone-danger { background: var(--progress-danger); box-shadow: var(--progress-glow-danger); }
+    /* One light sweep across the bar once it has filled. */
+    .progress-fill::after, .progress-bar::after {
+        content: ''; position: absolute; inset: 0; width: 40%; pointer-events: none;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+        transform: translateX(-100%); animation: progressShine .9s ease-out 1.05s 1 both;
+    }
+    .progress-label { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; font-size: 11.5px; color: var(--text-muted); margin-top: .35rem; }
+    .progress-label .value { font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+    /* ---- Alerts & confirmation toasts (the reward moment) ---- */
+    .alert { --alert-accent: var(--text-placeholder); position: relative; border-radius: 10px; border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-secondary); animation: subtleSlideIn 180ms ease-out; }
+    /* The accent is a short bar inset from the left edge. A thick coloured border-left on a rounded box hooks round
+       the corners and meets the top border on a diagonal, which read as a rendering glitch. */
+    .alert:not(.border-0)::before { content: ''; position: absolute; left: .5rem; top: .6rem; bottom: .6rem; width: 3px; border-radius: 2px; background: var(--alert-accent); pointer-events: none; }
+    /* The status tints are translucent in dark mode, so each one is layered over a solid surface: a toast that
+       floats over the page stays readable instead of showing the content underneath through it. */
+    .alert-success { --alert-accent: var(--status-success-text); border-color: var(--status-success-border); color: var(--status-success-text); background: linear-gradient(var(--status-success-bg), var(--status-success-bg)), var(--bg-elevated); }
+    .alert-warning { --alert-accent: var(--status-warning-text); border-color: var(--status-warning-border); color: var(--status-warning-text); background: linear-gradient(var(--status-warning-bg), var(--status-warning-bg)), var(--bg-elevated); }
+    .alert-danger { --alert-accent: var(--status-danger-text); border-color: var(--status-danger-border); color: var(--status-danger-text); background: linear-gradient(var(--status-danger-bg), var(--status-danger-bg)), var(--bg-elevated); }
+    .alert-info { --alert-accent: var(--status-info-text); border-color: var(--status-info-border); color: var(--status-info-text); background: linear-gradient(var(--status-info-bg), var(--status-info-bg)), var(--bg-elevated); }
+    .alert-success[data-auto-dismiss] {
+        background: linear-gradient(var(--status-success-bg), var(--status-success-bg)), var(--bg-elevated); color: var(--status-success-text);
+        border: 1px solid var(--status-success-border);
+        box-shadow: var(--glow-success); animation: rewardToastIn .46s var(--spring-bounce) both;
+    }
+    .alert-success[data-auto-dismiss]::after {
+        content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+        box-shadow: var(--glow-success); opacity: 0;
+        animation: rewardGlowPulse 1.3s ease-out .1s 1 both;
+    }
+    .alert-success[data-auto-dismiss] .bi-check-circle-fill { color: var(--status-success-text) !important; display: inline-block; animation: rewardCheckPop .5s var(--spring-bounce) .12s both; }
+    .reward-sparks { position: absolute; left: 1.5rem; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 2; }
+    .reward-spark { position: absolute; left: -2px; top: -2px; width: 5px; height: 5px; border-radius: 50%; background: var(--status-success-text); box-shadow: var(--glow-success); opacity: 0; pointer-events: none; animation: rewardSpark .75s var(--ease-snappy) forwards; }
+
+    /* ---- Modals & misc ---- */
+    .modal-content { --bs-modal-bg: var(--bg-elevated); --bs-modal-color: var(--text-secondary); background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); box-shadow: var(--shadow-modal); }
+    .modal-header { border-bottom: 1px solid var(--border-subtle); }
+    .modal-footer { border-top: 1px solid var(--border-subtle); }
+    .list-group { --bs-list-group-bg: transparent; --bs-list-group-color: var(--text-secondary); --bs-list-group-border-color: var(--border-subtle); }
+    .offcanvas { --bs-offcanvas-bg: var(--bg-surface); --bs-offcanvas-color: var(--text-secondary); }
+    .filter-bar:focus-within { border-color: var(--border-strong); box-shadow: var(--shadow-hover); }
+
+    .currency-symbol, .unit-symbol { color: var(--text-placeholder); font-weight: 400; }
+    .currency-value { color: var(--text-primary); font-weight: 600; }
+
+    body.ledger-fullscreen-active { overflow: hidden; }
+    .ledger-fullscreen.is-fullscreen { box-sizing: border-box; display: flex; flex-direction: column; position: fixed; inset: 0; top: var(--desktop-header-h, 0px); z-index: 1040; width: 100vw; height: calc(100vh - var(--desktop-header-h, 0px)); padding: 1rem; overflow: hidden; background: var(--bg-canvas); }
+    .ledger-fullscreen.is-fullscreen .table-responsive { flex: 0 1 auto; min-height: 0; max-height: 100%; }
+    .surface-card.fullscreen-card { animation: none; }
+    /* Reminder quick actions beside a balance (Email / Messages / Copy). */
+    .remind-actions { display: inline-flex; align-items: center; gap: .1rem; margin-left: .35rem; vertical-align: middle; }
+    .remind-actions .btn { padding: .12rem .32rem; line-height: 1; font-size: .8rem; color: var(--text-muted); }
+    .remind-actions .btn:hover { color: var(--btn-primary-bg); }
+    /* Table export tools: only offered while the table is full screen. */
+    .fs-only { display: none !important; }
+    .is-fullscreen .fs-only { display: inline-flex !important; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .header-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .75rem; }
+    @media (max-width:575px) { .header-grid .status-pill { display: none; } }
+
+    /* A toast lifted out of the page flow when the page reopens mid-scroll after a form post. */
+    .alert.is-floating-toast {
+        position: fixed; right: 1rem; z-index: 1085; width: min(440px, calc(100vw - 2rem));
+        margin: 0 !important; box-shadow: var(--shadow-pop);
+    }
+
+    /* ---- Desktop app scroll performance ----
+       The JavaFX WebView repaints the whole window on every scroll step and rasterizes each
+       rounded corner on the CPU, which held scrolling near 25fps. Square corners in the desktop
+       window bring it back to ~60fps. Pills, dots, switches and spinners keep their shape. */
+    html.desktop-webview *:not(.badge):not([class*="badge"]):not(.rounded-pill):not(.rounded-circle):not(.filter-pill):not(.status-pill):not(.status-dot):not(.payment-count):not(.spinner-border):not(.spinner-grow):not(.progress):not(.progress-slim):not(.progress-fill):not(.reward-spark):not([type="radio"]):not(.form-switch .form-check-input) {
+        border-radius: 0 !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+        .reward-sparks { display: none; }
+    }
+</style>
+
+<script th:fragment="themeInit" th:inline="javascript">
+    (function () {
+        function enableCommaNumberInputs() {
+            document.querySelectorAll('input[type="number"]').forEach(function (input) {
+                input.dataset.commaNumber = 'true';
+                input.dataset.numberMin = input.getAttribute('min') || '';
+                input.dataset.numberMax = input.getAttribute('max') || '';
+                input.dataset.numberStep = input.getAttribute('step') || '1';
+                input.type = 'text';
+                input.inputMode = input.dataset.numberStep === '1' ? 'numeric' : 'decimal';
+                input.autocomplete = 'off';
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', enableCommaNumberInputs);
+        } else {
+            enableCommaNumberInputs();
+        }
+
+        var pref = /*[[${appearanceMode}]]*/ 'light';
+        var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light'); document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        // The desktop window is a JavaFX WebView; it gets lighter rendering (see navStyles).
+        if (/JavaFX/.test(navigator.userAgent)) document.documentElement.classList.add('desktop-webview');
+    })();
+</script>
+
+<div class="dropdown theme-toggle ms-auto" th:fragment="themeToggle">
+    <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Change appearance">
+        <i class="bi bi-circle-half" data-theme-icon></i><span class="d-none d-sm-inline">Appearance</span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li><button type="button" class="dropdown-item" data-theme-option="light"><i class="bi bi-sun"></i>Light<i class="bi bi-check2 check"></i></button></li>
+        <li><button type="button" class="dropdown-item" data-theme-option="dark"><i class="bi bi-moon-stars"></i>Dark<i class="bi bi-check2 check"></i></button></li>
+        <li><button type="button" class="dropdown-item" data-theme-option="system"><i class="bi bi-circle-half"></i>System<i class="bi bi-check2 check"></i></button></li>
+    </ul>
+</div>
+
+<script th:fragment="modalScript">
+    document.addEventListener('show.bs.modal', function (e) {
+        if (e.target.parentElement !== document.body) document.body.appendChild(e.target);
+    });
+</script>
+
+<script th:fragment="themeScript" th:inline="javascript">
+    (function () {
+        var pref = /*[[${appearanceMode}]]*/ 'light';
+        var media = window.matchMedia('(prefers-color-scheme: dark)');
+        var icons = { light: 'bi-sun', dark: 'bi-moon-stars', system: 'bi-circle-half' };
+        function apply() {
+            var dark = pref === 'dark' || (pref === 'system' && media.matches);
+            document.documentElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light'); document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+            document.querySelectorAll('[data-theme-option]').forEach(function (b) {
+                b.classList.toggle('active', b.dataset.themeOption === pref);
+            });
+            document.querySelectorAll('[data-theme-icon]').forEach(function (i) {
+                i.className = 'bi ' + icons[pref];
+            });
+        }
+        document.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-theme-option]');
+            if (!b) return;
+            var previous = pref;
+            pref = b.dataset.themeOption;
+            apply();
+            fetch('/settings/appearance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: new URLSearchParams({ appearanceMode: pref }).toString()
+            }).then(function (response) {
+                if (!response.ok) throw new Error('Server returned ' + response.status);
+            }).catch(function (error) {
+                pref = previous;
+                apply();
+                console.error('Could not save appearance preference.', error);
+                window.alert('Appearance preference could not be saved. Please try again.');
+            });
+        });
+        media.addEventListener('change', function () {
+            if (pref === 'system') apply();
+        });
+        apply();
+
+        // Global interaction wiring
+        document.addEventListener('click', function (event) {
+            var row = event.target.closest('.table tbody tr');
+            if (!row || event.target.closest('a,button,input,select,textarea,form,label')) return;
+            row.classList.toggle('is-selected');
+        });
+
+        function normalizeNumberInput(input) {
+            var value = input.value.trim();
+            if (!value) {
+                input.setCustomValidity('');
+                return true;
+            }
+            var validNumber = /^[+-]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)$/.test(value);
+            var numericValue = Number(value.replace(/,/g, ''));
+            var error = '';
+            if (!validNumber || !Number.isFinite(numericValue)) {
+                error = 'Enter a number; use commas only as thousands separators (for example, 1,234.56).';
+            } else {
+                var min = input.dataset.numberMin === '' ? null : Number(input.dataset.numberMin);
+                var max = input.dataset.numberMax === '' ? null : Number(input.dataset.numberMax);
+                var step = input.dataset.numberStep;
+                if (min !== null && numericValue < min) {
+                    error = 'Enter a number no less than ' + input.dataset.numberMin + '.';
+                } else if (max !== null && numericValue > max) {
+                    error = 'Enter a number no greater than ' + input.dataset.numberMax + '.';
+                } else if (step !== 'any') {
+                    var increment = Number(step);
+                    var base = min === null ? 0 : min;
+                    var stepPosition = (numericValue - base) / increment;
+                    if (Math.abs(stepPosition - Math.round(stepPosition)) > 1e-8) {
+                        error = 'Enter a number using increments of ' + step + '.';
+                    }
+                }
+            }
+            input.setCustomValidity(error);
+            if (error) return false;
+            input.value = String(numericValue);
+            return true;
+        }
+
+        document.addEventListener('input', function (event) {
+            if (event.target.dataset.commaNumber === 'true') event.target.setCustomValidity('');
+        });
+        document.addEventListener('submit', function (event) {
+            if (event.defaultPrevented) return;
+            var inputs = Array.prototype.filter.call(event.target.elements, function (field) {
+                return field.dataset && field.dataset.commaNumber === 'true';
+            });
+            for (var i = 0; i < inputs.length; i++) {
+                if (!normalizeNumberInput(inputs[i])) {
+                    event.preventDefault();
+                    inputs[i].reportValidity();
+                    return;
+                }
+            }
+        }, true);
+
+        // Duplicate guard: forms marked data-duplicate-guard ask before saving an entry identical to one saved
+        // from this window in the last 10 minutes (same form, same values). Registered before the busy-state
+        // handler below so a cancelled save never shows a spinner.
+        var RECENT_KEY = 'duesdesk:recent-entries';
+        var RECENT_WINDOW = 10 * 60 * 1000;
+        function loadRecent() {
+            try { return JSON.parse(sessionStorage.getItem(RECENT_KEY)) || {}; } catch (e) { return {}; }
+        }
+        function saveRecent(recent) {
+            try { sessionStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch (e) { /* storage unavailable: no guard */ }
+        }
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+            if (event.defaultPrevented || !form.hasAttribute || !form.hasAttribute('data-duplicate-guard')) return;
+            var parts = [];
+            Array.prototype.forEach.call(form.elements, function (field) {
+                if (!field.name || field.disabled || field.type === 'file' || field.type === 'password'
+                        || field.name === 'idempotencyKey' || /^(submit|button|reset)$/.test(field.type)) return;
+                if ((field.type === 'checkbox' || field.type === 'radio') && !field.checked) return;
+                parts.push(field.name + '=' + String(field.value).trim().toLowerCase());
+            });
+            if (event.submitter && event.submitter.name) parts.push(event.submitter.name + '=' + event.submitter.value);
+            parts.sort();
+            var key = (form.getAttribute('action') || location.pathname) + '?' + parts.join('&');
+            var now = Date.now();
+            var recent = loadRecent();
+            Object.keys(recent).forEach(function (k) { if (now - recent[k] > RECENT_WINDOW) delete recent[k]; });
+            if (recent[key]) {
+                var minutes = Math.round((now - recent[key]) / 60000);
+                var when = minutes < 1 ? 'less than a minute' : minutes === 1 ? 'a minute' : minutes + ' minutes';
+                if (!window.confirm('You saved this exact entry ' + when + ' ago.\n\nSave it again?')) {
+                    event.preventDefault();
+                    return;
+                }
+            }
+            recent[key] = now;
+            saveRecent(recent);
+        });
+
+        // Money inputs (number fields with 0.01 steps): tidy to two decimals when leaving the field, and refuse
+        // minus/exponent keys where negative amounts aren't allowed (min of 0 or more).
+        function isMoneyInput(el) {
+            return el && el.tagName === 'INPUT' && el.dataset.commaNumber === 'true'
+                && el.dataset.numberStep === '0.01';
+        }
+        document.addEventListener('focusout', function (event) {
+            var input = event.target;
+            if (!isMoneyInput(input) || input.value === '') return;
+            var value = Number(input.value.replace(/,/g, ''));
+            if (isFinite(value)) input.value = value.toFixed(2);
+        });
+        document.addEventListener('keydown', function (event) {
+            var input = event.target;
+            if (!isMoneyInput(input) || event.ctrlKey || event.metaKey) return;
+            var min = input.getAttribute('min');
+            if ((event.key === '-' && min !== null && Number(min) >= 0) || event.key === 'e' || event.key === 'E' || event.key === '+') {
+                event.preventDefault();
+            }
+        });
+
+        document.addEventListener('submit', function (event) {
+            if (event.defaultPrevented) return;
+            var form = event.target;
+            // Prefer the clicked button when it has a loading label; otherwise the form's labelled button.
+            var button = event.submitter && event.submitter.hasAttribute('data-loading-label')
+                ? event.submitter : form.querySelector('[data-loading-label]');
+            if (!button || button.disabled || button.dataset.busy === 'true') return;
+            var row = form.closest('tr');
+            button.dataset.busy = 'true';
+            button.dataset.originalContent = button.innerHTML;
+            button.classList.add('is-busy');
+            button.setAttribute('aria-busy', 'true');
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>' + button.dataset.loadingLabel;
+            // Disable only after the browser has collected the form data: a button disabled during the submit
+            // event drops its name/value from the request.
+            setTimeout(function () { button.disabled = true; }, 0);
+            if (row) row.classList.add('is-processing');
+        });
+
+        // Keep the reader's place when a form posts and the server redirects back to the same
+        // page, and for links/controls marked data-keep-scroll (pagination, sort, month nav).
+        var SCROLL_KEY = 'duesdesk:keep-scroll';
+        function rememberScroll() {
+            try {
+                sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ path: location.pathname, y: window.scrollY, at: Date.now() }));
+            } catch (e) { /* storage unavailable: fall back to normal navigation */ }
+        }
+        window.duesDeskRememberScroll = rememberScroll;
+        document.addEventListener('submit', function (event) {
+            // Per-form confirm() handlers run first; a cancelled submit never navigates.
+            if (!event.defaultPrevented && (event.target.method || 'get').toLowerCase() === 'post') rememberScroll();
+        });
+        document.addEventListener('click', function (event) {
+            var link = event.target.closest('a[href]');
+            if (!link) return;
+            if (link.hasAttribute('data-keep-scroll')) {
+                rememberScroll();
+            } else if (link.getAttribute('href').charAt(0) !== '#') {
+                // Ordinary navigation (or a download that never left the page) starts at the top.
+                try { sessionStorage.removeItem(SCROLL_KEY); } catch (e) { /* ignore */ }
+            }
+        });
+        (function restoreScroll() {
+            var saved = null;
+            try {
+                saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY));
+                sessionStorage.removeItem(SCROLL_KEY);
+            } catch (e) { return; }
+            if (!saved || saved.path !== location.pathname || Date.now() - saved.at > 30000 || saved.y <= 0) return;
+            // The confirmation toast renders at the top of the page; float it into view instead.
+            var header = document.querySelector('.app-header-stack');
+            var toastTop = (header ? header.getBoundingClientRect().height : 0) + 12;
+            document.querySelectorAll('main > .alert[data-auto-dismiss]').forEach(function (toast) {
+                toast.classList.add('is-floating-toast');
+                toast.style.top = toastTop + 'px';
+            });
+            window.scrollTo(0, saved.y);
+            // Late layout (fonts, the URL hash) can move things after this script runs.
+            window.addEventListener('load', function () {
+                requestAnimationFrame(function () { window.scrollTo(0, saved.y); });
+            }, { once: true });
+        })();
+
+        document.querySelectorAll('.section-nav [data-nav-dropdown]').forEach(function (dropdown) {
+            var toggle = dropdown.querySelector('.dropdown-toggle');
+            if (!toggle) return;
+            var hideTimer = null;
+            function cancelHide() {
+                if (hideTimer) clearTimeout(hideTimer);
+                hideTimer = null;
+            }
+            function setOpen(open) {
+                cancelHide();
+                dropdown.classList.toggle('is-open', open);
+                toggle.setAttribute('aria-expanded', String(open));
+            }
+            dropdown.addEventListener('mouseenter', function () { setOpen(true); });
+            dropdown.addEventListener('mouseleave', function () {
+                cancelHide();
+                hideTimer = setTimeout(function () {
+                    hideTimer = null;
+                    if (!dropdown.contains(document.activeElement)) setOpen(false);
+                }, 140);
+            });
+            dropdown.addEventListener('focusin', cancelHide);
+            dropdown.addEventListener('focusout', function (e) {
+                if (!dropdown.contains(e.relatedTarget)) setOpen(false);
+            });
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                setOpen(!dropdown.classList.contains('is-open'));
+            });
+            // Bootstrap delegates dropdown keys in document capture. Handle this custom
+            // menu at window capture so Bootstrap never receives an uninitialized menu.
+            window.addEventListener('keydown', function (e) {
+                if (!(e.target instanceof Node) || !dropdown.contains(e.target)) return;
+                var items = Array.from(dropdown.querySelectorAll('.dropdown-item'));
+                var index = items.indexOf(e.target);
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    setOpen(false);
+                    toggle.focus();
+                } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    if (e.target !== toggle && index === -1) return;
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    setOpen(true);
+                    if (e.target === toggle) {
+                        var edgeItem = e.key === 'ArrowDown' ? items[0] : items[items.length - 1];
+                        if (edgeItem) edgeItem.focus();
+                    } else {
+                        var delta = e.key === 'ArrowDown' ? 1 : -1;
+                        items[(index + delta + items.length) % items.length].focus();
+                    }
+                }
+            }, true);
+        });
+        document.addEventListener('click', function (event) {
+            document.querySelectorAll('.section-nav [data-nav-dropdown]').forEach(function (dropdown) {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('is-open');
+                    var t = dropdown.querySelector('.dropdown-toggle');
+                    if (t) t.setAttribute('aria-expanded', 'false');
+                }
+            });
+        });
+
+        // Expandable cards ([data-hover-expand]): hovering previews the body; clicking the header,
+        // clicking or focusing inside, or arriving via the card's #id pins it open.
+        document.querySelectorAll('[data-hover-expand]').forEach(function (card) {
+            var toggle = card.querySelector('.hover-expand-card__toggle');
+            var content = card.querySelector('.hover-expand-card__content');
+            if (!toggle || !content) return;
+
+            var pinned = Boolean(card.id) && window.location.hash === '#' + card.id;
+            var hovered = false;
+            var leaveTimer = null;
+
+            function render() {
+                var expanded = pinned || hovered;
+                card.classList.toggle('is-expanded', expanded);
+                card.classList.toggle('is-pinned', pinned);
+                toggle.setAttribute('aria-expanded', String(expanded));
+                content.setAttribute('aria-hidden', String(!expanded));
+                content.inert = !expanded;
+            }
+
+            card.addEventListener('pointerenter', function (event) {
+                if (event.pointerType === 'touch') return;
+                clearTimeout(leaveTimer);
+                hovered = true;
+                render();
+            });
+            // Brief grace period so grazing the card edge doesn't flicker it closed.
+            card.addEventListener('pointerleave', function (event) {
+                if (event.pointerType === 'touch') return;
+                clearTimeout(leaveTimer);
+                leaveTimer = setTimeout(function () {
+                    hovered = false;
+                    render();
+                }, 150);
+            });
+            card.addEventListener('pointerdown', function (event) {
+                if (!content.contains(event.target)) return;
+                pinned = true;
+                render();
+            });
+            card.addEventListener('focusin', function (event) {
+                if (!content.contains(event.target)) return;
+                pinned = true;
+                render();
+            });
+            toggle.addEventListener('click', function () {
+                clearTimeout(leaveTimer);
+                if (pinned) {
+                    pinned = false;
+                    hovered = false;
+                } else {
+                    pinned = true;
+                }
+                render();
+            });
+            // In-page links (e.g. "Review reminder recipients") open their target card.
+            window.addEventListener('hashchange', function () {
+                if (card.id && window.location.hash === '#' + card.id) {
+                    pinned = true;
+                    render();
+                }
+            });
+
+            render();
+        });
+
+        // Hover preview + expanding panel (see .hover-peek / .expand-panel). Pages call it with:
+        //   peek, panel, backdrop: elements; triggers: elements carrying data-peek-key
+        //   hoverTarget(trigger) / anchor(trigger): what is hovered / what the preview sits beside (default: trigger)
+        //   hasPreview(key), renderPeek(key), renderPanel(key): fill the preview / panel for a key
+        //   returnRect(key): where the panel shrinks back to on close; onAnchor(el, on): highlight the hovered item
+        // Esc, the backdrop and any [data-expand-close] button close the panel; focus is trapped inside while open.
+        window.duesDeskPeek = function (config) {
+            var peek = config.peek, panel = config.panel, backdrop = config.backdrop;
+            var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+            var canHover = window.matchMedia('(hover: hover)');
+            var showTimer = null, hideTimer = null, closeTimer = null;
+            var peekKey = null, peekTrigger = null, panelKey = null, panelOrigin = null, returnFocus = null;
+            var suppressPeekUntil = 0;
+
+            function anchorOf(trigger) { return config.anchor ? config.anchor(trigger) : trigger; }
+            function hoverOf(trigger) { return config.hoverTarget ? config.hoverTarget(trigger) : trigger; }
+            function highlight(trigger, on) { if (trigger && config.onAnchor) config.onAnchor(anchorOf(trigger), on); }
+
+            // Beside the anchor when there's room (right, then left), otherwise below or above it.
+            function placePeek(anchor) {
+                var r = anchor.getBoundingClientRect();
+                var w = peek.offsetWidth, h = peek.offsetHeight, gap = 10, edge = 12;
+                var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+                var side, left, top;
+                if (r.right + gap + w <= vw - edge) { side = 'right'; left = r.right + gap; top = r.top; }
+                else if (r.left - gap - w >= edge) { side = 'left'; left = r.left - gap - w; top = r.top; }
+                else {
+                    left = r.left + r.width / 2 - w / 2;
+                    if (r.bottom + gap + h <= vh - edge) { side = 'below'; top = r.bottom + gap; }
+                    else { side = 'above'; top = r.top - gap - h; }
+                }
+                peek.dataset.side = side;
+                peek.style.left = Math.round(Math.max(edge, Math.min(left, vw - w - edge))) + 'px';
+                peek.style.top = Math.round(Math.max(edge, Math.min(top, vh - h - edge))) + 'px';
+            }
+
+            function showPeek(trigger) {
+                var key = trigger.dataset.peekKey;
+                if (panelKey || Date.now() < suppressPeekUntil || (config.hasPreview && !config.hasPreview(key))) return;
+                var wasOpen = peek.classList.contains('is-open');
+                if (peekTrigger && peekTrigger !== trigger) highlight(peekTrigger, false);
+                peekKey = key;
+                peekTrigger = trigger;
+                highlight(trigger, true);
+                config.renderPeek(key);
+                if (wasOpen && !reducedMotion.matches) {
+                    // Already showing: glide over to the new trigger instead of re-unfolding.
+                    peek.classList.add('is-moving');
+                    placePeek(anchorOf(trigger));
+                } else {
+                    // Snap to the starting clip for this side, then unfold.
+                    peek.classList.remove('is-moving');
+                    peek.style.transition = 'none';
+                    placePeek(anchorOf(trigger));
+                    void peek.offsetWidth;
+                    peek.style.transition = '';
+                    void peek.offsetWidth;
+                    peek.classList.add('is-open');
+                }
+                peek.setAttribute('aria-hidden', 'false');
+            }
+
+            function hidePeek(instant) {
+                clearTimeout(showTimer);
+                clearTimeout(hideTimer);
+                highlight(peekTrigger, false);
+                peekTrigger = null;
+                peekKey = null;
+                peek.classList.remove('is-moving');
+                if (instant) peek.style.transition = 'none';
+                peek.classList.remove('is-open');
+                if (instant) { void peek.offsetWidth; peek.style.transition = ''; }
+                peek.setAttribute('aria-hidden', 'true');
+            }
+
+            // Grace period so moving from the trigger onto the preview doesn't close it.
+            function scheduleHide() {
+                clearTimeout(showTimer);
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(function () { hidePeek(false); }, 170);
+            }
+
+            function finalRect() {
+                var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+                var margin = vw < 576 ? 0 : 24;
+                var width = Math.min(1200, vw - margin * 2);
+                // Below the desktop app's header, which is the window's drag area (0 in a browser).
+                var top = margin + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--desktop-header-h')) || 0);
+                return { top: top, left: Math.round((vw - width) / 2), width: width, height: vh - top - margin, radius: margin ? 16 : 0 };
+            }
+            function rectOf(domRect, radius) {
+                return { top: domRect.top, left: domRect.left, width: domRect.width, height: domRect.height, radius: radius };
+            }
+            function setRect(r) {
+                panel.style.top = r.top + 'px';
+                panel.style.left = r.left + 'px';
+                panel.style.width = r.width + 'px';
+                panel.style.height = r.height + 'px';
+                panel.style.borderRadius = r.radius + 'px';
+            }
+
+            function openPanel(key, fromRect, focusReturn) {
+                hidePeek(true);
+                clearTimeout(closeTimer);
+                panelKey = key;
+                panelOrigin = fromRect ? rectOf(fromRect, 12) : null;
+                returnFocus = focusReturn || document.activeElement;
+                config.renderPanel(key);
+
+                var scrollbar = window.innerWidth - document.documentElement.clientWidth;
+                document.body.style.paddingRight = scrollbar > 0 ? scrollbar + 'px' : '';
+                document.body.classList.add('expand-active');
+                backdrop.hidden = false;
+                panel.hidden = false;
+
+                // FLIP-style morph: start exactly over the preview (or trigger), then grow to the panel size.
+                var animate = !reducedMotion.matches && panelOrigin;
+                panel.classList.add('no-anim');
+                panel.classList.remove('is-open');
+                panel.style.opacity = '1';
+                setRect(animate ? panelOrigin : finalRect());
+                void panel.offsetWidth;
+                panel.classList.remove('no-anim');
+                requestAnimationFrame(function () {
+                    setRect(finalRect());
+                    panel.classList.add('is-open');
+                    backdrop.classList.add('is-open');
+                });
+                var close = panel.querySelector('[data-expand-close]');
+                if (close) close.focus({ preventScroll: true });
+            }
+
+            function closePanel() {
+                if (!panelKey) return;
+                // Shrink back into the item it came from when that's on screen.
+                var back = config.returnRect ? config.returnRect(panelKey) : null;
+                var origin = back ? rectOf(back, 10) : panelOrigin;
+                panelKey = null;
+                suppressPeekUntil = Date.now() + 600;
+                panel.classList.remove('is-open');
+                backdrop.classList.remove('is-open');
+                if (!reducedMotion.matches && origin) {
+                    setRect(origin);
+                    panel.style.opacity = '0';
+                }
+                closeTimer = setTimeout(function () {
+                    panel.hidden = true;
+                    backdrop.hidden = true;
+                    document.body.classList.remove('expand-active');
+                    document.body.style.paddingRight = '';
+                }, reducedMotion.matches ? 0 : 430);
+                if (returnFocus && document.contains(returnFocus)) returnFocus.focus({ preventScroll: true });
+                returnFocus = null;
+            }
+
+            config.triggers.forEach(function (trigger) {
+                var hover = hoverOf(trigger);
+                hover.addEventListener('pointerenter', function (e) {
+                    if (e.pointerType === 'touch' || !canHover.matches || panelKey) return;
+                    clearTimeout(hideTimer);
+                    clearTimeout(showTimer);
+                    // Hover intent: a short pause so sweeping past doesn't flash previews; quicker once one is open.
+                    var delay = peek.classList.contains('is-open') ? 70 : 220;
+                    showTimer = setTimeout(function () {
+                        if (!config.hasPreview || config.hasPreview(trigger.dataset.peekKey)) showPeek(trigger);
+                        else hidePeek(false);
+                    }, delay);
+                });
+                hover.addEventListener('pointerleave', function (e) {
+                    if (e.pointerType !== 'touch') scheduleHide();
+                });
+                trigger.addEventListener('focus', function () {
+                    var keyboard = true;
+                    try { keyboard = trigger.matches(':focus-visible'); } catch (err) { /* older engines: treat as keyboard */ }
+                    if (keyboard) showPeek(trigger);
+                });
+                trigger.addEventListener('blur', scheduleHide);
+            });
+
+            peek.addEventListener('pointerenter', function () { clearTimeout(hideTimer); });
+            peek.addEventListener('pointerleave', scheduleHide);
+            peek.addEventListener('click', function () {
+                if (peekKey) openPanel(peekKey, peek.getBoundingClientRect(), peekTrigger);
+            });
+            backdrop.addEventListener('click', closePanel);
+            panel.querySelectorAll('[data-expand-close]').forEach(function (btn) { btn.addEventListener('click', closePanel); });
+
+            document.addEventListener('keydown', function (e) {
+                if (panelKey) {
+                    if (e.key === 'Escape' && !e.defaultPrevented) {
+                        e.preventDefault();
+                        closePanel();
+                    } else if (e.key === 'Tab') {
+                        // Keep focus inside the panel while it's open.
+                        var items = Array.prototype.filter.call(
+                            panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+                            function (el) { return el.offsetParent !== null; });
+                        if (!items.length) return;
+                        var first = items[0], last = items[items.length - 1];
+                        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+                    }
+                } else if (peekKey && e.key === 'Escape') {
+                    hidePeek(false);
+                }
+            });
+            window.addEventListener('scroll', function () { if (peekKey) hidePeek(true); }, { passive: true });
+            window.addEventListener('resize', function () {
+                if (peekKey) hidePeek(true);
+                if (panelKey) {
+                    panel.classList.add('no-anim');
+                    setRect(finalRect());
+                    void panel.offsetWidth;
+                    panel.classList.remove('no-anim');
+                }
+            });
+
+            return {
+                open: function (key, fromEl, focusReturn) { openPanel(key, fromEl ? fromEl.getBoundingClientRect() : null, focusReturn); },
+                close: closePanel,
+                refresh: function () {
+                    if (panelKey) config.renderPanel(panelKey);
+                    if (peekKey) config.renderPeek(peekKey);
+                },
+                openKey: function () { return panelKey; }
+            };
+        };
+
+        // Themed select menus: each single-choice .form-select gets a button + listbox drawn with the
+        // shared dropdown styles. The native <select> stays in the form (hidden) as the source of truth,
+        // so submission, `required`, page scripts and inline onchange handlers keep working. Focus stays
+        // on the button (aria-activedescendant), which keeps Bootstrap's modal focus trap happy.
+        (function () {
+            var openState = null;
+            var menuCount = 0;
+            var typeBuffer = '';
+            var typeTimer = null;
+
+            function enabledIndex(items, from, step) {
+                for (var i = from; i >= 0 && i < items.length; i += step) {
+                    if (!items[i].optionRef.disabled) return i;
+                }
+                return -1;
+            }
+
+            function setActive(index) {
+                var s = openState;
+                if (!s) return;
+                if (s.items[s.active]) s.items[s.active].classList.remove('is-active');
+                s.active = index;
+                var item = s.items[index];
+                if (!item) { s.trigger.removeAttribute('aria-activedescendant'); return; }
+                item.classList.add('is-active');
+                s.trigger.setAttribute('aria-activedescendant', item.id);
+                var m = s.menu;
+                if (item.offsetTop < m.scrollTop) m.scrollTop = item.offsetTop - 4;
+                else if (item.offsetTop + item.offsetHeight > m.scrollTop + m.clientHeight) m.scrollTop = item.offsetTop + item.offsetHeight - m.clientHeight + 4;
+            }
+
+            function move(step) {
+                var s = openState;
+                var start = s.active === -1 ? (step > 0 ? 0 : s.items.length - 1) : s.active + step;
+                var next = enabledIndex(s.items, start, step);
+                if (next !== -1) setActive(next);
+            }
+
+            function position() {
+                var s = openState;
+                if (!s) return;
+                var r = s.trigger.getBoundingClientRect();
+                if (!r.width && !r.height) { close(); return; }
+                var menu = s.menu, gap = 4, edge = 8, keepScroll = menu.scrollTop;
+                menu.style.maxHeight = '';
+                menu.style.minWidth = r.width + 'px';
+                menu.style.maxWidth = Math.max(r.width, Math.min(420, window.innerWidth - edge * 2)) + 'px';
+                var below = window.innerHeight - r.bottom - gap - edge;
+                var above = r.top - gap - edge;
+                var h = menu.offsetHeight;
+                var up = h > below && above > below;
+                var room = up ? above : below;
+                if (h > room) { menu.style.maxHeight = room + 'px'; h = room; }
+                menu.style.top = (up ? r.top - gap - h : r.bottom + gap) + 'px';
+                menu.style.left = Math.max(edge, Math.min(r.left, window.innerWidth - menu.offsetWidth - edge)) + 'px';
+                menu.setAttribute('data-popper-placement', up ? 'top-start' : 'bottom-start');
+                menu.scrollTop = keepScroll;
+            }
+
+            function close() {
+                var s = openState;
+                if (!s) return;
+                openState = null;
+                s.trigger.classList.remove('is-open');
+                s.trigger.setAttribute('aria-expanded', 'false');
+                s.trigger.removeAttribute('aria-activedescendant');
+                s.trigger.removeAttribute('aria-controls');
+                s.menu.classList.add('is-closing');
+                setTimeout(function () { s.menu.remove(); }, 130);
+            }
+
+            function choose(item) {
+                var s = openState;
+                if (!s || !item || item.optionRef.disabled) return;
+                var changed = !item.optionRef.selected;
+                close();
+                s.trigger.focus();
+                if (changed) {
+                    item.optionRef.selected = true;
+                    s.select.dispatchEvent(new Event('input', { bubbles: true }));
+                    s.select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
+            function open(select, trigger) {
+                close();
+                if (select.disabled) return;
+                var menu = document.createElement('div');
+                menu.className = 'dropdown-menu dd-select-menu';
+                menu.id = 'dd-select-menu-' + (++menuCount);
+                menu.setAttribute('role', 'listbox');
+                if (trigger.getAttribute('aria-label')) menu.setAttribute('aria-label', trigger.getAttribute('aria-label'));
+                var items = [];
+                function addOption(opt) {
+                    if (opt.hidden) return;
+                    var item = document.createElement('div');
+                    item.className = 'dropdown-item' + (opt.disabled ? ' disabled' : '');
+                    item.id = menu.id + '-' + items.length;
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', String(opt.selected));
+                    if (opt.disabled) item.setAttribute('aria-disabled', 'true');
+                    var text = document.createElement('span');
+                    text.textContent = opt.text;
+                    var check = document.createElement('i');
+                    check.className = 'bi bi-check2 check';
+                    check.setAttribute('aria-hidden', 'true');
+                    item.appendChild(text);
+                    item.appendChild(check);
+                    item.optionRef = opt;
+                    menu.appendChild(item);
+                    items.push(item);
+                }
+                Array.prototype.forEach.call(select.children, function (child) {
+                    if (child.tagName === 'OPTGROUP') {
+                        var header = document.createElement('div');
+                        header.className = 'dropdown-header';
+                        header.setAttribute('role', 'presentation');
+                        header.textContent = child.label;
+                        menu.appendChild(header);
+                        Array.prototype.forEach.call(child.children, addOption);
+                    } else if (child.tagName === 'OPTION') {
+                        addOption(child);
+                    }
+                });
+                menu.addEventListener('click', function (e) { choose(e.target.closest('.dropdown-item')); });
+                menu.addEventListener('mousemove', function (e) {
+                    var index = items.indexOf(e.target.closest('.dropdown-item'));
+                    if (index !== -1 && index !== openState.active && !items[index].optionRef.disabled) setActive(index);
+                });
+                // Inside a modal the menu lives in the modal so it layers above it; elsewhere in <body>
+                // so overflow:hidden cards and scroll areas can't clip it.
+                (trigger.closest('.modal') || document.body).appendChild(menu);
+                openState = { select: select, trigger: trigger, menu: menu, items: items, active: -1 };
+                trigger.classList.add('is-open');
+                trigger.setAttribute('aria-expanded', 'true');
+                trigger.setAttribute('aria-controls', menu.id);
+                menu.classList.add('show');
+                position();
+                var selected = -1;
+                items.forEach(function (item, i) { if (item.optionRef.selected) selected = i; });
+                setActive(selected !== -1 ? selected : enabledIndex(items, 0, 1));
+            }
+
+            function typeahead(ch) {
+                var s = openState;
+                clearTimeout(typeTimer);
+                typeTimer = setTimeout(function () { typeBuffer = ''; }, 600);
+                typeBuffer += ch.toLowerCase();
+                var n = s.items.length;
+                // A repeated single letter cycles through matches; a longer prefix refines the current one.
+                var start = typeBuffer.length === 1 ? s.active + 1 : Math.max(s.active, 0);
+                for (var k = 0; k < n; k++) {
+                    var item = s.items[(start + k) % n];
+                    if (!item.optionRef.disabled && item.optionRef.text.trim().toLowerCase().indexOf(typeBuffer) === 0) {
+                        setActive((start + k) % n);
+                        return;
+                    }
+                }
+            }
+
+            function enhance(select) {
+                if (select.dataset.ddEnhanced || select.multiple || select.size > 1 || select.hasAttribute('data-native-select')) return;
+                select.dataset.ddEnhanced = 'true';
+                var trigger = document.createElement('button');
+                trigger.type = 'button';
+                trigger.className = select.className + ' dd-select-trigger';
+                if (select.getAttribute('style')) trigger.setAttribute('style', select.getAttribute('style'));
+                trigger.setAttribute('aria-haspopup', 'listbox');
+                trigger.setAttribute('aria-expanded', 'false');
+                var label = select.getAttribute('aria-label') || (select.labels && select.labels[0] ? select.labels[0].textContent.trim() : '');
+                if (label) trigger.setAttribute('aria-label', label);
+                select.classList.add('dd-select-native');
+                select.tabIndex = -1;
+                select.setAttribute('aria-hidden', 'true');
+                select.parentNode.insertBefore(trigger, select);
+
+                function sync() {
+                    var opt = select.options[select.selectedIndex];
+                    trigger.textContent = opt ? opt.text : '';
+                    trigger.disabled = select.disabled;
+                    trigger.classList.toggle('is-placeholder', select.required && select.value === '');
+                    if (select.checkValidity()) trigger.classList.remove('is-invalid');
+                }
+                sync();
+                select.addEventListener('change', sync);
+                // Labels and browser validation focus the hidden select; hand focus to the button.
+                select.addEventListener('focus', function () { trigger.focus(); });
+                select.addEventListener('invalid', function () { trigger.classList.add('is-invalid'); });
+                if (select.form) select.form.addEventListener('reset', function () { setTimeout(sync, 0); });
+                new MutationObserver(sync).observe(select, { attributes: true, attributeFilter: ['disabled'], childList: true, subtree: true });
+
+                trigger.addEventListener('click', function () {
+                    if (openState && openState.trigger === trigger) close();
+                    else open(select, trigger);
+                });
+                trigger.addEventListener('keydown', function (e) {
+                    var isOpen = openState && openState.trigger === trigger;
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!isOpen) open(select, trigger);
+                        else move(e.key === 'ArrowDown' ? 1 : -1);
+                    } else if (isOpen && (e.key === 'Home' || e.key === 'End')) {
+                        e.preventDefault();
+                        setActive(e.key === 'Home' ? enabledIndex(openState.items, 0, 1) : enabledIndex(openState.items, openState.items.length - 1, -1));
+                    } else if (isOpen && (e.key === 'Enter' || (e.key === ' ' && !typeBuffer))) {
+                        // Swallow the click the button would fire, so it doesn't reopen the menu.
+                        e.preventDefault();
+                        if (e.key === ' ') trigger.dataset.ddSwallowKeyup = 'true';
+                        choose(openState.items[openState.active]);
+                    } else if (isOpen && e.key === 'Escape') {
+                        // Stop here so an enclosing modal stays open.
+                        e.preventDefault();
+                        e.stopPropagation();
+                        close();
+                    } else if (isOpen && e.key === 'Tab') {
+                        close();
+                    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key !== ' ' || typeBuffer)) {
+                        e.preventDefault();
+                        if (!isOpen) open(select, trigger);
+                        typeahead(e.key);
+                    }
+                });
+                trigger.addEventListener('keyup', function (e) {
+                    if (e.key === ' ' && trigger.dataset.ddSwallowKeyup) {
+                        e.preventDefault();
+                        delete trigger.dataset.ddSwallowKeyup;
+                    }
+                });
+            }
+
+            document.addEventListener('mousedown', function (e) {
+                if (!openState) return;
+                // Keep focus on the button while picking an option.
+                if (openState.menu.contains(e.target)) { e.preventDefault(); return; }
+                if (!openState.trigger.contains(e.target)) close();
+            }, true);
+            window.addEventListener('scroll', function (e) {
+                if (openState && e.target !== openState.menu) position();
+            }, true);
+            window.addEventListener('resize', position);
+            document.addEventListener('hide.bs.modal', close);
+            document.addEventListener('show.bs.dropdown', close);
+
+            document.querySelectorAll('select.form-select').forEach(enhance);
+        })();
+
+        // Date fields: every <input type="date"> gets a typeable MM/DD/YYYY box and a pop-up month calendar. The
+        // original input stays in the form (hidden) and keeps the yyyy-mm-dd value, its name, required/min/max and
+        // any listeners a page attached; setting its value or disabling it from a script updates the box too.
+        // Fields added later (rows built by scripts, copied form rows) are picked up automatically.
+        // Opt out with data-native-date.
+        (function () {
+            var valueProp = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            var disabledProp = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'disabled');
+            var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            var enhanced = new WeakSet();
+            var fieldCount = 0;
+            var openState = null; // { field, popup, view: first of the shown month, focus: yyyy-mm-dd }
+
+            function pad(n) { return (n < 10 ? '0' : '') + n; }
+            function toIso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+            function fromIso(value) {
+                var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+                if (!m) return null;
+                var d = new Date(+m[1], +m[2] - 1, +m[3]);
+                return d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] ? d : null;
+            }
+            function shown(value) {
+                var d = fromIso(value);
+                return d ? pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + '/' + d.getFullYear() : '';
+            }
+            // Reads what was typed: 10/24/2026, 10-24-26, 2026-10-24 or "today". Returns yyyy-mm-dd, '' when the box
+            // is empty, or null when it isn't a real date.
+            function parse(text) {
+                var t = (text || '').trim();
+                if (!t) return '';
+                if (/^today$/i.test(t)) return toIso(new Date());
+                var y, mo, d, m = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/.exec(t);
+                if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+                else {
+                    m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/.exec(t);
+                    if (!m) return null;
+                    mo = +m[1]; d = +m[2]; y = +m[3] < 100 ? 2000 + +m[3] : +m[3];
+                }
+                var date = new Date(y, mo - 1, d);
+                return date.getFullYear() === y && date.getMonth() === mo - 1 && date.getDate() === d ? toIso(date) : null;
+            }
+            function inRange(field, value) {
+                return !(field.native.min && value < field.native.min) && !(field.native.max && value > field.native.max);
+            }
+            function rangeMessage(field) {
+                var min = shown(field.native.min), max = shown(field.native.max);
+                return min && max ? 'Pick a date from ' + min + ' to ' + max + '.' : min ? 'Pick a date on or after ' + min + '.' : 'Pick a date on or before ' + max + '.';
+            }
+
+            // Writes the real input and tells the page, exactly as if the person had used it.
+            function commitValue(field, value) {
+                var changed = valueProp.get.call(field.native) !== value;
+                valueProp.set.call(field.native, value);
+                field.text.value = shown(value);
+                setInvalid(field, '');
+                if (changed) {
+                    field.native.dispatchEvent(new Event('input', { bubbles: true }));
+                    field.native.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+            function setInvalid(field, message) {
+                field.text.setCustomValidity(message);
+                field.text.classList.toggle('is-invalid', Boolean(message));
+                if (message) field.text.setAttribute('aria-invalid', 'true'); else field.text.removeAttribute('aria-invalid');
+            }
+            // Turns whatever is typed into the stored value (on Enter, leaving the box, or before the form submits).
+            function commitTyped(field) {
+                var value = parse(field.text.value);
+                if (value === null) {
+                    valueProp.set.call(field.native, '');
+                    setInvalid(field, 'Enter a date like ' + shown(toIso(new Date())) + ', or pick one from the calendar.');
+                    return false;
+                }
+                if (value && !inRange(field, value)) {
+                    valueProp.set.call(field.native, '');
+                    setInvalid(field, rangeMessage(field));
+                    return false;
+                }
+                commitValue(field, value);
+                return true;
+            }
+
+            function position() {
+                var s = openState;
+                if (!s) return;
+                var r = s.field.text.getBoundingClientRect(), gap = 4, edge = 8, popup = s.popup;
+                var h = popup.offsetHeight, w = popup.offsetWidth;
+                var up = h > window.innerHeight - r.bottom - gap - edge && r.top - gap - edge > window.innerHeight - r.bottom;
+                popup.style.top = Math.max(edge, up ? r.top - gap - h : r.bottom + gap) + 'px';
+                popup.style.left = Math.max(edge, Math.min(r.left, window.innerWidth - w - edge)) + 'px';
+                popup.setAttribute('data-placement', up ? 'top' : 'bottom');
+            }
+
+            function button(className, label, html) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = className;
+                if (label) b.setAttribute('aria-label', label);
+                if (html) b.innerHTML = html;
+                b.tabIndex = -1;
+                return b;
+            }
+
+            function render() {
+                var s = openState, field = s.field, popup = s.popup;
+                popup.textContent = '';
+                var head = document.createElement('div');
+                head.className = 'dp-head';
+                var prev = button('dp-nav', 'Previous month', '<i class="bi bi-chevron-left" aria-hidden="true"></i>');
+                var next = button('dp-nav', 'Next month', '<i class="bi bi-chevron-right" aria-hidden="true"></i>');
+                prev.addEventListener('click', function () { shiftMonth(-1); });
+                next.addEventListener('click', function () { shiftMonth(1); });
+                var title = document.createElement('div');
+                title.className = 'dp-title';
+                title.id = popup.id + '-title';
+                title.setAttribute('aria-live', 'polite');
+                title.textContent = MONTHS[s.view.getMonth()] + ' ' + s.view.getFullYear();
+                head.appendChild(prev);
+                head.appendChild(title);
+                head.appendChild(next);
+                popup.appendChild(head);
+
+                var grid = document.createElement('div');
+                grid.className = 'dp-grid';
+                grid.setAttribute('role', 'grid');
+                grid.setAttribute('aria-labelledby', title.id);
+                DAYS.forEach(function (day) {
+                    var dow = document.createElement('div');
+                    dow.className = 'dp-dow';
+                    dow.setAttribute('aria-hidden', 'true');
+                    dow.textContent = day.slice(0, 2);
+                    grid.appendChild(dow);
+                });
+                var selected = valueProp.get.call(field.native), today = toIso(new Date());
+                var start = new Date(s.view.getFullYear(), s.view.getMonth(), 1 - s.view.getDay());
+                for (var i = 0; i < 42; i++) {
+                    var date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+                    var value = toIso(date);
+                    var day = button('dp-day', DAYS[date.getDay()] + ', ' + MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear());
+                    day.textContent = date.getDate();
+                    day.dataset.date = value;
+                    if (date.getMonth() !== s.view.getMonth()) day.classList.add('is-outside');
+                    if (value === today) { day.classList.add('is-today'); day.setAttribute('aria-current', 'date'); }
+                    if (value === selected) { day.classList.add('is-selected'); day.setAttribute('aria-pressed', 'true'); }
+                    if (!inRange(field, value)) day.disabled = true;
+                    if (value === s.focus) day.tabIndex = 0;
+                    grid.appendChild(day);
+                }
+                grid.addEventListener('click', function (e) {
+                    var day = e.target.closest('.dp-day');
+                    if (day && !day.disabled) choose(day.dataset.date);
+                });
+                grid.addEventListener('keydown', gridKeys);
+                popup.appendChild(grid);
+
+                var foot = document.createElement('div');
+                foot.className = 'dp-foot';
+                var todayButton = button('dp-link', null, 'Today');
+                todayButton.disabled = !inRange(field, today);
+                todayButton.addEventListener('click', function () { choose(today); });
+                foot.appendChild(todayButton);
+                if (!field.native.required) {
+                    var clear = button('dp-link', null, 'Clear');
+                    clear.addEventListener('click', function () { choose(''); });
+                    foot.appendChild(clear);
+                } else {
+                    var hint = document.createElement('span');
+                    hint.className = 'dp-hint';
+                    hint.textContent = 'Or type it: MM/DD/YYYY';
+                    foot.appendChild(hint);
+                }
+                popup.appendChild(foot);
+            }
+
+            function focusDay() {
+                var day = openState && openState.popup.querySelector('.dp-day[data-date="' + openState.focus + '"]');
+                if (day) day.focus();
+            }
+            function moveFocus(date, keepKeyboard) {
+                var s = openState;
+                s.focus = toIso(date);
+                if (date.getMonth() !== s.view.getMonth() || date.getFullYear() !== s.view.getFullYear()) {
+                    s.view = new Date(date.getFullYear(), date.getMonth(), 1);
+                }
+                render();
+                position();
+                if (keepKeyboard) focusDay();
+            }
+            function shiftMonth(step) {
+                var s = openState, current = fromIso(s.focus) || s.view;
+                var target = new Date(s.view.getFullYear(), s.view.getMonth() + step, 1);
+                var last = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+                moveFocus(new Date(target.getFullYear(), target.getMonth(), Math.min(current.getDate(), last)), openState.popup.contains(document.activeElement));
+            }
+            function gridKeys(e) {
+                var d = fromIso(openState.focus);
+                var moves = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+                if (moves[e.key] !== undefined) {
+                    e.preventDefault();
+                    moveFocus(new Date(d.getFullYear(), d.getMonth(), d.getDate() + moves[e.key]), true);
+                } else if (e.key === 'Home' || e.key === 'End') {
+                    e.preventDefault();
+                    moveFocus(new Date(d.getFullYear(), d.getMonth(), d.getDate() + (e.key === 'Home' ? -d.getDay() : 6 - d.getDay())), true);
+                } else if (e.key === 'PageUp' || e.key === 'PageDown') {
+                    e.preventDefault();
+                    shiftMonth(e.key === 'PageUp' ? -1 : 1);
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    var day = e.target.closest('.dp-day');
+                    if (day && !day.disabled) choose(day.dataset.date);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var field = openState.field;
+                    close();
+                    field.text.focus();
+                } else if (e.key === 'Tab') {
+                    var back = openState.field;
+                    close();
+                    back.text.focus();
+                }
+            }
+
+            function open(field) {
+                if (openState && openState.field === field) return;
+                close();
+                if (field.text.disabled || field.text.readOnly) return;
+                var typed = parse(field.text.value);
+                var focus = fromIso(typed) || fromIso(valueProp.get.call(field.native)) || new Date();
+                var popup = document.createElement('div');
+                popup.className = 'dp-popup';
+                popup.id = 'dp-popup-' + field.id;
+                popup.setAttribute('role', 'dialog');
+                popup.setAttribute('aria-label', 'Choose a date');
+                // Clicking inside keeps focus in the box, so picking a day never "leaves" the field half-typed.
+                popup.addEventListener('mousedown', function (e) { e.preventDefault(); });
+                (field.text.closest('.modal') || document.body).appendChild(popup);
+                openState = { field: field, popup: popup, view: new Date(focus.getFullYear(), focus.getMonth(), 1), focus: toIso(focus) };
+                field.toggle.setAttribute('aria-expanded', 'true');
+                field.text.setAttribute('aria-expanded', 'true');
+                field.text.setAttribute('aria-controls', popup.id);
+                render();
+                position();
+            }
+            function close() {
+                var s = openState;
+                if (!s) return;
+                openState = null;
+                s.field.toggle.setAttribute('aria-expanded', 'false');
+                s.field.text.setAttribute('aria-expanded', 'false');
+                s.field.text.removeAttribute('aria-controls');
+                s.popup.classList.add('is-closing');
+                setTimeout(function () { s.popup.remove(); }, 130);
+            }
+            function choose(value) {
+                var field = openState.field;
+                close();
+                commitValue(field, value);
+                field.text.focus();
+            }
+
+            function enhance(native) {
+                if (enhanced.has(native) || native.hasAttribute('data-native-date') || !native.parentNode) return;
+                // A copied form row (cloneNode) brings the box along without its behaviour: unwrap and start over.
+                var copied = native.parentNode.classList && native.parentNode.classList.contains('dp-field') ? native.parentNode : null;
+                if (copied) {
+                    copied.parentNode.insertBefore(native, copied);
+                    copied.remove();
+                    native.classList.remove('dp-native');
+                    native.removeAttribute('tabindex');
+                    native.removeAttribute('aria-hidden');
+                }
+                enhanced.add(native);
+                var field = { native: native, id: ++fieldCount };
+                var wrap = document.createElement('span');
+                wrap.className = 'dp-field';
+                if (native.getAttribute('style')) wrap.setAttribute('style', native.getAttribute('style'));
+                var text = document.createElement('input');
+                text.type = 'text';
+                text.className = native.className + ' dp-input';
+                text.id = (native.id || 'dp-field-' + field.id) + '-text';
+                text.placeholder = 'MM/DD/YYYY';
+                text.autocomplete = 'off';
+                text.spellcheck = false;
+                text.maxLength = 10;
+                text.setAttribute('aria-haspopup', 'dialog');
+                text.setAttribute('aria-expanded', 'false');
+                var label = native.getAttribute('aria-label');
+                if (label) text.setAttribute('aria-label', label);
+                if (native.required) text.setAttribute('aria-required', 'true');
+                // Labels point at the box people actually type in.
+                if (native.id) document.querySelectorAll('label[for="' + native.id + '"]').forEach(function (l) { l.htmlFor = text.id; });
+                var toggle = button('dp-toggle', 'Open calendar' + (label ? ' for ' + label : ''), '<i class="bi bi-calendar3" aria-hidden="true"></i>');
+                toggle.setAttribute('aria-haspopup', 'dialog');
+                toggle.setAttribute('aria-expanded', 'false');
+                field.text = text;
+                field.toggle = toggle;
+
+                native.parentNode.insertBefore(wrap, native);
+                wrap.appendChild(text);
+                wrap.appendChild(toggle);
+                wrap.appendChild(native);
+                native.classList.add('dp-native');
+                native.tabIndex = -1;
+                native.setAttribute('aria-hidden', 'true');
+
+                function sync() {
+                    if (document.activeElement !== text || !text.dataset.typing) text.value = shown(valueProp.get.call(native));
+                    text.disabled = disabledProp.get.call(native);
+                    toggle.disabled = text.disabled;
+                    text.readOnly = native.readOnly;
+                    if (!text.dataset.typing) setInvalid(field, '');
+                    if (openState && openState.field === field) { render(); position(); }
+                }
+                // Scripts that set the real input's value (presets, "today" defaults) update the box as well.
+                Object.defineProperty(native, 'value', {
+                    configurable: true,
+                    get: function () { return valueProp.get.call(this); },
+                    set: function (v) { valueProp.set.call(this, v); delete text.dataset.typing; sync(); }
+                });
+                // Enabling then focusing in one go (e.g. "Custom range") must find the box enabled straight away.
+                Object.defineProperty(native, 'disabled', {
+                    configurable: true,
+                    get: function () { return disabledProp.get.call(this); },
+                    set: function (v) { disabledProp.set.call(this, v); sync(); }
+                });
+                sync();
+                new MutationObserver(sync).observe(native, { attributes: true, attributeFilter: ['disabled', 'readonly', 'min', 'max'] });
+                if (native.form) native.form.addEventListener('reset', function () { setTimeout(sync, 0); });
+                // Labels, browser validation and page scripts focus the hidden input; hand focus to the box.
+                native.addEventListener('focus', function () { sync(); text.focus(); });
+                native.addEventListener('invalid', function () { text.classList.add('is-invalid'); });
+
+                text.addEventListener('click', function () { open(field); });
+                toggle.addEventListener('click', function () {
+                    if (openState && openState.field === field) close();
+                    else { open(field); text.focus(); }
+                });
+                text.addEventListener('input', function () {
+                    text.dataset.typing = 'true';
+                    setInvalid(field, '');
+                    // Follow along in the calendar as soon as what's typed is a whole date.
+                    var typed = parse(text.value);
+                    if (typed && openState && openState.field === field) {
+                        var d = fromIso(typed);
+                        openState.focus = typed;
+                        openState.view = new Date(d.getFullYear(), d.getMonth(), 1);
+                        render();
+                        position();
+                    }
+                });
+                text.addEventListener('keydown', function (e) {
+                    var isOpen = openState && openState.field === field;
+                    if (e.key === 'ArrowDown' && (e.altKey || !isOpen)) {
+                        e.preventDefault();
+                        open(field);
+                        focusDay();
+                    } else if (e.key === 'ArrowDown' && isOpen) {
+                        e.preventDefault();
+                        focusDay();
+                    } else if (e.key === 'Escape' && isOpen) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        close();
+                    } else if (e.key === 'Enter') {
+                        // Store what was typed before the form submits; a bad date stops the submit with a message.
+                        delete text.dataset.typing;
+                        if (isOpen) { e.preventDefault(); close(); }
+                        if (!commitTyped(field)) { e.preventDefault(); text.reportValidity(); }
+                    } else if (e.key === 'Tab' && isOpen) {
+                        close();
+                    }
+                });
+                text.addEventListener('blur', function () {
+                    if (!text.dataset.typing) return;
+                    delete text.dataset.typing;
+                    commitTyped(field);
+                });
+            }
+
+            function scan(root) {
+                if (root.matches && root.matches('input[type="date"]')) enhance(root);
+                if (root.querySelectorAll) root.querySelectorAll('input[type="date"]').forEach(enhance);
+            }
+            scan(document);
+            new MutationObserver(function (records) {
+                records.forEach(function (record) { record.addedNodes.forEach(function (node) { if (node.nodeType === 1) scan(node); }); });
+            }).observe(document.body, { childList: true, subtree: true });
+            // A typed date that hasn't been stored yet (e.g. clicking Save straight from the box) is stored first.
+            document.addEventListener('submit', function (e) {
+                var invalid = null;
+                e.target.querySelectorAll('input.dp-input').forEach(function (text) {
+                    if (!text.dataset.typing) return;
+                    delete text.dataset.typing;
+                    var native = text.parentNode.querySelector('input.dp-native');
+                    if (native && !commitTyped({ native: native, text: text }) && !invalid) invalid = text;
+                });
+                if (invalid) { e.preventDefault(); e.stopImmediatePropagation(); invalid.reportValidity(); }
+            }, true);
+
+            document.addEventListener('mousedown', function (e) {
+                if (!openState) return;
+                if (openState.popup.contains(e.target) || openState.field.text.parentNode.contains(e.target)) return;
+                close();
+            }, true);
+            window.addEventListener('scroll', function () { position(); }, true);
+            window.addEventListener('resize', position);
+            document.addEventListener('hide.bs.modal', close);
+        })();
+
+        // Sticky / static table headers: <button data-roster-header-toggle="tableId"> flips .headers-sticky on that table's
+        // .roster-table-container and remembers the choice per table (sticky by default).
+        document.querySelectorAll('[data-roster-header-toggle]').forEach(function (button) {
+            var table = document.getElementById(button.dataset.rosterHeaderToggle);
+            var container = table && table.closest('.roster-table-container');
+            if (!container) return;
+            var key = 'duesdesk.stickyHeaders.' + table.id;
+            var label = button.querySelector('span');
+            var icon = button.querySelector('i');
+            var noun = table.id === 'rentTable' ? 'rent' : 'dues';
+            function render(sticky) {
+                container.classList.toggle('headers-sticky', sticky);
+                button.setAttribute('aria-pressed', String(sticky));
+                button.setAttribute('aria-label', 'Make ' + noun + ' roster headers ' + (sticky ? 'static' : 'sticky'));
+                button.title = sticky ? 'Column titles stay in view while you scroll the table. Click to let the table flow with the page.'
+                                      : 'Column titles scroll away with the table. Click to keep them in view.';
+                if (label) label.textContent = sticky ? 'Headers: Sticky' : 'Headers: Static';
+                if (icon) icon.className = 'bi me-1 ' + (sticky ? 'bi-pin-angle-fill' : 'bi-pin-angle');
+            }
+            var sticky = true;
+            try { sticky = window.localStorage.getItem(key) !== 'static'; } catch (e) { sticky = true; }
+            render(sticky);
+            button.addEventListener('click', function () {
+                sticky = !container.classList.contains('headers-sticky');
+                render(sticky);
+                try { window.localStorage.setItem(key, sticky ? 'sticky' : 'static'); } catch (e) { /* the choice just isn't remembered */ }
+            });
+        });
+
+        // Table tools: live search, filter pills and click-to-sort headers for tables marked data-table-tools.
+        //   <th data-sort="text|number">        sortable column (number cells carry data-sort-value)
+        //   <tr data-row data-tags="a b" data-search="...">   filterable row (tags match pills, text matches search)
+        //   [data-table-search="tableId"], [data-table-filter="tableId"][data-filter="all|tag"], [data-table-count="tableId"]
+        //   <tr data-table-empty hidden>        shown when nothing matches
+        // Fires "tabletools:change" on the table with {filter, query} whenever the visible rows change.
+        document.querySelectorAll('table[data-table-tools]').forEach(function (table) {
+            var body = table.tBodies[0];
+            if (!body) return;
+            var rows = Array.prototype.slice.call(body.querySelectorAll('tr[data-row]'));
+            rows.forEach(function (row, index) { row.dataset.order = String(index); });
+            var emptyRow = body.querySelector('tr[data-table-empty]');
+            var search = document.querySelector('[data-table-search="' + table.id + '"]');
+            var pills = Array.prototype.slice.call(document.querySelectorAll('[data-table-filter="' + table.id + '"]'));
+            var count = document.querySelector('[data-table-count="' + table.id + '"]');
+            var filter = 'all';
+
+            function apply() {
+                var query = search ? search.value.trim().toLowerCase() : '';
+                var shown = 0;
+                rows.forEach(function (row) {
+                    var tags = (row.dataset.tags || '').split(/\s+/);
+                    var text = (row.dataset.search || row.textContent).toLowerCase();
+                    var visible = (filter === 'all' || tags.indexOf(filter) >= 0) && (!query || text.indexOf(query) >= 0);
+                    row.hidden = !visible;
+                    if (visible) shown++;
+                });
+                if (emptyRow) emptyRow.hidden = shown > 0 || rows.length === 0;
+                if (count) count.textContent = shown === rows.length ? '' : 'Showing ' + shown + ' of ' + rows.length;
+                table.dispatchEvent(new CustomEvent('tabletools:change', { detail: { filter: filter, query: query } }));
+            }
+
+            if (search) search.addEventListener('input', apply);
+            // A dropdown can drive the filter instead of pills: <select data-table-filter-select="tableId">.
+            var filterSelect = document.querySelector('select[data-table-filter-select="' + table.id + '"]');
+            if (filterSelect) {
+                filterSelect.addEventListener('change', function () {
+                    filter = filterSelect.value || 'all';
+                    apply();
+                });
+            }
+            pills.forEach(function (pill) {
+                pill.addEventListener('click', function () {
+                    pills.forEach(function (other) {
+                        other.classList.toggle('active', other === pill);
+                        other.setAttribute('aria-pressed', String(other === pill));
+                    });
+                    filter = pill.dataset.filter || 'all';
+                    apply();
+                });
+            });
+
+            Array.prototype.forEach.call(table.tHead ? table.tHead.querySelectorAll('th[data-sort]') : [], function (th) {
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'th-sort';
+                while (th.firstChild) button.appendChild(th.firstChild);
+                var icon = document.createElement('span');
+                icon.className = 'sort-icon';
+                icon.setAttribute('aria-hidden', 'true');
+                button.appendChild(icon);
+                th.appendChild(button);
+                th.setAttribute('aria-sort', 'none');
+                button.addEventListener('click', function () {
+                    var ascending = th.getAttribute('aria-sort') !== 'ascending';
+                    table.querySelectorAll('th[data-sort]').forEach(function (other) { other.setAttribute('aria-sort', 'none'); });
+                    th.setAttribute('aria-sort', ascending ? 'ascending' : 'descending');
+                    var column = Array.prototype.indexOf.call(th.parentNode.children, th);
+                    var numeric = th.dataset.sort === 'number';
+                    function value(row) {
+                        var cell = row.children[column];
+                        if (!cell) return numeric ? 0 : '';
+                        var raw = cell.hasAttribute('data-sort-value') ? cell.getAttribute('data-sort-value') : cell.textContent;
+                        return numeric ? (parseFloat(raw) || 0) : raw.trim().toLowerCase();
+                    }
+                    rows.sort(function (a, b) {
+                        var x = value(a), y = value(b);
+                        var result = numeric ? x - y : x.localeCompare(y, undefined, { numeric: true });
+                        return (ascending ? result : -result) || (Number(a.dataset.order) - Number(b.dataset.order));
+                    });
+                    rows.forEach(function (row) { body.appendChild(row); });
+                    if (emptyRow) body.appendChild(emptyRow);
+                });
+            });
+            apply();
+        });
+
+        // Keyboard shortcuts. "/" or Ctrl/Cmd+K: focus the page's search box. Ctrl/Cmd+Enter: submit the form being
+        // edited. Esc: close an open drawer, else clear an active search or filter (menus, panels, dialogs and full
+        // screen tables handle Esc themselves first). "?": list the shortcuts.
+        function typingIn(el) {
+            return el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+        }
+        function overlayOpen() {
+            return document.querySelector('.modal.show, .expand-panel:not([hidden]), .dd-select-menu, .dp-popup:not(.is-closing), .dropdown-menu.show, .hover-peek.is-open, .is-fullscreen');
+        }
+        function pageSearch() {
+            return Array.prototype.filter.call(document.querySelectorAll('[data-search-shortcut]'),
+                function (el) { return el.offsetParent !== null; })[0];
+        }
+        function clearFilters(target) {
+            var drawer = target && target.closest ? target.closest('.collapse.show') : null;
+            if (drawer && window.bootstrap) {
+                window.bootstrap.Collapse.getOrCreateInstance(drawer).hide();
+                return true;
+            }
+            var changed = false;
+            document.querySelectorAll('[data-search-shortcut]').forEach(function (box) {
+                if (!box.value) return;
+                box.value = '';
+                box.dispatchEvent(new Event('input', { bubbles: true }));
+                changed = true;
+            });
+            document.querySelectorAll('select[data-table-filter-select]').forEach(function (select) {
+                if (select.value === 'all') return;
+                select.value = 'all';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                changed = true;
+            });
+            document.querySelectorAll('[data-filter-reset]').forEach(function (reset) {
+                if (reset.classList.contains('active')) return;
+                reset.click();
+                changed = true;
+            });
+            return changed;
+        }
+        function showShortcuts() {
+            var modal = document.getElementById('shortcutsModal');
+            if (!modal) {
+                var mod = /Mac|iPhone|iPad/.test(navigator.platform) ? 'Cmd' : 'Ctrl';
+                modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'shortcutsModal';
+                modal.tabIndex = -1;
+                modal.setAttribute('aria-labelledby', 'shortcutsTitle');
+                modal.setAttribute('aria-hidden', 'true');
+                modal.innerHTML = '<div class="modal-dialog modal-dialog-centered"><div class="modal-content">'
+                    + '<div class="modal-header"><h2 class="modal-title fs-5" id="shortcutsTitle">Keyboard shortcuts</h2>'
+                    + '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>'
+                    + '<div class="modal-body"><ul class="shortcut-list">'
+                    + '<li><span>Search the table on this page</span><span><kbd>/</kbd> or <kbd>' + mod + '</kbd> <kbd>K</kbd></span></li>'
+                    + '<li><span>Save the form you are typing in</span><span><kbd>' + mod + '</kbd> <kbd>Enter</kbd></span></li>'
+                    + '<li><span>Clear the search and filters, or close a menu, panel or drawer</span><span><kbd>Esc</kbd></span></li>'
+                    + '<li><span>Show this list</span><span><kbd>?</kbd></span></li>'
+                    + '</ul></div></div></div>';
+                document.body.appendChild(modal);
+            }
+            if (window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(modal).show();
+        }
+        document.addEventListener('keydown', function (event) {
+            if (event.defaultPrevented || event.altKey) return;
+            var mod = event.ctrlKey || event.metaKey;
+            if ((event.key === '/' && !mod && !typingIn(event.target)) || (mod && (event.key === 'k' || event.key === 'K'))) {
+                var box = pageSearch();
+                if (!box) return;
+                event.preventDefault();
+                box.focus();
+                box.select();
+            } else if (mod && event.key === 'Enter') {
+                var form = event.target && event.target.form;
+                if (!form) return;
+                event.preventDefault();
+                if (form.requestSubmit) form.requestSubmit();
+                else form.submit();
+            } else if (event.key === 'Escape' && !overlayOpen()) {
+                if (clearFilters(event.target)) event.preventDefault();
+            } else if (event.key === '?' && !mod && !typingIn(event.target) && !overlayOpen()) {
+                event.preventDefault();
+                showShortcuts();
+            }
+        });
+
+        // Copy buttons: [data-copy-text="#someTextarea"] copies that element's text. The desktop window has no
+        // clipboard API, so it goes through the bridge; browsers use the Clipboard API with a legacy fallback.
+        function legacyCopy(text) {
+            var area = document.createElement('textarea');
+            area.value = text;
+            area.setAttribute('readonly', '');
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            document.body.appendChild(area);
+            area.select();
+            var copied = false;
+            try { copied = document.execCommand('copy'); } catch (e) { copied = false; }
+            area.remove();
+            return copied;
+        }
+        function copyText(text) {
+            if (window.desktopBridge && window.desktopBridge.copyToClipboard) {
+                try { window.desktopBridge.copyToClipboard(text); return Promise.resolve(); } catch (e) { /* fall back */ }
+            }
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text).catch(function () {
+                    if (!legacyCopy(text)) throw new Error('Copy failed');
+                });
+            }
+            return legacyCopy(text) ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
+        }
+        var copyStatus = document.createElement('div');
+        copyStatus.className = 'visually-hidden';
+        copyStatus.setAttribute('role', 'status');
+        copyStatus.setAttribute('aria-live', 'polite');
+        document.body.appendChild(copyStatus);
+
+        // A confirmation toast just below the navigation bar, like the ones that follow a saved form.
+        window.duesDeskToast = function (message) {
+            var header = document.querySelector('.app-header-stack');
+            var toast = document.createElement('div');
+            toast.className = 'alert alert-success shadow-sm is-floating-toast';
+            toast.setAttribute('role', 'status');
+            toast.dataset.autoDismiss = '3000';
+            toast.textContent = message;
+            toast.style.top = ((header ? header.getBoundingClientRect().bottom : 0) + 12) + 'px';
+            document.body.appendChild(toast);
+            setTimeout(function () {
+                toast.style.transition = 'opacity .18s';
+                toast.style.opacity = '0';
+                setTimeout(function () { toast.remove(); }, 400);
+            }, 3000);
+        };
+
+        // Reminder quick actions on the Dues and Rent ledgers:
+        //   [data-reminder-action="email|sms|copy"] with data-reminder-text, data-phone, data-email, data-subject.
+        // Email and Messages open the computer's own apps (Mail/Outlook; Messages on macOS, Phone Link on Windows),
+        // so reminders can go out without a Twilio account.
+        var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+        function openExternal(uri) {
+            if (window.desktopBridge && window.desktopBridge.openExternal) window.desktopBridge.openExternal(uri);
+            else window.location.href = uri;
+        }
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('[data-reminder-action]');
+            if (!button) return;
+            event.preventDefault();
+            var text = button.dataset.reminderText || '';
+            var action = button.dataset.reminderAction;
+            if (action === 'copy') {
+                copyText(text).then(function () { window.duesDeskToast('Reminder copied. Paste it into any message.'); })
+                    .catch(function () { window.alert('The reminder could not be copied.'); });
+            } else if (action === 'email') {
+                openExternal('mailto:' + encodeURIComponent(button.dataset.email || '').replace(/%40/g, '@')
+                    + '?subject=' + encodeURIComponent(button.dataset.subject || 'Payment reminder')
+                    + '&body=' + encodeURIComponent(text));
+                window.duesDeskToast(button.dataset.email ? 'Opening your email app…' : 'Opening your email app. Add the recipient there (no email saved for them).');
+            } else if (action === 'sms') {
+                var phone = (button.dataset.phone || '').replace(/[^0-9+]/g, '');
+                // Messages on macOS reads "&body=", Phone Link and most phones read "?body=".
+                openExternal('sms:' + phone + (isMac ? '&' : '?') + 'body=' + encodeURIComponent(text));
+                window.duesDeskToast('Opening your messaging app…');
+            }
+        });
+        // Table tools for full-screen tables. The table is read as it is displayed right now: columns marked
+        // data-export-skip (Actions) are left out, and so are rows hidden by a filter or search.
+        function cellText(cell) {
+            return (cell.innerText || cell.textContent || '').split(/\r?\n/)
+                .map(function (line) { return line.replace(/\s+/g, ' ').trim(); })
+                .filter(Boolean).join(' · ');
+        }
+        function readTable(table, title) {
+            var headRow = table.tHead && table.tHead.rows[0];
+            var columns = [];
+            Array.prototype.forEach.call(headRow ? headRow.cells : [], function (th, index) {
+                var label = th.textContent.replace(/\s+/g, ' ').trim();
+                if (th.hasAttribute('data-export-skip') || !label) return;
+                columns.push({ index: index, label: label, numeric: th.classList.contains('text-end') });
+            });
+            var rows = [];
+            var total = 0;
+            Array.prototype.forEach.call(table.tBodies[0] ? table.tBodies[0].rows : [], function (row) {
+                // Rows with fewer cells than the header are messages ("no members yet", "no match"), not data.
+                if (row.cells.length < (headRow ? headRow.cells.length : 0)) return;
+                total++;
+                if (row.hidden || window.getComputedStyle(row).display === 'none') return;
+                rows.push(columns.map(function (column) { return cellText(row.cells[column.index]); }));
+            });
+            var notes = [];
+            var scope = table.closest('.ledger-fullscreen') || document;
+            var pill = scope.querySelector('.filter-pill.active:not([data-filter-reset])');
+            if (pill) notes.push('Filter: ' + pill.textContent.trim());
+            var search = scope.querySelector('input[type="search"]');
+            if (search && search.value.trim()) notes.push('Search: "' + search.value.trim() + '"');
+            if (rows.length !== total) notes.push(rows.length + ' of ' + total + ' rows shown');
+            if (table.dataset.exportNote) notes.push(table.dataset.exportNote);
+            return {
+                title: title || table.dataset.exportTitle || 'Table',
+                subtitle: notes.join('  |  '),
+                headers: columns.map(function (column) { return column.label; }),
+                rows: rows,
+                numeric: columns.map(function (column) { return column.numeric; })
+            };
+        }
+        function tableAsText(data) {
+            function plain(value) { return value.replace(/[\t\r\n]+/g, ' '); }
+            return [data.headers].concat(data.rows).map(function (row) { return row.map(plain).join('\t'); }).join('\n');
+        }
+        function saveBlob(blob, name) {
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = name;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('[data-copy-text], [data-copy-table]');
+            if (!button) return;
+            var what = button.dataset.copyTable ? 'Table' : 'Summary';
+            var text;
+            if (button.dataset.copyTable) {
+                var table = document.querySelector(button.dataset.copyTable);
+                if (!table) return;
+                text = tableAsText(readTable(table));
+            } else {
+                var source = document.querySelector(button.dataset.copyText);
+                if (!source) return;
+                text = source.value || source.textContent;
+            }
+            var label = button.querySelector('span');
+            var icon = button.querySelector('i');
+            if (!button.dataset.copyLabel && label) button.dataset.copyLabel = label.textContent;
+            copyText(text).then(function () {
+                button.classList.remove('is-copied');
+                void button.offsetWidth;
+                button.classList.add('is-copied');
+                if (label) label.textContent = 'Copied';
+                if (icon) icon.className = 'bi bi-check2';
+                copyStatus.textContent = what + ' copied to the clipboard.';
+                clearTimeout(button._copyTimer);
+                button._copyTimer = setTimeout(function () {
+                    button.classList.remove('is-copied');
+                    if (label) label.textContent = button.dataset.copyLabel;
+                    if (icon) icon.className = 'bi bi-clipboard';
+                }, 1800);
+            }).catch(function () {
+                copyStatus.textContent = 'Copy failed.';
+                window.alert('The ' + what.toLowerCase() + ' could not be copied. Select it from the page instead.');
+            });
+        });
+
+        // [data-export-table="#tableId"] downloads that table as a PDF. The desktop window can't download files, so
+        // it hands the table to the Java side, which opens a save dialog.
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('[data-export-table]');
+            if (!button || button.disabled) return;
+            var table = document.querySelector(button.dataset.exportTable);
+            if (!table) return;
+            var data = readTable(table, button.dataset.exportTitle);
+            if (window.desktopBridge && window.desktopBridge.exportTablePdf) {
+                window.desktopBridge.exportTablePdf(JSON.stringify(data));
+                return;
+            }
+            var label = button.querySelector('span');
+            if (!button.dataset.exportLabel && label) button.dataset.exportLabel = label.textContent;
+            button.disabled = true;
+            if (label) label.textContent = 'Preparing…';
+            fetch('/table-export.pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(function (response) {
+                if (!response.ok) {
+                    return response.text().then(function (message) {
+                        // A plain-text reason from the server is worth showing; an error page is not.
+                        throw new Error(message && message.charAt(0) !== '<' ? message : 'PDF export failed.');
+                    });
+                }
+                return response.blob();
+            }).then(function (blob) {
+                var slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'table';
+                saveBlob(blob, 'DuesDesk-' + slug + '-' + new Date().toISOString().slice(0, 10) + '.pdf');
+            }).catch(function (error) {
+                window.alert(error.message || 'The table could not be exported.');
+            }).finally(function () {
+                button.disabled = false;
+                if (label) label.textContent = button.dataset.exportLabel;
+            });
+        });
+
+        // Reward micro-interactions: spark burst on confirmation toasts, press feedback on submits.
+        // All decorative nodes are pointer-events:none (see .reward-sparks) so they never block clicks.
+        (function () {
+            var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduced) return;
+            document.querySelectorAll('.alert-success[data-auto-dismiss]').forEach(function (toast) {
+                var layer = document.createElement('span');
+                layer.className = 'reward-sparks';
+                layer.setAttribute('aria-hidden', 'true');
+                for (var i = 0; i < 10; i++) {
+                    var angle = (Math.PI * 2 * i) / 10 + Math.random() * 0.4;
+                    var dist = 22 + Math.random() * 26;
+                    var spark = document.createElement('span');
+                    spark.className = 'reward-spark';
+                    spark.style.setProperty('--dx', Math.round(Math.cos(angle) * dist) + 'px');
+                    spark.style.setProperty('--dy', Math.round(Math.sin(angle) * dist) + 'px');
+                    spark.style.animationDelay = (160 + i * 14) + 'ms';
+                    layer.appendChild(spark);
+                }
+                toast.appendChild(layer);
+                setTimeout(function () { if (layer.parentNode) layer.parentNode.removeChild(layer); }, 1500);
+            });
+            document.addEventListener('click', function (event) {
+                var btn = event.target.closest('button[type="submit"].btn-fintech-primary, button[type="submit"].btn-primary, button[type="submit"].btn-dark');
+                if (!btn || btn.disabled) return;
+                btn.style.transition = 'box-shadow .12s ease';
+                btn.style.boxShadow = 'var(--shadow-btn), var(--glow-primary)';
+                setTimeout(function () { btn.style.boxShadow = ''; btn.style.transition = ''; }, 260);
+            }, true);
+        })();
+
+    })();
+</script>
+
+<nav class="section-nav" aria-label="Main navigation" th:fragment="nav(active)">
+    <div class="container-xxl px-3 px-md-4 d-flex gap-4">
+        <a href="/" th:attr="aria-current=${active == 'dues'} ? 'page' : null">Dues</a>
+        <a href="/rent" th:attr="aria-current=${active == 'rent'} ? 'page' : null">Rent</a>
+        <div class="dropdown" data-nav-dropdown>
+            <a href="#" class="dropdown-toggle" role="button" aria-expanded="false"
+               th:attr="aria-current=${active == 'numbers' or active == 'flow' or active == 'chair' or active == 'finance'} ? 'page' : null">Finance</a>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" th:classappend="${active == 'numbers'} ? 'active'" href="/numbers">Financial Overview</a></li>
+                <li><a class="dropdown-item" th:classappend="${active == 'flow'} ? 'active'" href="/numbers/flow">Cash Flow</a></li>
+                <li><a class="dropdown-item" th:classappend="${active == 'chair'} ? 'active'" href="/chair-budgeting">Chair Budgets</a></li>
+                <li><a class="dropdown-item" th:classappend="${active == 'finance'} ? 'active'" href="/finance-tools">Reports &amp; Handoff</a></li>
+            </ul>
+        </div>
+        <a href="/calendar" th:attr="aria-current=${active == 'calendar'} ? 'page' : null">Calendar &amp; Bills</a>
+        <a href="/presales" th:attr="aria-current=${active == 'presales'} ? 'page' : null">Events</a>
+        <a href="/upload-docs" th:attr="aria-current=${active == 'upload'} ? 'page' : null">Import &amp; Export</a>
+        <a href="/settings" th:attr="aria-current=${active == 'settings'} ? 'page' : null">Settings</a>
+    </div>
+</nav>
+
+<script th:fragment="tableFullscreenScript">
+    document.addEventListener('DOMContentLoaded', function () {
+        const buttons = document.querySelectorAll('[data-fullscreen-target]');
+        let returnFocus = null;
+        let portalPlaceholder = null;
+        // The attribute holds an element id ("duesLedgerView"); a leading "#" is tolerated.
+        function targetOf(button) {
+            return document.getElementById((button.dataset.fullscreenTarget || '').replace(/^#/, ''));
+        }
+        // A target can opt into being lifted to <body> while full screen (data-fullscreen-portal="true" on the target or on
+        // its button). A fixed element inside a card that moves on hover (transform) is positioned against that card, not
+        // the window, so the calculator result would shrink back into the card whenever the cursor left or entered it.
+        function isPortal(target) {
+            return target.dataset.fullscreenPortal === 'true' || Array.prototype.some.call(buttons, function (button) {
+                return button.dataset.fullscreenPortal === 'true' && targetOf(button) === target;
+            });
+        }
+        function render(button, on) {
+            const label = button.querySelector('span');
+            const icon = button.querySelector('i');
+            if (!button.dataset.fullscreenLabel && label) button.dataset.fullscreenLabel = label.textContent;
+            if (label) label.textContent = on ? 'Exit full screen' : button.dataset.fullscreenLabel;
+            if (icon) icon.className = 'bi ' + (on ? 'bi-fullscreen-exit' : 'bi-arrows-fullscreen');
+            button.setAttribute('aria-pressed', String(on));
+            button.setAttribute('aria-label', on
+                ? (button.dataset.fullscreenCloseLabel || 'Exit full screen table view')
+                : (button.dataset.fullscreenOpenLabel || 'View table full screen'));
+        }
+        function setFullscreen(target, on) {
+            const portal = isPortal(target);
+            if (portal && on && target.parentElement !== document.body) {
+                portalPlaceholder = document.createComment('calculator result position');
+                target.parentElement.insertBefore(portalPlaceholder, target);
+                document.body.appendChild(target);
+            }
+            target.classList.toggle('is-fullscreen', on);
+            document.body.classList.toggle('ledger-fullscreen-active', document.querySelector('.is-fullscreen') !== null);
+            buttons.forEach(function (button) {
+                if (targetOf(button) === target) render(button, on);
+            });
+            if (portal && !on && portalPlaceholder && portalPlaceholder.parentNode) {
+                portalPlaceholder.parentNode.insertBefore(target, portalPlaceholder);
+                portalPlaceholder.parentNode.removeChild(portalPlaceholder);
+                portalPlaceholder = null;
+                if (returnFocus && document.contains(returnFocus)) returnFocus.focus();
+                returnFocus = null;
+            }
+        }
+        buttons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const target = targetOf(button);
+                if (!target) return;
+                const entering = !target.classList.contains('is-fullscreen');
+                if (entering && isPortal(target)) returnFocus = button;
+                setFullscreen(target, entering);
+            });
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape' || e.defaultPrevented) return;
+            // Let an open menu or modal take the Escape first.
+            if (document.querySelector('.dropdown-menu.show, .modal.show')) return;
+            const open = document.querySelector('.is-fullscreen');
+            if (open) setFullscreen(open, false);
+        });
+    });
+</script>
+</body>
+</html>

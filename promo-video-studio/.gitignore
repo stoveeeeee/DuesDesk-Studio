@@ -1,0 +1,33 @@
+﻿# Dependencies
+node_modules/
+
+# Demo data (NEVER commit real user data!)
+demo-store.json
+demo-store.json.*
+
+# Playwright recordings
+recordings/
+*.webm
+
+# Remotion build outputs
+out/
+.remotion/
+
+# Video outputs
+*.mp4
+*-intermediate.mp4
+*-raw.webm
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

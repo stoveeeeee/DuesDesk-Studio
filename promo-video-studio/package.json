@@ -1,0 +1,27 @@
+{
+  "name": "duesdesk-promo-video-studio",
+  "version": "1.0.0",
+  "description": "Automated video production pipeline for DuesDesk promotional materials",
+  "type": "module",
+  "scripts": {
+    "seed": "node seed-demo-data.mjs",
+    "capture": "node capture-scenes.mjs",
+    "render:trailer": "npx remotion render src/index.ts trailer duesdesk-launch-trailer-raw.mp4",
+    "render:teaser": "npx remotion render src/index.ts teaser duesdesk-hero-loop-raw.mp4",
+    "encode": "node encode-finals.mjs",
+    "build": "npm run seed && npm run capture && npm run render:trailer && npm run render:teaser && npm run encode",
+    "preview": "npx remotion studio src/index.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@remotion/lambda": "^4.0.0",
+    "playwright": "^1.40.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "typescript": "^5.3.0"
+  }
+}

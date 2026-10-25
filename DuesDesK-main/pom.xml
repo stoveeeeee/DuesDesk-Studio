@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <!-- 3.5.0 predates Java 25 support (added in 3.5.5); use the latest 3.5.x patch -->
+        <version>3.5.16</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.fraternity</groupId>
+    <artifactId>dues-manager</artifactId>
+    <version>1.0.0</version>
+    <name>DuesDesk</name>
+
+    <properties>
+        <java.version>25</java.version>
+        <javafx.version>25</javafx.version>
+        <!-- jpackage settings; the OS profiles below pick the installer type and icon. -->
+        <app.name>DuesDesk</app.name>
+        <app.vendor>DuesDesk</app.vendor>
+        <jpackage.type>app-image</jpackage.type>
+        <jpackage.icon>${project.basedir}/DuesDesk.ico</jpackage.icon>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>10.1.0</version>
+        </dependency>
+
+        <!-- One JavaFX version only. javafx-web already pulls in controls, graphics, base and media.
+             The OpenJFX POMs pick the native classifier for the build machine automatically (mac, mac-aarch64,
+             win, linux, linux-aarch64), so nothing here is tied to one OS. To build for a different platform
+             than the current machine, pass it explicitly, e.g. mvn package -Djavafx.platform=win -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.fraternity.dues.Launcher</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Installer type and icon follow the build machine's OS (jpackage can only build for the OS it runs on). -->
+        <profile>
+            <id>os-mac</id>
+            <activation><os><family>mac</family></os></activation>
+            <properties>
+                <jpackage.type>dmg</jpackage.type>
+                <jpackage.icon>${project.basedir}/DuesDesk.icns</jpackage.icon>
+            </properties>
+        </profile>
+        <profile>
+            <id>os-windows</id>
+            <activation><os><family>windows</family></os></activation>
+            <properties>
+                <jpackage.type>msi</jpackage.type>
+                <jpackage.icon>${project.basedir}/DuesDesk.ico</jpackage.icon>
+            </properties>
+        </profile>
+
+        <!--
+          Native installer: mvn -Pjpackage -DskipTests package
+            macOS   -> target/installer/DuesDesk-1.0.0.dmg
+            Windows -> target/installer/DuesDesk-1.0.0.msi (needs the WiX Toolset on PATH; use -Djpackage.type=exe for an .exe)
+          See packaging/package-mac.sh and packaging/package-windows.ps1.
+        -->
+        <profile>
+            <id>jpackage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- jpackage wants a folder holding only the app jar. -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>jpackage-input</id>
+                                <phase>package</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <delete dir="${project.build.directory}/jpackage-input" quiet="true"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                              todir="${project.build.directory}/jpackage-input"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>jpackage-installer</id>
+                                <phase>package</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument><argument>${jpackage.type}</argument>
+                                        <argument>--name</argument><argument>${app.name}</argument>
+                                        <argument>--app-version</argument><argument>${project.version}</argument>
+                                        <argument>--vendor</argument><argument>${app.vendor}</argument>
+                                        <argument>--input</argument><argument>${project.build.directory}/jpackage-input</argument>
+                                        <argument>--main-jar</argument><argument>${project.build.finalName}.jar</argument>
+                                        <argument>--icon</argument><argument>${jpackage.icon}</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}/installer</argument>
+                                        <argument>--java-options</argument><argument>-Dfile.encoding=UTF-8</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

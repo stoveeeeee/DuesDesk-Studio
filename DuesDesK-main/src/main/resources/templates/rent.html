@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rent | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-canvas);
+            color: var(--text-secondary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navigation */
+        .app-navbar {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0.85rem 0;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--btn-primary-bg);
+            color: var(--btn-primary-text);
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--status-success-text);
+        }
+
+        /* Cards & Containers */
+        .surface-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .kpi-card {
+            padding: 1.25rem 1.35rem;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--border-strong);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1.2;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .kpi-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+        }
+
+        /* Typography & Utilities */
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .section-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* Badges */
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .badge-paid {
+            background-color: var(--status-success-bg);
+            color: var(--status-success-text);
+            border: 1px solid var(--status-success-border);
+        }
+
+        .badge-plan {
+            background-color: var(--status-info-bg);
+            color: var(--btn-primary-hover);
+            border: 1px solid var(--status-info-border);
+        }
+
+        .badge-delinquent {
+            background-color: var(--status-danger-bg);
+            color: var(--status-danger-text);
+            border: 1px solid var(--status-danger-border);
+        }
+
+        .badge-muted {
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            font-size: 0.7rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        /* Table Styling */
+        .table-fintech {
+            margin-bottom: 0;
+        }
+
+        .table-fintech thead th {
+            background-color: var(--bg-canvas);
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            white-space: nowrap;
+        }
+
+        .table-fintech tbody td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--bg-subtle);
+            font-size: 0.875rem;
+            vertical-align: middle;
+        }
+
+        .table-fintech tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-fintech tbody tr:hover {
+            background-color: var(--bg-canvas);
+        }
+
+        .history-link {
+            border: 0;
+            padding: 0;
+            background: none;
+            color: var(--text-primary);
+            font: inherit;
+            font-weight: 600;
+            text-align: left;
+            text-decoration: underline;
+            text-decoration-color: var(--border-strong);
+            text-underline-offset: 3px;
+        }
+
+        .history-link:hover {
+            color: var(--btn-primary-hover);
+            text-decoration-color: currentColor;
+        }
+
+        /* Filter Tabs & Search */
+        .filter-pill-group {
+            display: inline-flex;
+            background-color: var(--bg-subtle);
+            padding: 0.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .filter-pill {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .filter-pill.active {
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            font-weight: 600;
+            box-shadow: var(--shadow-card);
+        }
+
+        /* Forms & Inputs */
+        .form-label-fintech {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        .form-control, .form-select {
+            border-color: var(--border-strong);
+            font-size: 0.875rem;
+            border-radius: 8px;
+            color: var(--text-secondary);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--btn-primary-bg);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+
+        /* Buttons */
+        .btn-fintech-primary {
+            background-color: var(--text-primary);
+            color: var(--btn-primary-text);
+            border: 1px solid var(--text-primary);
+            font-weight: 500;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            padding: 0.45rem 0.9rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-fintech-primary:hover {
+            background-color: var(--text-secondary);
+            color: var(--btn-primary-text);
+        }
+
+        .btn-fintech-danger {
+            background-color: var(--status-danger-text);
+            color: var(--btn-primary-text);
+            border: 1px solid var(--status-danger-text);
+            font-weight: 500;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            padding: 0.45rem 0.9rem;
+        }
+
+        .btn-fintech-danger:hover {
+            background-color: var(--status-danger-text);
+            color: var(--btn-primary-text);
+        }
+
+        .btn-fintech-outline {
+            background-color: var(--bg-surface);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-strong);
+            font-weight: 500;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            padding: 0.45rem 0.85rem;
+        }
+
+        .btn-fintech-outline:hover {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            border-color: var(--text-placeholder);
+        }
+
+        .btn-action-sm {
+            font-size: 0.76rem;
+            font-weight: 500;
+            padding: 0.28rem 0.6rem;
+            border-radius: 6px;
+        }
+
+        /* Tag Insertion Chips */
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 0.15rem 0.5rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.12s ease;
+        }
+
+        .tag-chip:hover {
+            background-color: var(--status-info-bg);
+            color: var(--btn-primary-hover);
+            border-color: var(--status-info-border);
+        }
+
+        /* SMS Preview Bubble */
+        .sms-preview-box {
+            background-color: var(--bg-canvas);
+            border: 1px dashed var(--border-strong);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Log Feed */
+        .log-item {
+            padding: 0.85rem 0;
+            border-bottom: 1px solid var(--bg-subtle);
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .surface-card, .kpi-card {
+            animation: card-enter 0.45s ease both;
+        }
+
+        @keyframes card-enter {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+<th:block th:replace="~{fragments :: navStyles}"></th:block>
+<script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+    <div class="app-header-stack">
+    <header class="app-navbar mb-4">
+    <div class="container-xxl px-3 px-md-4 header-grid">
+        <div></div>
+        <div class="d-flex align-items-center gap-3 justify-content-center">
+            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
+            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
+        </div>
+        <div></div>
+    </div>
+</header>
+<nav th:replace="~{fragments :: nav('rent')}"></nav>
+</div>
+
+<main class="container-xxl px-3 px-md-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="4000" class="alert alert-success border-0 shadow-sm d-flex align-items-center justify-content-between rounded-3 py-2 px-3 mb-4" role="alert">
+        <div class="d-flex align-items-center gap-2 small">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span class="fw-medium" th:text="${toast}"></span>
+        </div>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">House rent</div>
+            <h2 class="page-title">Rent</h2>
+            <p class="page-lede">Track rent for the members living in the house and keep everyone in the loop.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4 row-cols-1 row-cols-sm-2 row-cols-xl-4">
+        <div class="col">
+            <div class="surface-card kpi-card h-100">
+                <div class="kpi-label"><span>Rent Collected (Mo)</span></div>
+                <div class="kpi-value text-success">$<span th:text="${#numbers.formatDecimal(rentCollected, 1, 'COMMA', 2, 'POINT')}">0.00</span></div>
+                <div class="kpi-sub">Of <span class="fw-semibold text-dark">$<span th:text="${#numbers.formatDecimal(rentExpected, 1, 'COMMA', 2, 'POINT')}">0.00</span></span> monthly rent roll</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="surface-card kpi-card h-100">
+                <div class="kpi-label"><span>Outstanding Rent</span></div>
+                <div class="kpi-value">$<span th:text="${#numbers.formatDecimal(rentOutstanding, 1, 'COMMA', 2, 'POINT')}">0.00</span></div>
+                <div class="kpi-sub"><span class="fw-semibold text-dark" th:text="${balanceDueCount}">0</span> residents with a balance</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="surface-card kpi-card h-100">
+                <div class="kpi-label"><span>Residents</span></div>
+                <div class="kpi-value" th:text="${#lists.size(residents)}">0</div>
+                <div class="kpi-sub"><span class="fw-semibold text-dark" th:text="${paidUpCount}">0</span> paid up</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="surface-card kpi-card h-100">
+                <div class="kpi-label"><span>Collection Rate</span></div>
+                <div class="kpi-value"><span th:text="${#numbers.formatDecimal(rentCollectionRate, 1, 1)}">0.0</span>%</div>
+                <div class="kpi-sub"></div>
+                <div class="progress-slim mt-2"><div class="progress-fill tone-success" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Rent collection rate"
+                     th:attr="aria-valuenow=${rentCollectionRate > 100 ? 100 : rentCollectionRate}"
+                     th:style="'width: ' + ${rentCollectionRate > 100 ? 100 : rentCollectionRate} + '%;'"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12">
+            <!-- fullscreen-card: this page fades cards in, and a card that is still "animated" would trap the full-screen table below the header -->
+            <div class="surface-card fullscreen-card rent-ledger-card mb-4">
+                <div class="ledger-fullscreen" id="rentLedgerView">
+                <div class="p-3 p-md-4 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3" style="border-color: var(--border-subtle) !important;">
+                    <div>
+                        <h2 class="section-title">House Rent Ledger</h2>
+                        <p class="section-subtitle">Balances, payments, and reminders for each resident</p>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <select class="form-select form-select-sm" style="width:auto;" aria-label="Sort roster" onchange="window.duesDeskRememberScroll &amp;&amp; window.duesDeskRememberScroll(); window.location.assign(window.location.pathname + (this.value ? '?sort=' + encodeURIComponent(this.value) : ''));"><option value="">Sort: Default</option><option value="first" th:selected="${sort == 'first'}">First name (A–Z)</option><option value="last" th:selected="${sort == 'last'}">Last name (A–Z)</option><option value="rent-desc" th:selected="${sort == 'rent-desc'}">Monthly rent: highest</option><option value="rent-asc" th:selected="${sort == 'rent-asc'}">Monthly rent: lowest</option><option value="balance-desc" th:selected="${sort == 'balance-desc'}">Balance due: highest</option><option value="balance-asc" th:selected="${sort == 'balance-asc'}">Balance due: lowest</option><option value="paid-desc" th:selected="${sort == 'paid-desc'}">Paid (Mo): highest</option><option value="paid-asc" th:selected="${sort == 'paid-asc'}">Paid (Mo): lowest</option></select>
+                        <button type="button" class="btn btn-fintech-outline d-inline-flex align-items-center gap-1" data-bs-toggle="collapse" data-bs-target="#addResidentDrawer" aria-expanded="false">
+                            <i class="bi bi-person-plus"></i><span>Add Resident</span>
+                        </button>
+                        <form th:action="@{/rent/send-bulk}" method="post" class="m-0" id="rentBulkReminderForm"
+                              th:attr="data-recipient-count=${reminderRecipientCount},data-total=${reminderBalanceTotal},data-live=${liveSmsEnabled},data-sms-remaining=${smsRemainingToday}">
+                            <button type="submit" class="btn btn-fintech-danger d-inline-flex align-items-center gap-1" th:disabled="${smsRemainingToday == 0 or reminderRecipientCount == 0}" data-loading-label="Sending…">
+                                <i class="bi bi-send-fill"></i><span>Text All With Balance (<span th:text="${reminderRecipientCount}">0</span>)</span>
+                            </button>
+                        </form>
+                        <span class="small text-muted" th:text="${smsRemainingToday} + ' SMS left today'"></span>
+                        <!-- Shown only while the table is full screen (.fs-only): copy it for a spreadsheet or save it as a PDF. -->
+                        <span class="fs-only" role="group" aria-label="Export this table">
+                            <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                    data-copy-table="#rentTable" title="Copy the rows shown, ready to paste into a spreadsheet">
+                                <i class="bi bi-clipboard" aria-hidden="true"></i><span>Copy table</span>
+                            </button>
+                            <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                    data-export-table="#rentTable" data-export-title="House Rent Ledger" title="Save the rows shown as a PDF">
+                                <i class="bi bi-filetype-pdf" aria-hidden="true"></i><span>Export PDF</span>
+                            </button>
+                        </span>
+                        <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                data-fullscreen-target="rentLedgerView" aria-label="View rent table fullscreen">
+                            <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+                            <span>Full screen</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="collapse border-bottom" id="addResidentDrawer" style="background-color: var(--bg-canvas); border-color: var(--border-subtle) !important;">
+                    <div class="p-3 p-md-4">
+                        <form th:action="@{/rent/residents}" method="post" data-duplicate-guard>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-3"><label class="form-label-fintech">Full Name</label>
+                                    <input type="text" name="name" class="form-control form-control-sm" required></div>
+                                <div class="col-6 col-md-2"><label class="form-label-fintech">Phone</label>
+                                    <input type="text" name="phoneNumber" class="form-control form-control-sm" required></div>
+                                <div class="col-12 col-md-3"><label class="form-label-fintech">Email (optional)</label>
+                                    <input type="email" name="email" maxlength="200" class="form-control form-control-sm" placeholder="for email reminders"></div>
+                                <div class="col-6 col-md-1"><label class="form-label-fintech">Room</label>
+                                    <input type="text" name="room" class="form-control form-control-sm"></div>
+                                <div class="col-4 col-md-2"><label class="form-label-fintech">Monthly Rent ($)</label>
+                                    <input type="number" min="0" step="0.01" name="monthlyRent" class="form-control form-control-sm" value="0.00" required></div>
+                                <div class="col-4 col-md-2"><label class="form-label-fintech">Balance Due ($)</label>
+                                    <input type="number" min="0" step="0.01" name="balanceDue" class="form-control form-control-sm" value="0.00" required></div>
+                                <div class="col-4 col-md-1"><label class="form-label-fintech">Paid (Mo)</label>
+                                    <input type="number" min="0" step="0.01" name="paidThisMonth" class="form-control form-control-sm" value="0.00" required></div>
+                                <div class="col-12 col-md-1"><button type="submit" class="btn btn-fintech-primary btn-sm w-100">Save</button></div>
+                                <div class="col-12 col-md-5"><label class="form-label-fintech">Roster member (for social clearance)</label>
+                                    <select name="linkedMemberId" class="form-select form-select-sm" aria-label="Roster member this resident is">
+                                        <option value="">Match a roster member by name</option>
+                                        <option value="none">Non-member / unlinked resident</option>
+                                        <option th:each="m : ${rosterMembers}" th:value="${m.id}" th:text="${m.name}"></option>
+                                    </select></div>
+                                <div class="col-12 col-md-7 small text-muted">Linking tells social clearance whose rent this is, even if the names are typed differently. Type in the list to jump to a name.</div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Live search + quick filters (client-side table tools; see fragments themeScript) -->
+                <div class="px-3 px-md-4 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2" style="background-color: var(--bg-subtle); border-color: var(--border-subtle) !important;">
+                    <div class="filter-pill-group" role="group" aria-label="Filter residents">
+                        <button type="button" class="filter-pill active" data-table-filter="rentTable" data-filter="all" data-filter-reset aria-pressed="true">All</button>
+                        <button type="button" class="filter-pill" data-table-filter="rentTable" data-filter="balance" aria-pressed="false">Balance due</button>
+                        <button type="button" class="filter-pill" data-table-filter="rentTable" data-filter="paid" aria-pressed="false">Paid up</button>
+                        <button type="button" class="filter-pill" data-table-filter="rentTable" data-filter="muted" aria-pressed="false">Muted</button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="table-count" data-table-count="rentTable" aria-live="polite"></span>
+                        <div class="position-relative search-box" style="min-width: 220px;">
+                            <i class="bi bi-search position-absolute text-muted" style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem;" aria-hidden="true"></i>
+                            <input type="search" class="form-control form-control-sm ps-4" placeholder="Search residents..."
+                                   aria-label="Search residents by name, phone or room" data-table-search="rentTable" data-search-shortcut>
+                            <kbd class="search-kbd" aria-hidden="true">/</kbd>
+                        </div>
+                        <button type="button" class="btn btn-fintech-outline btn-sm"
+                                data-roster-header-toggle="rentTable" aria-pressed="true"
+                                aria-label="Make rent roster headers static">
+                            <i class="bi bi-pin-angle-fill me-1" aria-hidden="true"></i><span>Headers: Sticky</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive roster-table-container">
+                    <table class="table table-fintech" id="rentTable" data-table-tools>
+                        <thead>
+                        <tr>
+                            <th data-sort="text">Resident</th><th data-sort="text">Room</th>
+                            <th class="text-end" data-sort="number">Monthly Rent</th><th class="text-end" data-sort="number">Balance Due</th><th class="text-end" data-sort="number">Paid (Mo)</th>
+                            <th data-sort="text">Status</th><th>Last Texted</th><th class="text-center" data-export-skip>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="r : ${residents}" data-row
+                            th:attr="data-tags=${(r.balanceDue > 0 ? 'balance' : 'paid') + (r.muteReminders ? ' muted' : '')},data-search=${#strings.toLowerCase(r.name + ' ' + r.phoneNumber + ' ' + (r.room != null ? r.room : ''))}">
+                            <td th:attr="data-sort-value=${r.name}">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-semibold" th:text="${r.name}"></span>
+                                    <span th:if="${r.muteReminders}" class="badge-muted" title="Excluded from reminders and announcements"><i class="bi bi-bell-slash"></i> Muted</span>
+                                    <span th:if="${!#lists.isEmpty(r.charges)}" class="badge-muted" title="Custom charges included in this balance"
+                                          th:text="${#lists.size(r.charges)} + (${#lists.size(r.charges)} == 1 ? ' charge' : ' charges')"></span>
+                                </div>
+                                <div class="text-muted tabular-nums" style="font-size: 0.78rem;" th:text="${r.phoneNumber}"></div>
+                                <div class="text-muted" style="font-size: 0.74rem;" th:if="${r.linkedMemberId != null and !#strings.isEmpty(r.linkedMemberId)}"
+                                     th:title="'Linked to this roster member for social clearance'">
+                                    <i class="bi bi-link-45deg" aria-hidden="true"></i><span th:text="${memberNames[r.linkedMemberId] ?: 'Removed member'}"></span>
+                                </div>
+                            </td>
+                            <td class="text-muted" th:text="${r.room} ?: '—'"></td>
+                            <td class="text-end tabular-nums" th:attr="data-sort-value=${r.monthlyRent}">$<span th:text="${#numbers.formatDecimal(r.monthlyRent, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                            <td class="text-end tabular-nums" th:classappend="${r.balanceDue > 0} ? 'text-danger fw-bold' : 'text-muted'" th:attr="data-sort-value=${r.balanceDue}">$<span th:text="${#numbers.formatDecimal(r.balanceDue, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                            <td class="text-end tabular-nums text-success fw-medium" th:attr="data-sort-value=${r.paidThisMonth}">$<span th:text="${#numbers.formatDecimal(r.paidThisMonth, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                            <td><span class="badge-status" th:classappend="${r.balanceDue > 0} ? 'badge-delinquent' : 'badge-paid'" th:text="${r.status}"></span>
+                                <span class="remind-actions" th:if="${reminderTexts.containsKey(r.id)}" role="group" th:attr="aria-label='Send ' + ${r.name} + ' a reminder'">
+                                    <button type="button" class="btn btn-ghost btn-sm" data-reminder-action="email" title="Open in Email"
+                                            th:attr="data-reminder-text=${reminderTexts[r.id]},data-email=${r.email},data-subject='Rent reminder for ' + ${r.name},aria-label='Email ' + ${r.name} + ' a reminder'"><i class="bi bi-envelope" aria-hidden="true"></i></button>
+                                    <button type="button" class="btn btn-ghost btn-sm" data-reminder-action="sms" title="Open in Messages"
+                                            th:attr="data-reminder-text=${reminderTexts[r.id]},data-phone=${r.phoneNumber},aria-label='Text ' + ${r.name} + ' a reminder from your Messages app'"><i class="bi bi-chat-dots" aria-hidden="true"></i></button>
+                                    <button type="button" class="btn btn-ghost btn-sm" data-reminder-action="copy" title="Copy reminder"
+                                            th:attr="data-reminder-text=${reminderTexts[r.id]},aria-label='Copy the reminder for ' + ${r.name}"><i class="bi bi-clipboard" aria-hidden="true"></i></button>
+                                </span>                            </td>
+                            <td class="text-muted small tabular-nums" th:text="${r.lastTextedDate}"></td>
+                            <td class="text-center">
+                                <div class="dropdown table-actions-menu">
+                                    <button type="button" class="btn btn-fintech-outline btn-action-sm dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-expanded="false"
+                                            th:attr="aria-label='Actions for ' + ${r.name}">...</button>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                                th:attr="data-bs-target=|#payRent-${r.id}|">Pay</button>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                                th:attr="data-bs-target=|#residentCharges-${r.id}|">Charges</button>
+                                        <form th:action="@{/rent/residents/{id}/text(id=${r.id})}" method="post"
+                                              th:attr="data-send-rent-name=${r.name},data-phone=${r.phoneNumber},data-balance=${r.balanceDue},data-live=${liveSmsEnabled},data-sms-remaining=${smsRemainingToday}">
+                                            <button type="submit" class="dropdown-item" th:disabled="${smsRemainingToday == 0}">Text</button>
+                                        </form>
+                                        <form th:action="@{/rent/residents/{id}/toggle-mute(id=${r.id})}" method="post">
+                                            <button type="submit" class="dropdown-item"
+                                                    th:text="${r.muteReminders ? 'Unmute' : 'Mute'}"></button>
+                                        </form>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                                th:attr="data-bs-target=|#editResident-${r.id}|">Edit</button>
+                                        <form th:action="@{/rent/residents/{id}/delete(id=${r.id})}" method="post"
+                                              th:attr="data-delete-resident=${r.name},data-balance=${r.balanceDue}">
+                                            <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr data-table-empty class="table-empty-row" hidden><td colspan="8">No residents match your search or filter. Press Esc to clear it.</td></tr>
+                        <tr th:if="${#lists.isEmpty(residents)}">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-house fs-3 d-block mb-2"></i>
+                                No residents yet. <a href="#addResidentDrawer">Add a resident</a> to create the house roster.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </div>
+
+            <div th:each="r : ${residents}">
+                <div class="modal fade" th:id="|payRent-${r.id}|" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog"><div class="modal-content">
+                        <form th:action="@{/rent/residents/{id}/payment(id=${r.id})}" method="post" data-duplicate-guard>
+                            <div class="modal-header"><h2 class="modal-title fs-5" th:text="'Record rent from ' + ${r.name}"></h2>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                            <div class="modal-body">
+                                <label class="form-label-fintech">Amount ($)</label>
+                                <input type="number" min="0.01" step="0.01" name="amount" class="form-control" th:value="${r.balanceDue > 0 ? r.balanceDue : r.monthlyRent}" required>
+                                <div class="form-text">Reduces the resident's balance due and adds to this month's paid total.</div>
+                            </div>
+                            <div class="modal-footer"><button type="button" class="btn btn-fintech-outline" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-fintech-primary">Record Payment</button></div>
+                        </form>
+                    </div></div>
+                </div>
+                <div class="modal fade" th:id="|residentCharges-${r.id}|" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-scrollable"><div class="modal-content">
+                        <div class="modal-header">
+                            <div>
+                                <h2 class="modal-title fs-5" th:text="'Charges for ' + ${r.name}"></h2>
+                                <p class="section-subtitle mt-1">Extra items added to this resident's rent bill. Balance due: $<span th:text="${#numbers.formatDecimal(r.balanceDue, 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div th:if="${#lists.isEmpty(r.charges)}" class="small text-muted mb-3">No custom charges yet.</div>
+                            <ul class="list-group list-group-flush mb-3" th:unless="${#lists.isEmpty(r.charges)}">
+                                <li class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3" th:each="c : ${r.charges}">
+                                    <div class="min-w-0">
+                                        <div class="fw-medium text-dark" th:text="${c.description}"></div>
+                                        <div class="small text-muted tabular-nums">
+                                            Added <span th:text="${c.date}"></span><span th:if="${c.dueDate != null}"> · Due <span th:text="${c.dueDate}"></span></span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                        <span class="fw-medium tabular-nums">$<span th:text="${#numbers.formatDecimal(c.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span></span>
+                                        <form th:action="@{/rent/residents/{id}/charges/{chargeId}/remove(id=${r.id}, chargeId=${c.id})}" method="post"
+                                              th:attr="data-remove-charge=${c.description},data-amount=${c.amount}">
+                                            <button type="submit" class="btn btn-sm btn-fintech-danger">Remove</button>
+                                        </form>
+                                    </div>
+                                </li>
+                            </ul>
+                            <h3 class="h6 fw-bold mb-2">Add a charge</h3>
+                            <form th:action="@{/rent/charges}" method="post" data-duplicate-guard>
+                                <input type="hidden" name="residentIds" th:value="${r.id}">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12">
+                                        <label class="form-label-fintech" th:for="|chargeDesc-${r.id}|">Description</label>
+                                        <input th:id="|chargeDesc-${r.id}|" name="description" class="form-control form-control-sm" maxlength="200" placeholder="e.g. Utilities, parking, damage fee" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label-fintech" th:for="|chargeAmount-${r.id}|">Amount ($)</label>
+                                        <input th:id="|chargeAmount-${r.id}|" name="amount" type="number" min="0.01" step="0.01" class="form-control form-control-sm" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label-fintech" th:for="|chargeDue-${r.id}|">Due date (optional)</label>
+                                        <input th:id="|chargeDue-${r.id}|" name="dueDate" type="date" class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-fintech-primary w-100 mt-3" data-loading-label="Adding…">Add charge to rent bill</button>
+                            </form>
+                        </div>
+                    </div></div>
+                </div>
+                <div class="modal fade" th:id="|editResident-${r.id}|" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg"><div class="modal-content">
+                        <form th:action="@{/rent/residents/{id}/edit(id=${r.id})}" method="post">
+                            <div class="modal-header"><h2 class="modal-title fs-5" th:text="'Edit ' + ${r.name}"></h2>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                            <div class="modal-body"><div class="row g-3">
+                                <div class="col-md-6"><label class="form-label-fintech">Full Name</label>
+                                    <input type="text" name="name" class="form-control" th:value="${r.name}" required></div>
+                                <div class="col-md-4"><label class="form-label-fintech">Phone</label>
+                                    <input type="text" name="phoneNumber" class="form-control" th:value="${r.phoneNumber}" required></div>
+                                <div class="col-md-6"><label class="form-label-fintech">Email (optional)</label>
+                                    <input type="email" name="email" maxlength="200" class="form-control" th:value="${r.email}" placeholder="for email reminders"></div>
+                                <div class="col-md-2"><label class="form-label-fintech">Room</label>
+                                    <input type="text" name="room" class="form-control" th:value="${r.room}"></div>
+                                <div class="col-md-4"><label class="form-label-fintech">Monthly Rent ($)</label>
+                                    <input type="number" min="0" step="0.01" name="monthlyRent" class="form-control" th:value="${r.monthlyRent}" required></div>
+                                <div class="col-md-4"><label class="form-label-fintech">Balance Due ($)</label>
+                                    <input type="number" min="0" step="0.01" name="balanceDue" class="form-control" th:value="${r.balanceDue}" required></div>
+                                <div class="col-md-4"><label class="form-label-fintech">Paid This Month ($)</label>
+                                    <input type="number" min="0" step="0.01" name="paidThisMonth" class="form-control" th:value="${r.paidThisMonth}" required></div>
+                                <div class="col-md-6"><label class="form-label-fintech" th:for="|link-${r.id}|">Roster member (for social clearance)</label>
+                                    <select th:id="|link-${r.id}|" name="linkedMemberId" class="form-select">
+                                        <option value="" th:selected="${r.linkedMemberId == null}">Match a roster member by name</option>
+                                        <option value="none" th:selected="${r.linkedMemberId != null and #strings.isEmpty(r.linkedMemberId)}">Non-member / unlinked resident</option>
+                                        <option th:each="m : ${rosterMembers}" th:value="${m.id}" th:text="${m.name}" th:selected="${m.id == r.linkedMemberId}"></option>
+                                    </select></div>
+                                <div class="col-md-6 small text-muted d-flex align-items-end">Social clearance adds this resident's rent to the linked member's dues when "Evaluate dues only" is off in Settings.</div>
+                            </div></div>
+                            <div class="modal-footer"><button type="button" class="btn btn-fintech-outline" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-fintech-primary">Save Resident</button></div>
+                        </form>
+                    </div></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <section id="rentCharges" class="surface-card hover-expand-card mb-4" aria-labelledby="rentChargesTitle" data-hover-expand>
+        <div class="hover-expand-card__header">
+            <h2 id="rentChargesTitle" class="section-title mb-0">
+                <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="rentChargesContent">
+                    <span>Create rent charges</span>
+                    <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                </button>
+            </h2>
+        </div>
+        <div id="rentChargesContent" class="hover-expand-card__content" aria-hidden="true" inert>
+            <div class="hover-expand-card__inner">
+                <div class="hover-expand-card__body">
+                    <p class="section-subtitle mt-2 mb-3">Add a custom charge, such as utilities, parking or a fine, to the rent bill of each selected resident. It's added to their balance due and listed under Charges in their actions menu.</p>
+                    <form th:action="@{/rent/charges}" method="post" id="rentChargeForm" data-duplicate-guard>
+                        <div class="row g-2 align-items-end mb-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="rentChargeDescription">Charge description</label>
+                                <input id="rentChargeDescription" name="description" class="form-control form-control-sm" maxlength="200" placeholder="e.g. October utilities" required>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label-fintech" for="rentChargeAmount">Amount per resident ($)</label>
+                                <input id="rentChargeAmount" name="amount" type="number" min="0.01" step="0.01" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-fintech" for="rentChargeDueDate">Due date (optional)</label>
+                                <input id="rentChargeDueDate" name="dueDate" type="date" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <button type="submit" class="btn btn-fintech-primary w-100" data-loading-label="Adding charges…">Add charge to selected</button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <input class="form-check-input" id="selectAllRentResidents" type="checkbox">
+                            <label class="small fw-semibold" for="selectAllRentResidents">Select all residents</label>
+                        </div>
+                        <div class="row g-2 border rounded-3 p-2 mx-0" style="max-height:180px;overflow:auto;">
+                            <div class="col-12 col-sm-6 col-lg-4" th:each="r : ${residents}">
+                                <div class="form-check">
+                                    <input class="form-check-input rent-charge-resident" type="checkbox" name="residentIds"
+                                           th:id="|rent-charge-${r.id}|" th:value="${r.id}">
+                                    <label class="form-check-label small" th:for="|rent-charge-${r.id}|" th:text="${r.name}"></label>
+                                </div>
+                            </div>
+                            <div class="small text-muted" th:if="${#lists.isEmpty(residents)}">No residents yet. Add a resident above before creating charges.</div>
+                        </div>
+                        <div id="rentChargeError" class="small text-danger mt-2" role="alert" hidden>Select at least one resident.</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="rentCommunications" class="surface-card hover-expand-card mb-4" aria-labelledby="rentCommunicationsTitle" data-hover-expand>
+        <div class="hover-expand-card__header">
+            <h2 id="rentCommunicationsTitle" class="section-title mb-0">
+                <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="rentCommunicationsContent">
+                    <span>Rent communications</span>
+                    <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                </button>
+            </h2>
+        </div>
+        <div id="rentCommunicationsContent" class="hover-expand-card__content" aria-hidden="true" inert>
+            <div class="hover-expand-card__inner">
+                <div class="hover-expand-card__body">
+                    <p class="section-subtitle mt-2 mb-3">Text the whole house or change the message residents get with rent reminders.</p>
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-6">
+                            <h3 class="h6 fw-bold mb-1">House announcement</h3>
+                            <p class="small text-muted mb-2">Text everyone who lives here (muted residents are skipped). <code>{name}</code> is replaced with each resident's name.</p>
+                            <form th:action="@{/rent/announce}" method="post" id="houseAnnouncementForm"
+                                  th:attr="data-recipient-count=${unmutedResidentCount},data-live=${liveSmsEnabled},data-sms-remaining=${smsRemainingToday}">
+                                <label class="visually-hidden" for="houseAnnouncement">Announcement message</label>
+                                <textarea id="houseAnnouncement" name="message" rows="4" maxlength="1600" class="form-control form-control-sm mb-2" placeholder="e.g. Heads up: trash pickup moved to Thursday." required></textarea>
+                                <button type="submit" class="btn btn-fintech-primary w-100" th:disabled="${smsRemainingToday == 0 or unmutedResidentCount == 0}" data-loading-label="Sending…">Send to house</button>
+                                <div class="small text-muted mt-2">
+                                    <span th:text="${unmutedResidentCount} + ' unmuted resident(s) will receive this message'"></span>
+                                    · <span th:text="${smsRemainingToday} + ' SMS left today'"></span>
+                                </div>
+                                <div class="small text-muted" th:if="${unmutedResidentCount == 0}">Add or unmute residents before sending an announcement.</div>
+                            </form>
+                        </div>
+                        <div class="col-12 col-xl-6">
+                            <h3 class="h6 fw-bold mb-1">Rent reminder template</h3>
+                            <p class="small text-muted mb-2">Tags: <code>{name}</code> <code>{room}</code> <code>{balanceDue}</code></p>
+                            <form th:action="@{/rent/settings}" method="post">
+                                <label class="visually-hidden" for="rentSmsTemplate">Rent reminder template</label>
+                                <textarea id="rentSmsTemplate" name="rentSmsTemplate" rows="4" maxlength="1600" class="form-control form-control-sm mb-2" th:text="${settings.rentSmsTemplate}" required></textarea>
+                                <button type="submit" class="btn btn-fintech-primary w-100" data-loading-label="Saving…">Save template</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script th:replace="~{fragments :: tableFullscreenScript}"></script>
+<script>
+    document.addEventListener('submit', function (event) {
+        if (event.defaultPrevented) return;
+        // The button that was clicked. It's disabled only after the browser has collected the form data:
+        // a button disabled during the submit event drops its name/value from the request.
+        const button = event.submitter || event.target.querySelector('button[type="submit"], button:not([type])');
+        if (!button || button.disabled || button.dataset.busy === 'true') return;
+        button.dataset.busy = 'true';
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>' + (button.dataset.loadingLabel || 'Working…');
+        setTimeout(function () { button.disabled = true; }, 0);
+    });
+</script>
+<script>
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+</script>
+<script th:replace="~{fragments :: modalScript}"></script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    const rentBulkReminderForm = document.getElementById('rentBulkReminderForm');
+    if (rentBulkReminderForm) {
+        rentBulkReminderForm.addEventListener('submit', function (event) {
+            const live = rentBulkReminderForm.dataset.live === 'true'
+                ? 'Real SMS will be sent through Twilio.' : 'SMS simulation mode is active.';
+            if (!window.confirm('Send rent reminders to ' + rentBulkReminderForm.dataset.recipientCount +
+                ' unmuted resident(s) with a balance?\n\nCombined balance due: $' +
+                Number(rentBulkReminderForm.dataset.total || 0).toFixed(2) +
+                '\nSMS allowance remaining today: ' + rentBulkReminderForm.dataset.smsRemaining + '\n' + live)) {
+                event.preventDefault();
+            }
+        });
+    }
+    document.querySelectorAll('[data-send-rent-name]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            const live = form.dataset.live === 'true' ? 'Real SMS will be sent through Twilio.' : 'SMS simulation mode is active.';
+            if (!window.confirm('Send a rent reminder to ' + form.dataset.sendRentName + ' (' + form.dataset.phone +
+                ')?\n\nBalance due: $' + Number(form.dataset.balance || 0).toFixed(2) +
+                '\nSMS allowance remaining today: ' + form.dataset.smsRemaining + '\n' + live)) {
+                event.preventDefault();
+            }
+        });
+    });
+    const announcementForm = document.getElementById('houseAnnouncementForm');
+    if (announcementForm) {
+        announcementForm.addEventListener('submit', function (event) {
+            const message = document.getElementById('houseAnnouncement').value.trim();
+            const delivery = announcementForm.dataset.live === 'true' ? 'Real SMS will be sent through Twilio.' : 'SMS simulation mode is active.';
+            if (!window.confirm('Send this announcement to ' + announcementForm.dataset.recipientCount +
+                ' unmuted resident(s)?\n\nMessage preview: ' + message.slice(0, 180) +
+                (message.length > 180 ? '…' : '') + '\n\nSMS allowance remaining today: ' + announcementForm.dataset.smsRemaining +
+                '\n' + delivery)) {
+                event.preventDefault();
+            }
+        });
+    }
+    const rentChargeForm = document.getElementById('rentChargeForm');
+    if (rentChargeForm) {
+        const selectAll = document.getElementById('selectAllRentResidents');
+        const checks = Array.from(rentChargeForm.querySelectorAll('.rent-charge-resident'));
+        selectAll.addEventListener('change', function () {
+            checks.forEach(function (check) { check.checked = selectAll.checked; });
+        });
+        checks.forEach(function (check) {
+            check.addEventListener('change', function () {
+                selectAll.checked = checks.length > 0 && checks.every(function (item) { return item.checked; });
+            });
+        });
+        rentChargeForm.addEventListener('submit', function (event) {
+            const selected = checks.filter(function (check) { return check.checked; });
+            if (selected.length === 0) {
+                event.preventDefault();
+                document.getElementById('rentChargeError').hidden = false;
+                return;
+            }
+            const amount = Number(document.getElementById('rentChargeAmount').value);
+            const description = document.getElementById('rentChargeDescription').value.trim();
+            if (!window.confirm('Add "' + description + '" to ' + selected.length + ' resident(s)?\n\nAmount per resident: $' +
+                amount.toFixed(2) + '\nTotal new charges: $' + (amount * selected.length).toFixed(2) +
+                '\nEach resident\'s balance due increases by this amount.')) event.preventDefault();
+        });
+    }
+    document.querySelectorAll('[data-remove-charge]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!window.confirm('Remove "' + form.dataset.removeCharge + '" ($' + Number(form.dataset.amount || 0).toFixed(2) +
+                ')?\n\nThis lowers the resident\'s balance due by that amount.')) event.preventDefault();
+        });
+    });
+    document.querySelectorAll('[data-delete-resident]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!window.confirm('Remove ' + form.dataset.deleteResident + ' from the house roster?\n\nBalance due: $' +
+                Number(form.dataset.balance || 0).toFixed(2))) event.preventDefault();
+        });
+    });
+</script>
+</body>
+</html>

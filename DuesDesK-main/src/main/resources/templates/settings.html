@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-canvas);
+            color: var(--text-secondary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navigation */
+        .app-navbar {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0.85rem 0;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--btn-primary-bg);
+            color: var(--btn-primary-text);
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--status-success-text);
+        }
+
+        /* Cards & Containers */
+        .surface-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .kpi-card {
+            padding: 1.25rem 1.35rem;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--border-strong);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1.2;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .kpi-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+        }
+
+        .kpi-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        /* Typography & Utilities */
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .section-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* Badges */
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .badge-paid {
+            background-color: var(--status-success-bg);
+            color: var(--status-success-text);
+            border: 1px solid var(--status-success-border);
+        }
+
+        .badge-plan {
+            background-color: var(--status-info-bg);
+            color: var(--btn-primary-hover);
+            border: 1px solid var(--status-info-border);
+        }
+
+        .badge-delinquent {
+            background-color: var(--status-danger-bg);
+            color: var(--status-danger-text);
+            border: 1px solid var(--status-danger-border);
+        }
+
+        .badge-muted {
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            font-size: 0.7rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        /* Table Styling */
+        .table-fintech {
+            margin-bottom: 0;
+        }
+
+        .table-fintech thead th {
+            background-color: var(--bg-canvas);
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            white-space: nowrap;
+        }
+
+        .table-fintech tbody td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--bg-subtle);
+            font-size: 0.875rem;
+            vertical-align: middle;
+        }
+
+        .table-fintech tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-fintech tbody tr:hover {
+            background-color: var(--bg-canvas);
+        }
+
+        .history-link {
+            border: 0;
+            padding: 0;
+            background: none;
+            color: var(--text-primary);
+            font: inherit;
+            font-weight: 600;
+            text-align: left;
+            text-decoration: underline;
+            text-decoration-color: var(--border-strong);
+            text-underline-offset: 3px;
+        }
+
+        .history-link:hover {
+            color: var(--btn-primary-hover);
+            text-decoration-color: currentColor;
+        }
+
+        /* Filter Tabs & Search */
+        .filter-pill-group {
+            display: inline-flex;
+            background-color: var(--bg-subtle);
+            padding: 0.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .filter-pill {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .filter-pill.active {
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            font-weight: 600;
+            box-shadow: var(--shadow-card);
+        }
+
+        /* Forms & Inputs */
+        .form-label-fintech {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        .form-control, .form-select {
+            border-color: var(--border-strong);
+            font-size: 0.875rem;
+            border-radius: 8px;
+            color: var(--text-secondary);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--btn-primary-bg);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+
+        /* Buttons */
+        .btn-fintech-primary {
+            background-color: var(--text-primary);
+            color: var(--btn-primary-text);
+            border: 1px solid var(--text-primary);
+            font-weight: 500;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            padding: 0.45rem 0.9rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-fintech-primary:hover {
+            background-color: var(--text-secondary);
+            color: var(--btn-primary-text);
+        }
+
+        .btn-fintech-danger {
+            background-color: var(--status-danger-text);
+            color: var(--btn-primary-text);
+            border: 1px solid var(--status-danger-text);
+            font-weight: 500;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            padding: 0.45rem 0.9rem;
+        }
+
+        .btn-fintech-danger:hover {
+            background-color: var(--status-danger-text);
+            color: var(--btn-primary-text);
+        }
+
+        .btn-fintech-outline {
+            background-color: var(--bg-surface);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-strong);
+            font-weight: 500;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            padding: 0.45rem 0.85rem;
+        }
+
+        .btn-fintech-outline:hover {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            border-color: var(--text-placeholder);
+        }
+
+        .btn-action-sm {
+            font-size: 0.76rem;
+            font-weight: 500;
+            padding: 0.28rem 0.6rem;
+            border-radius: 6px;
+        }
+
+        /* Tag Insertion Chips */
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 0.15rem 0.5rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.12s ease;
+        }
+
+        .tag-chip:hover {
+            background-color: var(--status-info-bg);
+            color: var(--btn-primary-hover);
+            border-color: var(--status-info-border);
+        }
+
+        /* SMS Preview Bubble */
+        .sms-preview-box {
+            background-color: var(--bg-canvas);
+            border: 1px dashed var(--border-strong);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Log Feed */
+        .log-item {
+            padding: 0.85rem 0;
+            border-bottom: 1px solid var(--bg-subtle);
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .surface-card, .kpi-card {
+            animation: card-enter 0.45s ease both;
+        }
+
+        @keyframes card-enter {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        /* Settings layout: section index on the left, focused cards on the right */
+        .settings-nav { position: sticky; top: calc(var(--desktop-header-h, 0px) + 8.5rem); display: flex; flex-direction: column; gap: .15rem; }
+        .settings-nav a { display: flex; align-items: center; gap: .55rem; padding: .5rem .75rem; border-radius: 8px; color: var(--text-secondary); font-size: .86rem; font-weight: 500; text-decoration: none; transition: background-color .12s ease, color .12s ease; }
+        .settings-nav a:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .settings-nav a.is-current { background: var(--status-info-bg); color: var(--status-info-text); font-weight: 600; }
+        .settings-nav .bi { font-size: .95rem; opacity: .8; }
+        .settings-section { scroll-margin-top: 8.5rem; }
+        .settings-save-bar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem 1.25rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); box-shadow: var(--shadow-pop); }
+        @media (max-width: 991px) { .settings-nav { position: static; flex-direction: row; flex-wrap: wrap; } }
+    </style>
+<th:block th:replace="~{fragments :: navStyles}"></th:block>
+<script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+
+<!-- Top Navigation Bar -->
+<div class="app-header-stack">
+<header class="app-navbar mb-4">
+    <div class="container-xxl px-3 px-md-4 header-grid">
+        <div class="d-flex align-items-center">
+            <span class="status-pill" th:if="${settings.autoSendEnabled}">
+                <span class="status-dot"></span>
+                <span>Auto-Scheduler Active (<span th:text="${settings.frequency}"></span>)</span>
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-3 justify-content-center">
+            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
+            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
+        </div>
+        <div></div>
+    </div>
+</header>
+
+<nav th:replace="~{fragments :: nav('settings')}"></nav>
+</div>
+
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="4000" class="alert alert-success border-0 shadow-sm rounded-3 py-2 px-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill text-success me-2"></i><span class="fw-medium small" th:text="${toast}"></span>
+    </div>
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Preferences</div>
+            <h2 class="page-title">Settings</h2>
+            <p class="page-lede">How DuesDesk looks, how it sends texts and payment links, and the chapter-wide money policies it applies.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- On-this-page navigation: stays in view while the settings scroll -->
+        <nav class="col-12 col-lg-3" aria-label="Settings sections">
+            <div class="settings-nav">
+                <a href="#appearance"><i class="bi bi-palette" aria-hidden="true"></i>Appearance</a>
+                <a href="#messaging"><i class="bi bi-broadcast" aria-hidden="true"></i>Text messaging</a>
+                <a href="#paymentLinks"><i class="bi bi-link-45deg" aria-hidden="true"></i>Payment links</a>
+                <a href="#treasury"><i class="bi bi-sliders" aria-hidden="true"></i>Treasury policies</a>
+                <a href="#smsLog"><i class="bi bi-journal-text" aria-hidden="true"></i>SMS dispatch log</a>
+            </div>
+        </nav>
+
+        <div class="col-12 col-lg-9 d-flex flex-column gap-4">
+            <section class="surface-card settings-section" id="appearance" aria-labelledby="appearanceTitle">
+                <div class="card-head">
+                    <div>
+                        <h3 class="section-title" id="appearanceTitle">Appearance</h3>
+                        <p class="section-subtitle">Choose how DuesDesk looks. System follows your device setting.</p>
+                    </div>
+                    <div class="btn-group" role="group" aria-label="Appearance">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-theme-option="light"><i class="bi bi-sun me-1"></i>Light</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-theme-option="dark"><i class="bi bi-moon-stars me-1"></i>Dark</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-theme-option="system"><i class="bi bi-circle-half me-1"></i>System</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="surface-card settings-section" id="messaging" aria-labelledby="twilioTitle">
+                <div class="card-head">
+                    <div>
+                        <h3 class="section-title" id="twilioTitle">Text messaging (Twilio)</h3>
+                        <p class="section-subtitle">Connect your Twilio account to send live SMS directly from DuesDesk. Reminder templates and the dispatch schedule are on the <a href="/#smsReminders">Dues page</a>; house announcements and the rent reminder template are on the <a href="/rent#rentCommunications">Rent page</a>.</p>
+                    </div>
+                    <span class="badge" th:if="${hasTwilioCredentials}" th:classappend="${twilioEnabled} ? ' bg-success' : ' bg-secondary'"
+                          th:text="${twilioEnabled} ? 'Saved connection enabled' : 'Saved connection disabled'"></span>
+                    <span class="badge text-bg-light" th:unless="${hasTwilioCredentials}"
+                          th:text="${twilioLiveConfigured} ? 'Live Twilio is configured from your environment.' : 'No live Twilio connection configured; SMS uses simulation mode.'"></span>
+                </div>
+                <div class="card-body-pad">
+                    <form th:action="@{/settings/twilio}" method="post" autocomplete="off">
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="twilioAccountSid">Account SID</label>
+                                <input id="twilioAccountSid" name="accountSid" type="text" class="form-control form-control-sm"
+                                       autocomplete="off" placeholder="AC… (leave blank to keep saved credentials)">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="twilioAuthToken">Auth Token</label>
+                                <input id="twilioAuthToken" name="authToken" type="password" class="form-control form-control-sm"
+                                       autocomplete="new-password" placeholder="Enter token to replace saved credentials">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="twilioFromNumber">Twilio Sender Number</label>
+                                <input id="twilioFromNumber" name="fromNumber" type="tel" class="form-control form-control-sm"
+                                       autocomplete="off" placeholder="+15551234567">
+                            </div>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="twilioEnabled"
+                                   name="enabled" value="true" th:checked="${twilioEnabled}">
+                            <label class="form-check-label fw-semibold small" for="twilioEnabled">Enable live SMS using this connection</label>
+                        </div>
+                        <p class="small text-muted">Credentials are stored locally outside your exported save, with owner-only file permissions where supported. They are not encrypted; anyone with access to this computer account may be able to read them.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-fintech-primary btn-sm">Save Twilio Connection</button>
+                            <button type="submit" th:if="${hasTwilioCredentials}" form="twilioDisconnectForm" class="btn btn-outline-danger btn-sm">Disconnect and Remove Credentials</button>
+                        </div>
+                    </form>
+                    <form th:if="${hasTwilioCredentials}" id="twilioDisconnectForm" th:action="@{/settings/twilio/disconnect}" method="post"
+                          onsubmit="return confirm('Remove the locally saved Twilio credentials?');"></form>
+                </div>
+            </section>
+
+            <section class="surface-card settings-section" id="paymentLinks" aria-labelledby="paymentLinksTitle">
+                <div class="card-head">
+                    <div>
+                        <h3 class="section-title" id="paymentLinksTitle">Payment links</h3>
+                        <p class="section-subtitle">Add the chapter's payment accounts. Reminder templates can then include a link that opens the app with the amount and a note already filled in, so members pay in two taps and the payment is easy to match. Use <code>{{venmo_link}}</code>, <code>{{cashapp_link}}</code> or <code>{{paypal_link}}</code> for one service, or <code>{{pay_links}}</code> for all of them. Zelle has no link, so it is listed by name.</p>
+                    </div>
+                </div>
+                <div class="card-body-pad">
+                    <form th:action="@{/settings/payment-links}" method="post" id="paymentLinksForm">
+                        <div id="paymentHandleRows">
+                            <div class="row g-2 align-items-end mb-2 payment-handle-row" th:each="h : ${settings.chapterCashServiceHandles}">
+                                <div class="col-5 col-md-3">
+                                    <label class="form-label-fintech">Service</label>
+                                    <select name="service" class="form-select form-select-sm">
+                                        <option th:each="s : ${paymentServices}" th:value="${s.key}" th:text="${s.value}" th:selected="${s.key == h.service}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-5 col-md-5">
+                                    <label class="form-label-fintech">Account / handle</label>
+                                    <input name="handle" class="form-control form-control-sm" maxlength="100" th:value="${h.handle}" placeholder="@ChapterTreasury">
+                                </div>
+                                <div class="col-2 col-md-1"><button type="button" class="btn btn-ghost btn-sm w-100" data-remove-handle aria-label="Remove this payment handle"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
+                            </div>
+                        </div>
+                        <template id="paymentHandleTemplate">
+                            <div class="row g-2 align-items-end mb-2 payment-handle-row">
+                                <div class="col-5 col-md-3">
+                                    <label class="form-label-fintech">Service</label>
+                                    <select name="service" class="form-select form-select-sm">
+                                        <option th:each="s : ${paymentServices}" th:value="${s.key}" th:text="${s.value}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-5 col-md-5">
+                                    <label class="form-label-fintech">Account / handle</label>
+                                    <input name="handle" class="form-control form-control-sm" maxlength="100" placeholder="@ChapterTreasury">
+                                </div>
+                                <div class="col-2 col-md-1"><button type="button" class="btn btn-ghost btn-sm w-100" data-remove-handle aria-label="Remove this payment handle"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
+                            </div>
+                        </template>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <button type="button" class="btn btn-fintech-outline btn-sm" id="addPaymentHandle"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Add a payment account</span></button>
+                            <button type="submit" class="btn btn-fintech-primary btn-sm">Save payment links</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Treasury policies: one form split into focused cards, saved together -->
+            <form th:action="@{/settings/treasury}" method="post" id="treasury" class="settings-section d-flex flex-column gap-4" aria-labelledby="treasuryTitle">
+                <div class="tier-heading my-0">
+                    <h2 id="treasuryTitle">Treasury policies</h2>
+                    <p>Saved together with the button at the bottom. <a href="/finance-tools">Open Reports &amp; Handoff</a></p>
+                </div>
+
+                <section class="surface-card" aria-labelledby="chapterCashTitle">
+                    <div class="card-head">
+                        <div>
+                            <h3 class="section-title" id="chapterCashTitle">Chapter &amp; cash</h3>
+                            <p class="section-subtitle">Used on payment plan agreements, the meeting packet and the Financial Overview.</p>
+                        </div>
+                    </div>
+                    <div class="card-body-pad">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label-fintech" for="chapterName">Chapter name</label>
+                                <input id="chapterName" name="chapterName" class="form-control form-control-sm" maxlength="120"
+                                       th:value="${settings.chapterName}" placeholder="e.g. Alpha Beta Chapter">
+                                <div class="form-text">Printed on payment plan agreements.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label-fintech" for="openingCash">Opening cash balance ($)</label>
+                                <input id="openingCash" name="openingCashBalance" type="number" min="0" step="0.01"
+                                       class="form-control form-control-sm" th:value="${settings.openingCashBalance}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label-fintech" for="upcomingBills">Upcoming bills (one per line: Description | YYYY-MM-DD | Amount)</label>
+                                <textarea id="upcomingBills" name="upcomingBills" rows="3" maxlength="4000" class="form-control form-control-sm"
+                                          placeholder="IHQ assessment | 2026-11-01 | 1250.00"
+                                          th:text="${settings.upcomingBills}"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="surface-card" aria-labelledby="backupTitle">
+                    <div class="card-head">
+                        <div>
+                            <h3 class="section-title" id="backupTitle">Encrypted daily cloud-folder backup</h3>
+                            <p class="section-subtitle" th:text="${settings.cloudBackupStatus}"></p>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="cloudBackupEnabled"
+                                   name="cloudBackupEnabled" value="true" th:checked="${settings.cloudBackupEnabled}">
+                            <label class="form-check-label small fw-semibold" for="cloudBackupEnabled">Enable daily</label>
+                        </div>
+                    </div>
+                    <div class="card-body-pad">
+                        <p class="small text-muted">Writes an AES-encrypted snapshot to a local iCloud Drive, OneDrive, Dropbox, or Google Drive sync folder at 2:00 AM, and also when DuesDesk opens or closes if no snapshot was made in the last 20 hours (so a laptop that sleeps overnight still gets its daily backup). The generated key is protected by your <strong th:text="${credentialStoreName}">system credential store</strong>. Record the recovery password separately so you can restore a synced snapshot on a replacement computer.</p>
+                        <div class="row g-3 mb-2">
+                            <div class="col-12 col-md-9">
+                                <label class="form-label-fintech" for="cloudBackupFolder">Local sync-folder path</label>
+                                <input id="cloudBackupFolder" name="cloudBackupFolder" class="form-control form-control-sm"
+                                       maxlength="1000" th:value="${settings.cloudBackupFolder}"
+                                       th:placeholder="${isWindows} ? 'C:\Users\you\OneDrive\DuesDesk Backups' : '/Users/you/Dropbox/DuesDesk Backups'">
+                                <div class="d-flex flex-wrap align-items-center gap-1 mt-2" th:if="${!#lists.isEmpty(cloudFolders)}">
+                                    <span class="small text-muted me-1">Found on this computer:</span>
+                                    <button type="button" class="btn btn-fintech-outline btn-sm py-0" th:each="folder : ${cloudFolders}"
+                                            th:attr="data-cloud-folder=${folder.path}" th:title="${folder.path}">
+                                        <i class="bi bi-cloud-check" aria-hidden="true"></i><span th:text="${folder.provider}"></span>
+                                    </button>
+                                </div>
+                                <div class="small text-muted mt-1" th:if="${#lists.isEmpty(cloudFolders)}">No iCloud Drive, OneDrive, Dropbox or Google Drive folder was found on this computer. Type the path of any folder your sync app watches.</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-fintech" for="backupRetention">Keep snapshots (days)</label>
+                                <input id="backupRetention" name="cloudBackupRetentionDays" type="number" min="1" max="365"
+                                       class="form-control form-control-sm" th:value="${settings.cloudBackupRetentionDays}">
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mt-3">
+                            <button type="submit" form="snapshotNowForm" class="btn btn-fintech-outline btn-sm" th:disabled="${!settings.cloudBackupEnabled}">Create encrypted snapshot now</button>
+                            <button type="button" class="btn btn-fintech-outline btn-sm" id="revealBackupRecovery"
+                                    th:disabled="${!settings.cloudBackupEnabled}">Show backup recovery password</button>
+                            <code id="backupRecoveryPassword" class="small" aria-live="polite"></code>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="surface-card" aria-labelledby="lateFeesTitle">
+                    <div class="card-head">
+                        <div>
+                            <h3 class="section-title" id="lateFeesTitle">Automatic late fees</h3>
+                            <p class="section-subtitle">One non-compounding fee per itemized charge after its due date and grace period. Existing saves without due-dated charges are not assessed.</p>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="lateFeesEnabled"
+                                   name="lateFeesEnabled" value="true" th:checked="${settings.lateFeesEnabled}">
+                            <label class="form-check-label small fw-semibold" for="lateFeesEnabled">Enable automatic fees</label>
+                        </div>
+                    </div>
+                    <div class="card-body-pad">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="lateFeeGraceDays">Grace period (days)</label>
+                                <input id="lateFeeGraceDays" name="lateFeeGraceDays" type="number" min="0" max="365"
+                                       class="form-control form-control-sm" th:value="${settings.lateFeeGraceDays}">
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label-fintech" for="lateFeeType">Fee type</label>
+                                <select id="lateFeeType" name="lateFeeType" class="form-select form-select-sm">
+                                    <option value="FIXED" th:selected="${settings.lateFeeType == 'FIXED'}">Fixed amount ($)</option>
+                                    <option value="PERCENT" th:selected="${settings.lateFeeType == 'PERCENT'}">Percent of unpaid charge</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label-fintech" for="lateFeeAmount">Fee amount / percent</label>
+                                <input id="lateFeeAmount" name="lateFeeAmount" type="number" min="0" step="0.01"
+                                       class="form-control form-control-sm" th:value="${settings.lateFeeAmount}">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="surface-card" aria-labelledby="clearanceTitle">
+                    <div class="card-head">
+                        <div>
+                            <h3 class="section-title" id="clearanceTitle">Social clearance</h3>
+                            <p class="section-subtitle">Who counts as cleared on the clearance list and meeting packet.</p>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="duesOnlyClearance"
+                                   name="socialClearanceDuesOnly" value="true" th:checked="${settings.socialClearanceDuesOnly}">
+                            <label class="form-check-label small fw-semibold" for="duesOnlyClearance">Evaluate dues only</label>
+                        </div>
+                    </div>
+                    <div class="card-body-pad">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label-fintech" for="clearanceTolerance">Clearance unpaid-balance tolerance ($)</label>
+                                <input id="clearanceTolerance" name="socialClearanceTolerance" type="number" min="0" step="0.01"
+                                       class="form-control form-control-sm" th:value="${settings.socialClearanceTolerance}">
+                            </div>
+                            <div class="col-12 small text-muted">When dues-only is off, a member's house rent counts too: the resident linked to that member on the Rent page, or (for residents not linked yet) the one whose name matches. Active payment plans are considered in good standing only when every unpaid installment has a valid date and none is overdue.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="settings-save-bar">
+                    <span class="small text-muted">Changes to the four treasury cards above are saved together.</span>
+                    <button type="submit" class="btn btn-fintech-primary">Save Treasury Settings</button>
+                </div>
+            </form>
+            <form th:action="@{/settings/cloud-backup/run}" method="post" id="snapshotNowForm" class="d-none"></form>
+
+            <section class="surface-card settings-section" id="smsLog" aria-labelledby="smsLogTitle">
+                <div class="card-head">
+                    <div>
+                        <h3 class="section-title" id="smsLogTitle">SMS Dispatch Log</h3>
+                        <p class="section-subtitle">Recent dues and rent messages (latest 50)</p>
+                    </div>
+                    <span class="badge rounded-pill bg-light text-dark border tabular-nums" th:text="${#lists.size(smsLogs)} + ' / 50'">0 / 50</span>
+                </div>
+                <div class="card-body-pad">
+                    <div th:if="${#lists.isEmpty(smsLogs)}" class="empty-note py-3">
+                        <i class="bi bi-inbox" aria-hidden="true"></i>
+                        No messages dispatched yet.
+                    </div>
+                    <div style="max-height: 360px; overflow-y: auto;" class="pe-1" th:unless="${#lists.isEmpty(smsLogs)}">
+                        <div th:each="log : ${smsLogs}" class="log-item">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="fw-semibold small text-dark">
+                                    <span th:text="${log.memberName}"></span>
+                                    <span class="text-muted fw-normal tabular-nums" th:text="'(' + ${log.phoneNumber} + ')'"></span>
+                                </div>
+                                <span class="badge-status" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;"
+                                      th:classappend="${log.deliveryMode == 'TWILIO LIVE' ? 'badge-paid' : (log.deliveryMode == 'FAILED' ? 'badge-delinquent' : 'badge-plan')}"
+                                      th:text="${log.deliveryMode}"></span>
+                            </div>
+                            <div class="small text-secondary mb-1" style="line-height: 1.4;" th:text="${log.message}"></div>
+                            <div class="text-muted tabular-nums" style="font-size: 0.72rem;" th:text="${log.timestamp}"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script>
+    // Payment links: add or remove one row per chapter payment account.
+    (function () {
+        var rows = document.getElementById('paymentHandleRows');
+        var template = document.getElementById('paymentHandleTemplate');
+        var add = document.getElementById('addPaymentHandle');
+        if (!rows || !template || !add) return;
+        function addRow(focus) {
+            var row = template.content.firstElementChild.cloneNode(true);
+            rows.appendChild(row);
+            if (focus) row.querySelector('input[name="handle"]').focus();
+        }
+        add.addEventListener('click', function () { addRow(true); });
+        rows.addEventListener('click', function (event) {
+            var remove = event.target.closest('[data-remove-handle]');
+            if (remove) remove.closest('.payment-handle-row').remove();
+        });
+        if (!rows.querySelector('.payment-handle-row')) addRow(false);
+    })();
+    // Section index: highlight the section currently in view.
+    (function () {
+        var links = Array.prototype.slice.call(document.querySelectorAll('.settings-nav a'));
+        if (!links.length || !('IntersectionObserver' in window)) return;
+        var byId = {};
+        links.forEach(function (link) { byId[link.getAttribute('href').slice(1)] = link; });
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting || !byId[entry.target.id]) return;
+                links.forEach(function (link) { link.classList.toggle('is-current', link === byId[entry.target.id]); });
+            });
+        }, { rootMargin: '-35% 0px -55% 0px' });
+        Object.keys(byId).forEach(function (id) {
+            var section = document.getElementById(id);
+            if (section) observer.observe(section);
+        });
+    })();
+    // Cloud-folder quick picks: fill the path with a DuesDesk Backups folder inside the chosen sync provider.
+    document.querySelectorAll('[data-cloud-folder]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var input = document.getElementById('cloudBackupFolder');
+            input.value = button.dataset.cloudFolder;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.focus();
+        });
+    });
+    const revealBackupRecovery = document.getElementById('revealBackupRecovery');
+    if (revealBackupRecovery) {
+        revealBackupRecovery.addEventListener('click', async function () {
+            revealBackupRecovery.disabled = true;
+            try {
+                const response = await fetch('/settings/cloud-backup/recovery-password', {method: 'POST'});
+                const value = await response.text();
+                if (!response.ok) throw new Error(value || 'Recovery password unavailable.');
+                document.getElementById('backupRecoveryPassword').textContent = value;
+            } catch (error) {
+                window.alert(error.message || 'Recovery password unavailable.');
+            } finally {
+                revealBackupRecovery.disabled = false;
+            }
+        });
+    }
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+</script>
+<script th:replace="~{fragments :: themeScript}"></script>
+</body>
+</html>

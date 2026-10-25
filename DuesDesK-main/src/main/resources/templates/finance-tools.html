@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports &amp; Handoff | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg-canvas);color:var(--text-secondary); }
+        .banner { background:var(--bg-surface);border-bottom:1px solid var(--border-subtle);padding:1rem 0; }
+        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
+        .surface { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:1.25rem; }
+        .muted { color:var(--text-muted);font-size:.86rem; }
+    </style>
+    <th:block th:replace="~{fragments :: navStyles}"></th:block>
+    <script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+<div class="app-header-stack">
+    <header class="banner">
+        <div class="container-xxl px-3 px-md-4 header-grid">
+            <div></div>
+            <div class="d-flex align-items-center gap-3 justify-content-center">
+                <div class="brand-icon"><i class="bi bi-bank2"></i></div><h1 class="h6 fw-bold mb-0">DuesDesk</h1>
+            </div>
+            <div></div>
+        </div>
+    </header>
+    <nav th:replace="~{fragments :: nav('finance')}"></nav>
+</div>
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="6000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Finance</div>
+            <h2 class="page-title">Reports &amp; Handoff</h2>
+            <p class="page-lede">Share privacy-conscious chapter reports, and hand the books to the next treasurer at the end of a term.</p>
+        </div>
+        <div class="page-actions small text-muted text-end" th:if="${!#strings.isEmpty(settings.lastRolloverDate)}">
+            <span>Last rollover: <span class="tabular-nums" th:text="${settings.lastRolloverDate}"></span><span th:if="${!#strings.isEmpty(settings.currentTermName)}" th:text="' (' + ${settings.currentTermName} + ')'"></span></span>
+        </div>
+    </div>
+
+    <!-- Everyday reports first: one click each, no setup -->
+    <div class="tier-heading mt-0"><h2>Reports to share</h2><p>Clearance lists show only names and CLEARED / NOT CLEARED, never balances.</p></div>
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <section class="surface-card h-100 d-flex flex-column" aria-labelledby="clearancePdfTitle">
+                <div class="card-head justify-content-start border-bottom-0 pb-2">
+                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-file-earmark-pdf"></i></span>
+                    <div>
+                        <h3 class="section-title" id="clearancePdfTitle">Social clearance list</h3>
+                        <p class="section-subtitle">Printable PDF</p>
+                    </div>
+                </div>
+                <div class="card-body-pad pt-0 d-flex flex-column flex-grow-1">
+                    <p class="metric-description mb-3">Who is cleared for social events, by name only. Good for posting or sending to the social chair.</p>
+                    <button type="button" class="btn btn-fintech-primary mt-auto" data-finance-document="clearance-pdf">Export Social Clearance List (PDF)</button>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-md-4">
+            <section class="surface-card h-100 d-flex flex-column" aria-labelledby="clearanceCsvTitle">
+                <div class="card-head justify-content-start border-bottom-0 pb-2">
+                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-filetype-csv"></i></span>
+                    <div>
+                        <h3 class="section-title" id="clearanceCsvTitle">Social clearance spreadsheet</h3>
+                        <p class="section-subtitle">CSV for Excel or Google Sheets</p>
+                    </div>
+                </div>
+                <div class="card-body-pad pt-0 d-flex flex-column flex-grow-1">
+                    <p class="metric-description mb-3">The same list as a spreadsheet, for sign-in sheets or door lists.</p>
+                    <button type="button" class="btn btn-fintech-outline mt-auto" data-finance-document="clearance-csv">Export Social Clearance List (CSV)</button>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-md-4">
+            <section class="surface-card h-100 d-flex flex-column" aria-labelledby="packetTitle">
+                <div class="card-head justify-content-start border-bottom-0 pb-2">
+                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-easel"></i></span>
+                    <div>
+                        <h3 class="section-title" id="packetTitle">Chapter meeting packet</h3>
+                        <p class="section-subtitle">Anonymous PDF summary</p>
+                    </div>
+                </div>
+                <div class="card-body-pad pt-0 d-flex flex-column flex-grow-1">
+                    <p class="metric-description mb-3">The meeting packet is anonymous and uses the opening cash and upcoming bills configured in Settings.</p>
+                    <button type="button" class="btn btn-fintech-outline mt-auto" data-finance-document="meeting-packet">Export Chapter Meeting Packet (PDF)</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- End of term: two clear steps -->
+    <div class="tier-heading"><h2>End of term</h2><p>Roll the roster into the new semester, then hand everything to the incoming treasurer.</p></div>
+    <div class="row g-3">
+        <div class="col-12 col-xl-7">
+            <section class="surface-card h-100" id="rollover" style="scroll-margin-top:7rem" aria-labelledby="rolloverTitle">
+                <div class="card-head justify-content-start">
+                    <span class="step-badge" aria-hidden="true">1</span>
+                    <div>
+                        <h3 class="section-title" id="rolloverTitle">Start a new semester</h3>
+                        <p class="section-subtitle">Move from one term to the next without losing history. Payments, cash flow and stat history are always kept, and a copy of all your data is saved first.</p>
+                    </div>
+                    <div class="small text-muted ms-auto text-end" th:if="${archivedMemberCount > 0}"
+                         th:text="${archivedMemberCount} + ' archived ' + (${archivedMemberCount == 1} ? 'member' : 'members')"></div>
+                </div>
+                <form th:action="@{/finance/semester-rollover}" method="post" id="rolloverForm" class="card-body-pad">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label-fintech" for="termName">New term name (optional)</label>
+                            <input id="termName" name="termName" class="form-control form-control-sm" maxlength="60" placeholder="e.g. Spring 2027">
+                        </div>
+                        <div class="col-12">
+                            <div class="fw-semibold small mb-1 text-dark">1. Archive graduated or departed members</div>
+                            <p class="small text-muted mb-2">Only members with a $0 balance can be archived. They leave the roster, but their payments stay in Cash Flow and reports.</p>
+                            <div th:if="${#lists.isEmpty(rolloverArchivable)}" class="small text-muted">No members have a $0 balance right now.</div>
+                            <div class="d-flex flex-wrap gap-2" th:unless="${#lists.isEmpty(rolloverArchivable)}">
+                                <div class="form-check border px-4 py-1 rounded-1" th:each="m : ${rolloverArchivable}">
+                                    <input class="form-check-input" type="checkbox" name="archiveMemberIds" th:value="${m.id}" th:id="|archive-${m.id}|">
+                                    <label class="form-check-label small" th:for="|archive-${m.id}|" th:text="${m.name}"></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="consolidateCharges" value="true" id="consolidateCharges" checked>
+                                <label class="form-check-label small fw-semibold" for="consolidateCharges">2. Combine unpaid charges into one carryover</label>
+                            </div>
+                            <div class="small text-muted ms-4" th:text="${rolloverChargeMembers} + (${rolloverChargeMembers == 1} ? ' member has' : ' members have') + ' unpaid itemized charges. Each gets one &quot;Prior Semester Carryover Balance&quot; charge for the same total; paid charges stay as history.'"></div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="clearExpiredVouches" value="true" id="clearExpiredVouches" checked>
+                                <label class="form-check-label small fw-semibold" for="clearExpiredVouches">3. Clear expired social-clearance vouches</label>
+                            </div>
+                            <div class="small text-muted ms-4" th:text="${rolloverExpiredVouches} + (${rolloverExpiredVouches == 1} ? ' vouch has' : ' vouches have') + ' expired.'"></div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="resetChairBudgets" value="true" id="resetChairBudgets">
+                                <label class="form-check-label small fw-semibold" for="resetChairBudgets">4. Start chair budgets fresh</label>
+                            </div>
+                            <div class="small text-muted ms-4" th:text="${rolloverBudgets} + (${rolloverBudgets == 1} ? ' budget has' : ' budgets have') + ' charges or money raised this term. Their records are kept in history and the caps stay.'"></div>
+                        </div>
+                        <div class="col-12 pt-2 border-top">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="confirmed" value="true" id="rolloverConfirmed" required>
+                                <label class="form-check-label small" for="rolloverConfirmed">I understand this changes the roster and charges for everyone. A copy of the current data is saved first.</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-fintech-primary">Start new semester</button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+        </div>
+        <div class="col-12 col-xl-5">
+            <section class="surface-card h-100" aria-labelledby="handoffTitle">
+                <div class="card-head justify-content-start">
+                    <span class="step-badge" aria-hidden="true">2</span>
+                    <div>
+                        <h3 class="section-title" id="handoffTitle">Officer transition</h3>
+                        <p class="section-subtitle">Creates a ZIP containing an AES-encrypted save, one-page financial summary, and setup instructions. Twilio credentials are excluded. Share the password separately.</p>
+                    </div>
+                </div>
+                <form id="handoffForm" th:action="@{/finance/handoff-package}" method="post" class="card-body-pad">
+                    <label class="form-label-fintech" for="handoffPassword">Backup password (8+ characters)</label>
+                    <input id="handoffPassword" name="password" type="password" minlength="8" autocomplete="new-password"
+                           class="form-control mb-3" required>
+                    <label class="form-label-fintech" for="handoffPasswordConfirm">Confirm password</label>
+                    <input id="handoffPasswordConfirm" type="password" minlength="8" autocomplete="new-password"
+                           class="form-control mb-3" required>
+                    <button type="submit" class="btn btn-fintech-primary w-100">Generate Officer Handoff Package</button>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+    document.getElementById('handoffForm').addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const password = document.getElementById('handoffPassword');
+        const confirm = document.getElementById('handoffPasswordConfirm');
+        if (password.value !== confirm.value) {
+            window.alert('The password confirmation does not match.');
+            confirm.focus();
+            return;
+        }
+        if (window.desktopBridge) {
+            window.desktopBridge.exportFinanceDocument('handoff-package', password.value);
+            password.value = '';
+            confirm.value = '';
+            return;
+        }
+        try {
+            const response = await fetch('/finance/handoff-package', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                body: new URLSearchParams({password: password.value})
+            });
+            if (!response.ok) throw new Error(await response.text() || 'Package generation failed.');
+            const url = URL.createObjectURL(await response.blob());
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'DuesDesk-officer-handoff-' + new Date().toISOString().slice(0, 10) + '.zip';
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            window.alert(error.message || 'Officer handoff package generation failed.');
+        } finally {
+            password.value = '';
+            confirm.value = '';
+        }
+    });
+    document.querySelectorAll('[data-finance-document]').forEach(function (button) {
+        button.addEventListener('click', async function () {
+            const type = button.dataset.financeDocument;
+            if (window.desktopBridge) {
+                window.desktopBridge.exportFinanceDocument(type, '');
+                return;
+            }
+            const endpoint = type === 'clearance-pdf' ? '/finance/social-clearance.pdf'
+                : type === 'clearance-csv' ? '/finance/social-clearance.csv' : '/finance/meeting-packet.pdf';
+            try {
+                const response = await fetch(endpoint);
+                if (!response.ok) throw new Error('Report export failed.');
+                const url = URL.createObjectURL(await response.blob());
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = endpoint.split('/').pop();
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                window.alert(error.message || 'Report export failed.');
+            }
+        });
+    });
+</script>
+<script>
+    // Semester rollover: a last check that says exactly what is about to happen.
+    (function () {
+        var form = document.getElementById('rolloverForm');
+        if (!form) return;
+        form.addEventListener('submit', function (event) {
+            var archived = form.querySelectorAll('input[name="archiveMemberIds"]:checked').length;
+            var steps = [];
+            if (archived) steps.push('archive ' + archived + (archived === 1 ? ' member' : ' members'));
+            if (form.elements.consolidateCharges.checked) steps.push('combine unpaid charges into carryover balances');
+            if (form.elements.clearExpiredVouches.checked) steps.push('clear expired clearance vouches');
+            if (form.elements.resetChairBudgets.checked) steps.push('start chair budgets fresh');
+            var term = form.elements.termName.value.trim();
+            var message = 'Start ' + (term || 'the new semester') + '?\n\nThis will ' + (steps.length ? steps.join(', ') : 'only record the new term')
+                + '.\n\nA copy of your current data is saved first.';
+            if (!window.confirm(message)) event.preventDefault();
+        });
+    })();
+</script>
+</body>
+</html>

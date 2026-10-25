@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import &amp; Export | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg-canvas); color:var(--text-secondary); }
+        .banner { background:var(--bg-surface); border-bottom:1px solid var(--border-subtle); padding:1rem 0; }
+        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
+        .metric-card { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:1.1rem;height:100%; }
+        .metric-value { color:var(--text-primary);font-size:1.35rem;font-weight:700;letter-spacing:-.03em; }
+        .metric-description { color:var(--text-muted);font-size:.82rem;line-height:1.5; }
+        .metric-status { font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;font-weight:700; }
+        .download-status { display:none;align-items:center;gap:.5rem; }
+        .download-status.is-visible { display:inline-flex; }
+        .download-status .spinner-border { width:1rem;height:1rem;border-width:.15em; }
+        @keyframes enter { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
+        @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important; } }
+    </style>
+<th:block th:replace="~{fragments :: navStyles}"></th:block>
+<script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+    <div class="app-header-stack">
+    <header class="banner">
+    <div class="container-xxl px-3 px-md-4 header-grid">
+        <div></div>
+        <div class="d-flex align-items-center gap-3 justify-content-center">
+            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
+            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
+        </div>
+        <div></div>
+    </div>
+</header>
+<nav th:replace="~{fragments :: nav('upload')}"></nav>
+</div>
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="6000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Data</div>
+            <h2 class="page-title">Import &amp; Export</h2>
+            <p class="page-lede">Bring in balances and bank or Venmo activity, or back up your data to move it to another computer.</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-fintech-outline btn-sm" href="/numbers/flow">Review imported activity in Cash Flow</a>
+        </div>
+    </div>
+
+    <!-- Imports: the three statement types side by side, each a self-contained step -->
+    <div class="tier-heading mt-0"><h2>Import activity</h2><p>Imported deposits show up in Cash Flow for you to confirm before any balance changes.</p></div>
+    <div class="row g-3 mb-2">
+        <div class="col-12 col-lg-4">
+            <section class="surface-card h-100 d-flex flex-column" aria-labelledby="greekbillTitle">
+                <div class="card-head justify-content-start">
+                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+                    <div>
+                        <h3 class="section-title" id="greekbillTitle">GreekBill balance sync</h3>
+                        <p class="section-subtitle">Updates each member's balances</p>
+                    </div>
+                </div>
+                <div class="card-body-pad d-flex flex-column flex-grow-1">
+                    <p class="metric-description mb-2">Import a comma- or pipe-delimited export to reconcile balances and automatically calculate monthly inflow.</p>
+                    <p class="mb-3"><span class="badge bg-light text-secondary border font-monospace" style="font-size:.72rem;white-space:normal;">Name, Phone, Total Owed, Past Due, Paid This Month</span></p>
+                    <form th:action="@{/upload-csv}" method="post" enctype="multipart/form-data" class="mt-auto d-grid gap-2">
+                        <input type="file" name="file" accept=".csv,.txt" class="form-control" aria-label="GreekBill CSV file" required>
+                        <button type="submit" class="btn btn-fintech-primary" data-loading-label="Importing…">Upload &amp; reconcile</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-lg-4">
+            <section class="surface-card h-100 d-flex flex-column" aria-labelledby="venmoTitle">
+                <div class="card-head justify-content-start">
+                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-phone"></i></span>
+                    <div>
+                        <h3 class="section-title" id="venmoTitle">Venmo statement</h3>
+                        <p class="section-subtitle">Adds completed payments to Cash Flow</p>
+                    </div>
+                </div>
+                <div class="card-body-pad d-flex flex-column flex-grow-1">
+                    <p class="metric-description mb-3">Download your statement from Venmo (Statements &rarr; Download CSV) and upload it here. Bank transfers and pending items are skipped, and re-uploading never creates duplicates.</p>
+                    <form th:action="@{/numbers/flow/upload-venmo}" method="post" enctype="multipart/form-data" class="mt-auto d-grid gap-2">
+                        <input type="file" name="file" accept=".csv,.txt" class="form-control" aria-label="Venmo statement CSV file" required>
+                        <button type="submit" class="btn btn-fintech-primary" data-loading-label="Importing…">Upload Venmo statement</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-lg-4">
+            <section class="surface-card h-100 d-flex flex-column" aria-labelledby="bankTitle">
+                <div class="card-head justify-content-start">
+                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-bank"></i></span>
+                    <div>
+                        <h3 class="section-title" id="bankTitle">Bank statement CSV</h3>
+                        <p class="section-subtitle">Queues deposits for member matching</p>
+                    </div>
+                </div>
+                <div class="card-body-pad d-flex flex-column flex-grow-1">
+                    <p class="metric-description mb-3">Needs a <code>Date</code> column and an <code>Amount</code> column, or separate <code>Debit</code> and <code>Credit</code> columns. Nothing changes a member balance until you confirm the match.</p>
+                    <form th:action="@{/numbers/flow/upload-bank}" method="post" enctype="multipart/form-data" class="mt-auto d-grid gap-2">
+                        <input type="file" name="file" accept=".csv,.txt" class="form-control" aria-label="Bank statement CSV file" required>
+                        <button type="submit" class="btn btn-fintech-primary" data-loading-label="Importing…">Import bank CSV</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Backup and restore: kept together, below the everyday imports -->
+    <div class="tier-heading"><h2>Back up &amp; restore</h2><p>Encrypted backups for moving to a new computer or a new treasurer.</p></div>
+    <div class="row g-3">
+        <div class="col-12 col-lg-6">
+            <section class="surface-card h-100" aria-labelledby="exportTitle">
+                <div class="card-head justify-content-start">
+                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-box-arrow-down"></i></span>
+                    <div>
+                        <h3 class="section-title" id="exportTitle">Export data</h3>
+                        <p class="section-subtitle">The complete save as an AES-encrypted file</p>
+                    </div>
+                </div>
+                <div class="card-body-pad">
+                    <p class="metric-description mb-3">Use a strong password, and share it with the incoming treasurer separately from the backup. Twilio credentials are not included.</p>
+                    <form id="exportBackupForm" class="row g-2 align-items-end">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label-fintech" for="exportPassword">Backup password (8+ characters)</label>
+                            <input type="password" id="exportPassword" class="form-control" minlength="8" autocomplete="new-password" required>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label-fintech" for="exportPasswordConfirm">Confirm password</label>
+                            <input type="password" id="exportPasswordConfirm" class="form-control" minlength="8" autocomplete="new-password" required>
+                        </div>
+                        <div class="col-12 d-flex flex-wrap align-items-center gap-2">
+                            <button id="exportBtn" type="submit" class="btn btn-fintech-primary" aria-describedby="exportStatus">Export encrypted backup</button>
+                            <span id="exportStatus" class="download-status small text-muted" role="status" aria-live="polite">
+                                <span class="spinner-border" aria-hidden="true"></span><span>Preparing export…</span>
+                            </span>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-lg-6">
+            <section class="surface-card h-100" aria-labelledby="importTitle">
+                <div class="card-head justify-content-start">
+                    <span class="icon-tile icon-tile--danger" aria-hidden="true"><i class="bi bi-box-arrow-in-up"></i></span>
+                    <div>
+                        <h3 class="section-title" id="importTitle">Import saved data</h3>
+                        <p class="section-subtitle">Replaces everything currently in the app</p>
+                    </div>
+                </div>
+                <div class="card-body-pad">
+                    <p class="metric-description mb-3">Choose a DuesDesk backup file. Encrypted <code>.ddbk</code> backups require the password used during export; older JSON backups remain importable. <strong>This replaces all data currently in the app</strong> (the previous data is kept as a single automatic backup next to the data file).</p>
+                    <form th:action="@{/import-data}" method="post" enctype="multipart/form-data" class="row g-2 align-items-end mb-0" id="importBackupForm">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label-fintech" for="backupFile">Backup file</label>
+                            <input id="backupFile" type="file" name="file" accept=".ddbk,.json,application/octet-stream,application/json" class="form-control" required>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label-fintech" for="importPassword">Backup password (for .ddbk)</label>
+                            <input id="importPassword" type="password" name="password" class="form-control" autocomplete="current-password">
+                        </div>
+                        <div class="col-12"><button type="submit" class="btn btn-outline-danger" data-loading-label="Replacing data…">Import &amp; replace all data</button></div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    const importBackupForm = document.getElementById('importBackupForm');
+    if (importBackupForm) {
+        importBackupForm.addEventListener('submit', function (event) {
+            const fileInput = document.getElementById('backupFile');
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) return;
+            const password = document.getElementById('importPassword').value;
+            if (file.name.toLowerCase().endsWith('.ddbk') && password.length < 8) {
+                event.preventDefault();
+                window.alert('Enter the backup password (at least 8 characters).');
+                return;
+            }
+            const confirmed = window.confirm('Replace all current DuesDesk data with "' + file.name + '"?\n\n' +
+                'Members, payments, charges, residents, transactions, settings and the SMS log will be replaced. ' +
+                'The app keeps one automatic backup of the current data before importing. Twilio credentials are not included.');
+            if (!confirmed) event.preventDefault();
+        });
+    }
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+</script>
+<script>
+    const exportForm = document.getElementById('exportBackupForm');
+    const exportButton = document.getElementById('exportBtn');
+    const exportStatus = document.getElementById('exportStatus');
+    exportForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const passwordInput = document.getElementById('exportPassword');
+        const confirmInput = document.getElementById('exportPasswordConfirm');
+        if (passwordInput.value !== confirmInput.value) {
+            window.alert('The password confirmation does not match.');
+            confirmInput.focus();
+            return;
+        }
+        exportButton.classList.add('is-busy');
+        exportButton.setAttribute('aria-busy', 'true');
+        exportButton.disabled = true;
+        exportStatus.classList.add('is-visible');
+        try {
+            if (window.desktopBridge) {
+                window.desktopBridge.exportData(passwordInput.value);
+            } else {
+                const response = await fetch('/export-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: new URLSearchParams({ password: passwordInput.value })
+                });
+                if (!response.ok) throw new Error(await response.text() || 'Backup export failed.');
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'DuesDesk-backup-' + new Date().toISOString().slice(0, 10) + '.ddbk';
+                link.click();
+                URL.revokeObjectURL(url);
+                exportStatus.querySelector('span:last-child').textContent = 'Encrypted backup downloaded';
+                exportStatus.querySelector('.spinner-border').hidden = true;
+                window.setTimeout(function () {
+                    exportStatus.classList.remove('is-visible');
+                    exportStatus.querySelector('span:last-child').textContent = 'Preparing export…';
+                    exportStatus.querySelector('.spinner-border').hidden = false;
+                }, 1800);
+            }
+        } catch (error) {
+            window.alert(error.message || 'Encrypted backup export failed.');
+        } finally {
+            passwordInput.value = '';
+            confirmInput.value = '';
+            exportButton.classList.remove('is-busy');
+            exportButton.removeAttribute('aria-busy');
+            exportButton.disabled = false;
+            if (window.desktopBridge) {
+                exportStatus.classList.remove('is-visible');
+            }
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Flow | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg-canvas); color:var(--text-secondary); }
+        .banner { background:var(--bg-surface); border-bottom:1px solid var(--border-subtle); padding:1rem 0; }
+        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
+        .metric-card { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:1.1rem;height:100%; }
+        .metric-value { color:var(--text-primary);font-size:1.35rem;font-weight:700;letter-spacing:-.03em; }
+        .metric-description { color:var(--text-muted);font-size:.82rem;line-height:1.5; }
+        .metric-status { font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;font-weight:700; }
+        @keyframes enter { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
+        /* Time period + export toolbar */
+        .flow-toolbar { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:14px; padding:.9rem 1.1rem; box-shadow:var(--shadow-card); animation:enter .4s ease backwards; }
+        .flow-period-form { display:flex; align-items:flex-end; gap:.75rem; flex-wrap:wrap; }
+        .flow-field { min-width:11rem; }
+        .flow-custom-range { display:flex; align-items:flex-end; gap:.75rem; flex-wrap:wrap; animation:peekRowIn .28s var(--ease-snappy) both; }
+        .flow-toolbar-end { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+        .flow-period-summary { display:flex; flex-direction:column; align-items:flex-end; font-size:12.5px; line-height:1.35; }
+        .metric-period { font-size:11.5px; color:var(--text-muted); margin-top:.15rem; }
+        /* Quick filters above the transactions table (same look as the Dues and Rent ledgers) */
+        .filter-pill-group { display:inline-flex; background-color:var(--bg-subtle); padding:.2rem; border-radius:8px; border:1px solid var(--border-subtle); }
+        .filter-pill { border:none; background:transparent; color:var(--text-secondary); font-size:.78rem; font-weight:500; padding:.3rem .7rem; border-radius:6px; transition:all .15s ease; }
+        .filter-pill.active { background-color:var(--bg-surface); color:var(--text-primary); font-weight:600; box-shadow:var(--shadow-card); }
+        .flow-table-tools { display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:.9rem; }
+        @media (max-width:575px) { .flow-period-summary { align-items:flex-start; } .flow-field { min-width:0; flex:1 1 9rem; } }
+        @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important; } }
+    </style>
+<th:block th:replace="~{fragments :: navStyles}"></th:block>
+<script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+    <div class="app-header-stack">
+    <header class="banner">
+    <div class="container-xxl px-3 px-md-4 header-grid">
+        <div></div>
+        <div class="d-flex align-items-center gap-3 justify-content-center">
+            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
+            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
+        </div>
+        <div></div>
+    </div>
+</header>
+<nav th:replace="~{fragments :: nav('flow')}"></nav>
+</div>
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="6000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Finance</div>
+            <h2 class="page-title">Cash Flow</h2>
+            <p class="page-lede">Every dues payment and bank or Venmo transaction in one timeline, newest first. Pick a time period to focus the totals and table, then export it as a spreadsheet or a printable report.</p>
+            <p class="small text-muted mt-2 mb-0">Want to create a new manual charge? <a href="/calendar#recordTransaction" class="fw-semibold">Go to Calendar &amp; Bills</a> to record one, or to set up a recurring bill.</p>
+        </div>
+        <div class="page-actions">
+            <a href="/upload-docs" class="btn btn-fintech-outline btn-sm">Import a statement</a>
+            <a href="/calendar#recordTransaction" class="btn btn-fintech-primary btn-sm">Record a transaction</a>
+        </div>
+    </div>
+
+    <section class="flow-toolbar mb-4" aria-label="Time period and export">
+        <form id="flowPeriodForm" method="get" action="/numbers/flow" class="flow-period-form">
+            <div class="flow-field">
+                <label class="form-label small fw-semibold mb-1" for="flowPeriod"><i class="bi bi-calendar-range me-1" aria-hidden="true"></i>Time period</label>
+                <select id="flowPeriod" name="period" class="form-select form-select-sm">
+                    <option th:each="p : ${periodPresets}" th:value="${p.key}" th:text="${p.value}" th:selected="${p.key == period.key}"></option>
+                </select>
+            </div>
+            <!-- Shown for "Custom range"; disabled otherwise so preset links stay clean (?period=this-month). -->
+            <div id="flowCustomRange" class="flow-custom-range" th:hidden="${period.key != 'custom'}">
+                <div class="flow-field">
+                    <label class="form-label small fw-semibold mb-1" for="flowFrom">From</label>
+                    <input id="flowFrom" type="date" name="from" class="form-control form-control-sm"
+                           th:value="${period.fromText}" th:disabled="${period.key != 'custom'}">
+                </div>
+                <div class="flow-field">
+                    <label class="form-label small fw-semibold mb-1" for="flowTo">To</label>
+                    <input id="flowTo" type="date" name="to" class="form-control form-control-sm"
+                           th:value="${period.toText}" th:disabled="${period.key != 'custom'}">
+                </div>
+                <button type="submit" class="btn btn-fintech-primary btn-sm"><i class="bi bi-check2" aria-hidden="true"></i><span>Apply</span></button>
+            </div>
+            <noscript><button type="submit" class="btn btn-fintech-outline btn-sm">Apply</button></noscript>
+        </form>
+        <div class="flow-toolbar-end">
+            <div class="flow-period-summary">
+                <span class="fw-semibold text-dark" th:text="${#lists.size(rows)} + (${#lists.size(rows)} == 1 ? ' transaction' : ' transactions')"></span>
+                <span class="text-muted" th:text="${period.bounded} ? ${period.range} : 'across all dates'"></span>
+            </div>
+            <button type="button" class="btn btn-fintech-outline btn-sm" data-copy-text="#flowSummaryText"
+                    title="Copy a plain-text summary of this period: money in, money out, net and totals by type">
+                <i class="bi bi-clipboard" aria-hidden="true"></i><span>Copy summary</span>
+            </button>
+            <textarea id="flowSummaryText" hidden readonly aria-hidden="true" th:text="${flowSummary}"></textarea>
+            <div class="dropdown">
+                <button type="button" class="btn btn-fintech-outline btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
+                        th:disabled="${#lists.isEmpty(rows)}" aria-label="Export the transactions table"
+                        title="Exports this period, narrowed by any quick filter or search applied to the table">
+                    <i class="bi bi-download" aria-hidden="true"></i><span>Export</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" data-flow-export="csv"
+                           th:attr="data-period=${period.key},data-from=${period.fromText},data-to=${period.toText}"
+                           th:href="@{/numbers/flow/export.csv(period=${period.key},from=${period.fromText},to=${period.toText})}">
+                        <i class="bi bi-filetype-csv" aria-hidden="true"></i><span>Spreadsheet (CSV)</span></a></li>
+                    <li><a class="dropdown-item" data-flow-export="pdf"
+                           th:attr="data-period=${period.key},data-from=${period.fromText},data-to=${period.toText}"
+                           th:href="@{/numbers/flow/export.pdf(period=${period.key},from=${period.fromText},to=${period.toText})}">
+                        <i class="bi bi-filetype-pdf" aria-hidden="true"></i><span>Printable report (PDF)</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4"><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Total inflow</span></div><div class="kpi-value text-success tabular-nums" th:text="'$' + ${#numbers.formatDecimal(totalInflow, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
+        <div class="col-12 col-md-4"><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Total outflow</span></div><div class="kpi-value text-danger tabular-nums" th:text="'$' + ${#numbers.formatDecimal(totalOutflow, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
+        <div class="col-12 col-md-4"><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Net</span></div><div class="kpi-value tabular-nums" th:classappend="${net >= 0} ? 'text-success' : 'text-danger'" th:text="(${net < 0} ? '-' : '') + '$' + ${#numbers.formatDecimal(net < 0 ? -net : net, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
+    </div>
+    <!-- Nothing to review: a slim status line instead of a large empty card -->
+    <div th:if="${#lists.isEmpty(reconciliationRows)}" class="surface-card card-body-pad mb-4 d-flex flex-wrap align-items-center gap-2 small text-muted">
+        <i class="bi bi-check2-circle text-success" aria-hidden="true"></i>
+        <span><strong class="text-dark">Pending transaction reconciliation:</strong> No transactions need review right now. <a href="/upload-docs">Import a bank or Venmo statement</a> to add transactions for matching.</span>
+    </div>
+    <!-- Something to review: an action card, placed above the timeline because it needs a decision -->
+    <section class="surface-card mb-4" th:unless="${#lists.isEmpty(reconciliationRows)}" aria-labelledby="reconcileTitle">
+        <div class="card-head">
+            <div>
+                <h3 class="section-title" id="reconcileTitle">Pending transaction reconciliation</h3>
+                <p class="section-subtitle">Review incoming bank or Venmo transactions. Suggestions are not applied until you confirm a member match.</p>
+            </div>
+            <span class="badge rounded-pill text-bg-warning" th:text="${#lists.size(reconciliationRows)} + ' pending'"></span>
+        </div>
+        <div class="card-body-pad">
+        <div th:if="${#lists.isEmpty(reconciliationRows)}" class="rounded-3 border p-3 small text-muted">
+            No transactions need review right now. <a href="/upload-docs">Import a bank or Venmo statement</a> to add transactions for matching.
+        </div>
+        <div th:if="${!#lists.isEmpty(reconciliationRows) and #lists.isEmpty(roster)}" class="alert alert-warning small py-2">
+            Add or import roster members before transactions can be matched. <a href="/">Open the dues roster</a>.
+        </div>
+        <div class="table-responsive" th:unless="${#lists.isEmpty(reconciliationRows)}">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Date</th><th>Counterparty</th><th>Description</th><th class="text-end">Amount</th><th>Match to member</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="item : ${reconciliationRows}">
+                    <td class="text-nowrap" th:text="${item.entry.date}"></td>
+                    <td th:text="${item.entry.counterparty} ?: '—'"></td>
+                    <td th:text="${item.entry.description} ?: '—'"></td>
+                    <td class="text-end text-success fw-semibold text-nowrap" th:text="'+$' + ${#numbers.formatDecimal(item.entry.amount, 1, 'COMMA', 2, 'POINT')}"></td>
+                    <td>
+                        <span class="badge rounded-pill mb-1"
+                              th:classappend="${item.suggestedMember == null ? ' text-bg-warning' : (#strings.startsWith(item.matchConfidence, 'Saved payer alias') ? ' text-bg-success' : ' text-bg-info')}">
+                            <i class="bi bi-person-check me-1" aria-hidden="true" th:if="${#strings.startsWith(item.matchConfidence, 'Saved payer alias')}"></i><span th:text="${item.matchConfidence}"></span>
+                        </span>
+                        <form th:action="@{/reconciliation/{id}/confirm(id=${item.entry.id})}" method="post"
+                              th:attr="data-payer=${item.entry.counterparty}">
+                            <div class="d-flex gap-2">
+                                <select name="memberId" class="form-select form-select-sm" required>
+                                    <option value="" th:selected="${item.suggestedMember == null}">Choose member…</option>
+                                    <option th:each="member : ${roster}" th:value="${member.id}" th:text="${member.name}"
+                                            th:selected="${item.suggestedMember != null and item.suggestedMember.id == member.id}"
+                                            th:attr="data-balance=${member.totalOwed},data-past-due=${member.pastDueBalance},data-recent-payment=${recentPaymentsByMember[member.id]}"></option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary text-nowrap"
+                                        th:disabled="${#lists.isEmpty(roster)}"
+                                        data-loading-label="Matching…">Confirm</button>
+                            </div>
+                            <div class="form-check small mt-1 alias-remember" th:if="${!#strings.isEmpty(item.entry.counterparty)}" hidden>
+                                <input class="form-check-input" type="checkbox" name="rememberAlias" value="true" th:id="|alias-${item.entry.id}|">
+                                <label class="form-check-label" th:for="|alias-${item.entry.id}|">
+                                    Remember "<span th:text="${item.entry.counterparty}"></span>" as a payer alias for <span class="alias-member fw-semibold"></span>
+                                </label>
+                            </div>
+                        </form>
+                        <div class="small text-muted mt-2 member-snapshot" th:hidden="${item.suggestedMember == null}">
+                            <div><span class="fw-semibold member-snapshot-name" th:text="${item.suggestedMember != null ? item.suggestedMember.name : ''}"></span>
+                                <span> · Balance </span><span class="member-snapshot-balance"
+                                      th:text="'$' + ${#numbers.formatDecimal(item.suggestedMember != null ? item.suggestedMember.totalOwed : 0, 1, 'COMMA', 2, 'POINT')}"></span>
+                                <span> · Past due </span><span class="member-snapshot-past-due"
+                                      th:text="'$' + ${#numbers.formatDecimal(item.suggestedMember != null ? item.suggestedMember.pastDueBalance : 0, 1, 'COMMA', 2, 'POINT')}"></span>
+                            </div>
+                            <div>Recent payment: <span class="member-snapshot-payment" th:text="${item.recentPaymentSummary}"></span></div>
+                        </div>
+                    </td>
+                    <td>
+                        <form th:action="@{/reconciliation/{id}/ignore(id=${item.entry.id})}" method="post"
+                              onsubmit="return confirm('Dismiss this transaction from the pending reconciliation list?');">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" data-loading-label="Dismissing…">Dismiss</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        </div>
+    </section>
+    <section class="surface-card" aria-labelledby="flowTableTitle">
+        <div class="card-head">
+            <div>
+                <h3 id="flowTableTitle" class="section-title">Transactions</h3>
+                <p class="section-subtitle" th:text="${period.description} + ' · newest first'"></p>
+            </div>
+        </div>
+        <div class="card-body-pad">
+        <!-- Live search + quick filters + click-to-sort (client-side table tools; see fragments themeScript) -->
+        <div class="flow-table-tools" th:unless="${#lists.isEmpty(rows)}">
+            <div class="filter-pill-group" role="group" aria-label="Filter transactions">
+                <button type="button" class="filter-pill active" data-table-filter="flowTable" data-filter="all" data-filter-reset aria-pressed="true">All</button>
+                <button type="button" class="filter-pill" data-table-filter="flowTable" data-filter="in" aria-pressed="false">Money in</button>
+                <button type="button" class="filter-pill" data-table-filter="flowTable" data-filter="out" aria-pressed="false">Money out</button>
+                <button type="button" class="filter-pill" data-table-filter="flowTable" data-filter="dues" aria-pressed="false">Dues payments</button>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="table-count" data-table-count="flowTable" aria-live="polite"></span>
+                <div class="position-relative search-box" style="min-width: 240px;">
+                    <i class="bi bi-search position-absolute text-muted" style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem;" aria-hidden="true"></i>
+                    <input type="search" class="form-control form-control-sm ps-4" placeholder="Search transactions..."
+                           aria-label="Search transactions by description, name, type or source" data-table-search="flowTable" data-search-shortcut>
+                    <kbd class="search-kbd" aria-hidden="true">/</kbd>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" id="flowTable" data-table-tools>
+                <thead>
+                    <tr><th data-sort="text">Date</th><th data-sort="text">Type</th><th data-sort="text">Description</th><th data-sort="text">Name</th><th data-sort="text">Source</th><th class="text-end" data-sort="number">Amount</th></tr>
+                </thead>
+                <tbody>
+                    <tr th:each="r : ${rows}" data-row
+                        th:attr="data-tags=${(r.amount >= 0 ? 'in' : 'out') + (r.type == 'Dues payment' ? ' dues' : '')},data-search=${#strings.toLowerCase((r.date ?: '') + ' ' + (r.type ?: '') + ' ' + (r.description ?: '') + ' ' + (r.party ?: '') + ' ' + (r.source ?: ''))}">
+                        <td class="text-nowrap tabular-nums" th:text="${#strings.length(r.date) >= 10 ? #strings.substring(r.date, 0, 10) : r.date}"></td>
+                        <td><span class="badge rounded-pill" th:classappend="${r.amount >= 0} ? 'text-bg-success' : 'text-bg-danger'" th:text="${r.type}"></span></td>
+                        <td th:text="${r.description} ?: '—'"></td>
+                        <td th:text="${r.party} ?: '—'"></td>
+                        <td class="text-muted small" th:text="${r.source}"></td>
+                        <td class="text-end fw-semibold text-nowrap tabular-nums" th:classappend="${r.amount >= 0} ? 'text-success' : 'text-danger'" th:attr="data-sort-value=${r.amount}"
+                            th:text="(${r.amount < 0} ? '-' : '+') + '$' + ${#numbers.formatDecimal(r.amount < 0 ? -r.amount : r.amount, 1, 'COMMA', 2, 'POINT')}"></td>
+                    </tr>
+                    <tr data-table-empty class="table-empty-row" hidden><td colspan="6">No transactions match your search or filter. Press Esc to clear it.</td></tr>
+                    <tr th:if="${#lists.isEmpty(rows) and !hasAnyTransactions}"><td colspan="6" class="text-center text-muted py-4">No transactions yet. <a href="/">Record a dues payment</a> or <a href="/upload-docs">import a bank or Venmo CSV</a>.</td></tr>
+                    <tr th:if="${#lists.isEmpty(rows) and hasAnyTransactions}"><td colspan="6" class="text-center text-muted py-4">No transactions in this period. <a href="/numbers/flow?period=all">Show all time</a> or choose a different period above.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        </div>
+    </section>
+</main>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    document.querySelectorAll('form[action*="/reconciliation/"][action$="/confirm"]').forEach(function (form) {
+        const select = form.querySelector('select[name="memberId"]');
+        const snapshot = form.closest('td').querySelector('.member-snapshot');
+        function updateMemberSnapshot() {
+            if (!snapshot) return;
+            const selected = select && select.options[select.selectedIndex];
+            if (!selected || !selected.value) {
+                snapshot.hidden = true;
+                return;
+            }
+            snapshot.hidden = false;
+            snapshot.querySelector('.member-snapshot-name').textContent = selected.text;
+            snapshot.querySelector('.member-snapshot-balance').textContent = '$' + Number(selected.dataset.balance || 0).toFixed(2);
+            snapshot.querySelector('.member-snapshot-past-due').textContent = '$' + Number(selected.dataset.pastDue || 0).toFixed(2);
+            snapshot.querySelector('.member-snapshot-payment').textContent = selected.dataset.recentPayment || 'No payments recorded';
+        }
+        // "Remember this payer name": shown once a member is picked, ticked by default when the payer's name isn't
+        // the member's own (a parent, a roommate, a Venmo display name).
+        const remember = form.querySelector('.alias-remember');
+        function normalized(value) { return (value || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, ''); }
+        function updateRemember() {
+            if (!remember) return;
+            const selected = select && select.options[select.selectedIndex];
+            if (!selected || !selected.value) { remember.hidden = true; return; }
+            remember.hidden = false;
+            remember.querySelector('.alias-member').textContent = selected.text;
+            remember.querySelector('input').checked = normalized(form.dataset.payer) !== normalized(selected.text);
+        }
+        if (select) select.addEventListener('change', function () { updateMemberSnapshot(); updateRemember(); });
+        updateMemberSnapshot();
+        updateRemember();
+        form.addEventListener('submit', function (event) {
+            const selected = select && select.options[select.selectedIndex];
+            if (!selected || !selected.value) return;
+            const amountCell = form.closest('tr').querySelector('td:nth-child(4)');
+            const amount = amountCell.textContent.replace(/[^0-9.]/g, '');
+            const balance = Number(selected.dataset.balance || 0).toFixed(2);
+            const pastDue = Number(selected.dataset.pastDue || 0).toFixed(2);
+            const estimatedBalance = Math.max(0, Number(selected.dataset.balance || 0) - Number(amount)).toFixed(2);
+            const confirmed = window.confirm(
+                'Record $' + amount + ' from this transaction as a payment for ' + selected.text + '?\n\n' +
+                'Current balance: $' + balance + '\nPast due: $' + pastDue + '\n' +
+                'Estimated balance after payment: $' + estimatedBalance + '\n' +
+                'Confirming will update the selected member account.'
+            );
+            if (!confirmed) event.preventDefault();
+        });
+    });
+    // Time period: presets apply as soon as they're picked; "Custom range" reveals the dates and waits for Apply.
+    (function () {
+        var form = document.getElementById('flowPeriodForm');
+        if (!form) return;
+        var select = document.getElementById('flowPeriod');
+        var range = document.getElementById('flowCustomRange');
+        var dates = range.querySelectorAll('input[type="date"]');
+        select.addEventListener('change', function () {
+            var custom = select.value === 'custom';
+            range.hidden = !custom;
+            dates.forEach(function (input) { input.disabled = !custom; });
+            if (custom) document.getElementById('flowFrom').focus();
+            else if (form.requestSubmit) form.requestSubmit();
+            else form.submit();
+        });
+        // Exports follow the table's quick filter and search, so the file matches what's on screen.
+        var exportLinks = document.querySelectorAll('[data-flow-export]');
+        var refinement = { kind: '', q: '' };
+        var flowTable = document.getElementById('flowTable');
+        if (flowTable) {
+            flowTable.addEventListener('tabletools:change', function (event) {
+                refinement.kind = event.detail.filter === 'all' ? '' : event.detail.filter;
+                refinement.q = event.detail.query;
+                exportLinks.forEach(function (link) {
+                    var url = new URL(link.getAttribute('href'), window.location.href);
+                    if (refinement.kind) url.searchParams.set('kind', refinement.kind); else url.searchParams.delete('kind');
+                    if (refinement.q) url.searchParams.set('q', refinement.q); else url.searchParams.delete('q');
+                    link.setAttribute('href', url.pathname + url.search);
+                });
+            });
+        }
+        // The desktop window can't download files, so it hands exports to the Java side instead of following the link.
+        exportLinks.forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                if (!window.desktopBridge) return;
+                event.preventDefault();
+                window.desktopBridge.exportFlowReport(link.dataset.flowExport, link.dataset.period, link.dataset.from,
+                        link.dataset.to, refinement.kind, refinement.q);
+            });
+        });
+    })();
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+</script>
+</body>
+</html>

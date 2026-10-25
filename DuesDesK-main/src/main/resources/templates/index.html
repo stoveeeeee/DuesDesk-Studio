@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+/* Top Navigation */
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--status-success-text);
+        }
+
+        /* Cards & Containers */
+
+        .tone-emerald { background-color: var(--status-success-bg); color: var(--status-success-text); }
+        .tone-blue { background-color: var(--status-info-bg); color: var(--btn-primary-bg); }
+        .tone-rose { background-color: var(--status-danger-bg); color: var(--status-danger-text); }
+        .tone-slate { background-color: var(--bg-subtle); color: var(--text-secondary); }
+        .tone-text-emerald { color: var(--status-success-text); }
+        .tone-text-rose { color: var(--status-danger-text); }
+        .stat-picker-btn { cursor: pointer; }
+        .kpi-action { border: 0; padding: 0.1rem 0.4rem; border-radius: 6px; background: transparent; color: var(--text-placeholder); font-size: 12px; font-weight: 500; transition: background-color .12s ease, color .12s ease; }
+        .kpi-action:hover, .kpi-action[aria-expanded="true"] { background: var(--status-info-bg); color: var(--status-info-text); }
+        .kpi-action:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+        .stat-picker-btn { color: var(--text-placeholder); }
+        /* The hover lift (a transform) turns the card into a stacking context, which trapped this menu below later
+           positioned content ("Needs attention" text showed through it). Drop the lift while the menu is open so the
+           menu's own z-index applies against the whole page. */
+        .kpi-card.picker-open, .kpi-card.picker-open:hover { transform: none; }
+        .stat-picker-menu { background-color: var(--bg-elevated); opacity: 1; text-transform: none; letter-spacing: normal; font-weight: 400; color: var(--text-secondary); max-height: 340px; overflow-y: auto; min-width: 280px; }
+        .stat-picker-group { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); padding: .55rem .65rem .2rem; }
+        .stat-picker-group:first-of-type { padding-top: .25rem; }
+        .stat-picker-item { font-size: 13px; white-space: normal; }
+        .stat-picker-item.active { font-weight: 600; }
+
+        /* Table Styling */
+        .table-fintech {
+            margin-bottom: 0;
+        }
+
+        .table-fintech thead th {
+            background-color: var(--bg-canvas);
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            white-space: nowrap;
+        }
+        .ledger-fullscreen.is-fullscreen .roster-table-container.headers-sticky .table-fintech thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            box-shadow: inset 0 -1px 0 var(--border-subtle);
+        }
+
+        .table-fintech tbody td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--bg-subtle);
+            font-size: 0.875rem;
+            vertical-align: middle;
+        }
+
+        .table-fintech tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-fintech tbody tr:hover {
+            background-color: var(--bg-canvas);
+        }
+
+        .history-link {
+            border: 0;
+            padding: 0;
+            background: none;
+            color: var(--text-primary);
+            font: inherit;
+            font-weight: 600;
+            text-align: left;
+            text-decoration: underline;
+            text-decoration-color: var(--border-strong);
+            text-underline-offset: 3px;
+        }
+
+        .history-link:hover {
+            color: var(--btn-primary-hover);
+            text-decoration-color: currentColor;
+        }
+        .payment-history-modal.fade .modal-dialog {
+            transition: transform 0.12s ease-out;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .payment-history-modal.fade .modal-dialog { transition: none; }
+        }
+
+        /* Filter Tabs & Search */
+        .filter-pill-group {
+            display: inline-flex;
+            background-color: var(--bg-subtle);
+            padding: 0.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .filter-pill {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .filter-pill.active {
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            font-weight: 600;
+            box-shadow: var(--shadow-card);
+        }
+
+        /* Forms & Inputs */
+        .form-label-fintech {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        /* Tag Insertion Chips */
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 0.15rem 0.5rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.12s ease;
+        }
+
+        .tag-chip:hover {
+            background-color: var(--status-info-bg);
+            color: var(--btn-primary-hover);
+            border-color: var(--status-info-border);
+        }
+
+        /* SMS Preview Bubble */
+        .sms-preview-box {
+            background-color: var(--bg-canvas);
+            border: 1px dashed var(--border-strong);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Log Feed */
+        .log-item {
+            padding: 0.85rem 0;
+            border-bottom: 1px solid var(--bg-subtle);
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes member-review-highlight {
+            0%, 35% { box-shadow: inset 0 0 0 9999px var(--highlight-flash); }
+            100% { box-shadow: inset 0 0 0 9999px transparent; }
+        }
+
+        .member-row.member-review-highlight > td {
+            animation: member-review-highlight 1.1s ease-out;
+        }
+
+        [data-bs-theme="dark"] .member-row.member-review-highlight > td {
+            animation-name: member-review-highlight-dark;
+        }
+
+        @keyframes member-review-highlight-dark {
+            0%, 35% { box-shadow: inset 0 0 0 9999px var(--highlight-flash); }
+            100% { box-shadow: inset 0 0 0 9999px transparent; }
+        }
+
+        /* ---- Member charges & discounts ---- */
+        .adj-type { display:grid; grid-template-columns:1fr 1fr; gap:.2rem; padding:.15rem; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:10px; }
+        .adj-type label { display:flex; align-items:center; justify-content:center; gap:.4rem; margin:0; padding:.2rem .5rem; border-radius:7px; font-size:13px; line-height:1.5; font-weight:500; color:var(--text-muted); cursor:pointer; transition:background-color .15s ease, color .15s ease, box-shadow .2s var(--ease-snappy); }
+        .adj-type label:hover { color:var(--text-primary); }
+        .adj-type .btn-check:checked + label { background:var(--bg-surface); box-shadow:var(--shadow-card); }
+        .adj-type .btn-check:checked + label.fine { color:var(--status-danger-text); }
+        .adj-type .btn-check:checked + label.discount { color:var(--status-success-text); }
+        .adj-type .btn-check:focus-visible + label { box-shadow:0 0 0 3px var(--focus-ring); }
+        .preset-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
+        .preset-chip { display:inline-flex; align-items:stretch; border:1px solid var(--border-subtle); border-radius:999px; background:var(--bg-surface); overflow:hidden; font-size:12px; }
+        .preset-chip__use { border:0; background:transparent; color:var(--text-secondary); padding:.28rem .3rem .28rem .65rem; display:inline-flex; align-items:center; gap:.35rem; cursor:pointer; }
+        .preset-chip__use:hover { color:var(--text-primary); background:var(--bg-subtle); }
+        .preset-chip__amt { font-variant-numeric:tabular-nums; font-weight:600; }
+        .preset-chip__amt.fine { color:var(--status-danger-text); }
+        .preset-chip__amt.discount { color:var(--status-success-text); }
+        .preset-chip__remove { border:0; background:transparent; color:var(--text-muted); padding:0 .5rem 0 .25rem; cursor:pointer; }
+        .preset-chip__remove:hover { color:var(--status-danger-text); }
+        #memberAdjustmentForm[data-type="DISCOUNT"] .adj-fine-only { display:none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+<th:block th:replace="~{fragments :: navStyles}"></th:block>
+<script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+
+<!-- Top Navigation Bar -->
+<div class="app-header-stack">
+<header class="app-navbar mb-4">
+    <div class="container-xxl px-3 px-md-4 header-grid">
+        <div class="d-flex align-items-center">
+            <span class="status-pill" th:if="${settings.autoSendEnabled}">
+                <span class="status-dot"></span>
+                <span>Auto-Scheduler Active (<span th:text="${settings.frequency}"></span>)</span>
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-3 justify-content-center">
+            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
+            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
+        </div>
+        <div></div>
+    </div>
+</header>
+
+<nav th:replace="~{fragments :: nav('dues')}"></nav>
+</div>
+
+<main class="container-xxl px-3 px-md-4 pb-5">
+
+    <!-- Flash Toast Notification -->
+    <div th:if="${toast}" data-auto-dismiss="4000" class="alert alert-success border-0 shadow-sm d-flex align-items-center justify-content-between rounded-3 py-2 px-3 mb-4" role="alert">
+        <div class="d-flex align-items-center gap-2 small">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span class="fw-medium" th:text="${toast}"></span>
+        </div>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Members</div>
+            <h2 class="page-title">Dues</h2>
+            <p class="page-lede">Collections at a glance, what needs your attention today, and every member's account in one ledger.</p>
+        </div>
+    </div>
+
+    <!-- Executive KPI Row: boxes are fixed, the stat shown in each can be swapped -->
+    <div class="row g-3 mb-4 row-cols-1 row-cols-sm-2 row-cols-xl-5">
+        <div class="col" th:each="stat, iter : ${statBoxes}">
+            <div class="surface-card kpi-card h-100">
+                <div class="kpi-label">
+                    <span th:text="${stat.name}">Stat</span>
+                    <span class="d-inline-flex align-items-center gap-1">
+                        <button th:if="${stat.key == 'ihq'}" type="button" class="kpi-action"
+                                data-bs-toggle="modal" data-bs-target="#ihqBillModal" title="Set IHQ semester bill" aria-label="Set IHQ semester bill">
+                            Edit
+                        </button>
+                        <span class="dropdown">
+                            <button type="button" class="kpi-action stat-picker-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                    aria-expanded="false" title="Change the stat shown in this box" aria-label="Change the stat shown in this box">
+                                Change
+                            </button>
+                            <form th:action="@{/dashboard-stats}" method="post" class="dropdown-menu dropdown-menu-end stat-picker-menu p-2 m-0">
+                                <input type="hidden" name="slot" th:value="${iter.index}">
+                                <th:block th:each="group : ${statCatalog}">
+                                    <div class="stat-picker-group" th:text="${group.key}"></div>
+                                    <button type="submit" name="stat" th:each="option : ${group.value}" th:value="${option.key}"
+                                            class="dropdown-item stat-picker-item" th:classappend="${option.key == stat.key} ? 'active'">
+                                        <span th:text="${option.name}"></span>
+                                        <span class="text-muted ms-2" th:if="${option.value == '—'}">not tracked</span>
+                                    </button>
+                                </th:block>
+                            </form>
+                        </span>
+                    </span>
+                </div>
+                <div class="kpi-value" th:classappend="${stat.value == '—'} ? 'text-muted' : ('tone-text-' + ${stat.tone})" th:text="${stat.value}">0</div>
+                <div class="progress-slim mt-2" th:if="${stat.progress != null}">
+                    <div class="progress-fill" role="progressbar" th:classappend="${stat.key == 'ihq'} ? '' : 'tone-success'"
+                         aria-valuemin="0" aria-valuemax="100" th:attr="aria-valuenow=${stat.progress},aria-label=${stat.name}"
+                         th:style="'width: ' + ${stat.progress} + '%;'"></div>
+                </div>
+                <div class="kpi-sub" th:text="${stat.sub}"></div>
+            </div>
+        </div>
+    </div>
+
+    <section class="surface-card p-3 p-md-4 mb-4" aria-labelledby="attentionTitle">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+                <h2 id="attentionTitle" class="section-title">Needs attention</h2>
+                <p class="section-subtitle mt-1">Time-sensitive account items and reviews, with a direct link to each next step.</p>
+            </div>
+            <span class="badge rounded-pill text-bg-primary" th:text="${attentionCount} + ' items'"></span>
+        </div>
+        <div th:if="${#lists.isEmpty(attentionItems)}" class="rounded-3 border p-3 small text-muted">
+            <span th:if="${totalMembers == 0}">Your roster is empty. <a href="#addMemberDrawer">Add a member</a> or <a href="/upload-docs">import a roster</a> to get started.</span>
+            <span th:unless="${totalMembers == 0}">Everything is up to date. No past-due balances, near-term due dates, pending transactions, or reminder candidates need attention.</span>
+        </div>
+        <ul class="list-group list-group-flush" th:unless="${#lists.isEmpty(attentionItems)}">
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3"
+                th:each="item : ${attentionItems}">
+                <div class="min-w-0">
+                    <div class="fw-medium text-dark" th:text="${item.title}"></div>
+                    <div class="small text-muted" th:text="${item.detail}"></div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <span class="badge rounded-pill text-bg-warning" th:text="${item.status}"></span>
+                    <a class="btn btn-sm btn-fintech-soft" th:href="${item.href}">Review</a>
+                    <form th:if="${item.memberId != null}" th:action="@{/attention/{memberId}/snooze(memberId=${item.memberId})}"
+                          method="post" class="d-flex align-items-center gap-1">
+                        <label class="visually-hidden" th:for="|snooze-${item.memberId}|"
+                               th:text="'Hide ' + ${item.title} + ' for'"></label>
+                        <select class="form-select form-select-sm" name="days" th:id="|snooze-${item.memberId}|"
+                                th:attr="aria-label='Hide ' + ${item.title} + ' for'">
+                            <option value="1">1 day</option>
+                            <option value="7">1 week</option>
+                            <option value="30">30 days</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-fintech-outline text-nowrap"
+                                th:attr="aria-label='Snooze ' + ${item.title}">Snooze</button>
+                    </form>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <!-- IHQ Bill Modal -->
+    <div class="modal fade" id="ihqBillModal" tabindex="-1" aria-hidden="true" aria-labelledby="ihqBillTitle">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/ihq-bill}" method="post">
+                    <div class="modal-header">
+                        <div>
+                            <h2 class="modal-title fs-5" id="ihqBillTitle">IHQ Semester Bill</h2>
+                            <p class="section-subtitle mt-1">Dues payments are applied to this amount first.</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label-fintech" for="ihqAmount">Total IHQ bill for the semester ($)</label>
+                            <input id="ihqAmount" type="number" min="0" step="0.01" name="amount" class="form-control tabular-nums"
+                                   th:value="${settings.ihqBillAmount}" required>
+                        </div>
+                        <div>
+                            <label class="form-label-fintech" for="ihqStart">Semester start date (optional)</label>
+                            <input id="ihqStart" type="date" name="startDate" class="form-control" th:value="${settings.ihqStartDate}">
+                            <div class="form-text">Only dues payments recorded on or after this date count. Leave blank to count every recorded payment.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-fintech-outline" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-fintech-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <div class="row g-4">
+        <!-- Left Column: Member Ledger & CSV Sync -->
+        <div class="col-12">
+            <div class="surface-card mb-4">
+                <!-- Card Header -->
+                <div class="p-3 p-md-4 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3" style="border-color: var(--border-subtle) !important;">
+                    <div>
+                        <h2 class="section-title">Member Dues Ledger</h2>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <button type="button" class="btn btn-fintech-outline d-inline-flex align-items-center gap-1" data-bs-toggle="collapse" data-bs-target="#addMemberDrawer" aria-expanded="false">
+                            <i class="bi bi-person-plus"></i>
+                            <span>Add Member</span>
+                        </button>
+                        <button type="button" class="btn btn-fintech-outline d-inline-flex align-items-center gap-1" data-copy-text="#duesSummaryText"
+                                title="Copy a plain-text summary: collected, outstanding, past due, collection rate, IHQ progress and past-due members">
+                            <i class="bi bi-clipboard" aria-hidden="true"></i><span>Copy summary</span>
+                        </button>
+                        <textarea id="duesSummaryText" hidden readonly aria-hidden="true" th:text="${duesSummary}"></textarea>
+                        <a href="#smsReminders" class="btn btn-fintech-danger d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-send-fill"></i>
+                            <span>Review Reminder Recipients</span>
+                        </a>
+                        <span class="small text-muted" th:text="${smsRemainingToday} + ' SMS left today'"></span>
+                    </div>
+                </div>
+
+                <!-- Collapsible Add Member Form -->
+                <div class="collapse border-bottom" id="addMemberDrawer" style="background-color: var(--bg-canvas); border-color: var(--border-subtle) !important;">
+                    <div class="p-3 p-md-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.04em;">Add New Chapter Member</span>
+                            <button type="button" class="btn-close small" style="font-size: 0.7rem;" data-bs-toggle="collapse" data-bs-target="#addMemberDrawer"></button>
+                        </div>
+                        <form th:action="@{/add-member}" method="post" data-duplicate-guard>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-3">
+                                    <label class="form-label-fintech">Full Name</label>
+                                    <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Jordan Hayes" required>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-2">
+                                    <label class="form-label-fintech">Phone Number</label>
+                                    <input type="text" name="phoneNumber" class="form-control form-control-sm" placeholder="555-019-2834" required>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-3">
+                                    <label class="form-label-fintech">Email (optional)</label>
+                                    <input type="email" name="email" maxlength="200" class="form-control form-control-sm" placeholder="for email reminders">
+                                </div>
+                                <div class="col-4 col-sm-6 col-md-2">
+                                    <label class="form-label-fintech">Total Owed ($)</label>
+                                    <input type="number" min="0" step="0.01" name="totalOwed" class="form-control form-control-sm tabular-nums" value="0.00" required>
+                                </div>
+                                <div class="col-4 col-sm-6 col-md-2">
+                                    <label class="form-label-fintech">Past Due ($)</label>
+                                    <input type="number" min="0" step="0.01" name="pastDueBalance" class="form-control form-control-sm tabular-nums" value="0.00" required>
+                                </div>
+                                <div class="col-4 col-sm-6 col-md-2">
+                                    <label class="form-label-fintech">Paid This Mo ($)</label>
+                                    <input type="number" min="0" step="0.01" name="paidThisMonth" class="form-control form-control-sm tabular-nums" value="0.00" required>
+                                </div>
+                                <div class="col-12 col-md-1">
+                                    <button type="submit" class="btn btn-fintech-primary btn-sm w-100">Save</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="ledger-fullscreen" id="duesLedgerView">
+                <!-- Client-Side Search & Status Filter Bar -->
+                <div class="px-3 px-md-4 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2" style="background-color: var(--bg-subtle); border-color: var(--border-subtle) !important;">
+                    <div class="filter-pill-group" role="group" aria-label="Filter members by status">
+                        <button type="button" class="filter-pill active" data-filter="ALL" data-filter-reset>All</button>
+                        <button type="button" class="filter-pill" data-filter="Delinquent">Past Due</button>
+                        <button type="button" class="filter-pill" data-filter="Payment Plan">Payment Plan</button>
+                        <button type="button" class="filter-pill" data-filter="Paid in Full">Paid in Full</button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <select class="form-select form-select-sm" style="width:auto;" aria-label="Sort roster" onchange="window.duesDeskRememberScroll &amp;&amp; window.duesDeskRememberScroll(); window.location.assign(window.location.pathname + (this.value ? '?sort=' + encodeURIComponent(this.value) : ''));"><option value="">Sort: Default</option><option value="first" th:selected="${sort == 'first'}">First name (A–Z)</option><option value="last" th:selected="${sort == 'last'}">Last name (A–Z)</option><option value="owed-desc" th:selected="${sort == 'owed-desc'}">Total owed: highest</option><option value="owed-asc" th:selected="${sort == 'owed-asc'}">Total owed: lowest</option><option value="pastdue-desc" th:selected="${sort == 'pastdue-desc'}">Past due: highest</option><option value="pastdue-asc" th:selected="${sort == 'pastdue-asc'}">Past due: lowest</option><option value="paid-desc" th:selected="${sort == 'paid-desc'}">Paid (Mo): highest</option><option value="paid-asc" th:selected="${sort == 'paid-asc'}">Paid (Mo): lowest</option></select>
+                        <div class="position-relative search-box" style="min-width: 220px;">
+                            <i class="bi bi-search position-absolute text-muted" style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem;"></i>
+                            <input type="search" id="memberSearchInput" class="form-control form-control-sm ps-4" placeholder="Search this page..."
+                                   aria-label="Search members on this page" data-search-shortcut>
+                            <kbd class="search-kbd" aria-hidden="true">/</kbd>
+                        </div>
+                        <!-- Shown only while the table is full screen (.fs-only): copy it for a spreadsheet or save it as a PDF. -->
+                        <span class="fs-only" role="group" aria-label="Export this table">
+                            <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                    data-copy-table="#rosterTable" title="Copy the rows shown, ready to paste into a spreadsheet">
+                                <i class="bi bi-clipboard" aria-hidden="true"></i><span>Copy table</span>
+                            </button>
+                            <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                    data-export-table="#rosterTable" data-export-title="Member Dues Ledger" title="Save the rows shown as a PDF">
+                                <i class="bi bi-filetype-pdf" aria-hidden="true"></i><span>Export PDF</span>
+                            </button>
+                        </span>
+                        <button type="button" class="btn btn-fintech-outline btn-sm"
+                                data-roster-header-toggle="rosterTable" aria-pressed="true"
+                                aria-label="Make dues roster headers static">
+                            <i class="bi bi-pin-angle-fill me-1" aria-hidden="true"></i><span>Headers: Sticky</span>
+                        </button>
+                        <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
+                                data-fullscreen-target="duesLedgerView" aria-label="View dues table fullscreen">
+                            <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+                            <span>Full screen</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Roster Table -->
+                <div class="table-responsive roster-table-container">
+                    <table class="table table-fintech" id="rosterTable"
+                           th:attr="data-export-note=${totalPages > 1 ? 'Page ' + currentPage + ' of ' + totalPages + ' (' + totalMembers + ' members in all)' : ''}">
+                        <thead>
+                        <tr>
+                            <!-- Clicking a header uses the server-side sort, so it orders the whole roster, not just this page. -->
+                            <th th:attr="aria-sort=${sort == 'last' or sort == 'first' ? 'ascending' : 'none'}">
+                                <a class="th-sort" data-keep-scroll th:href="@{/(sort=${sort == 'last' ? 'first' : 'last'})}"
+                                   th:title="${sort == 'last' ? 'Sort by first name' : 'Sort by last name'}">Member<span class="sort-icon" aria-hidden="true"></span></a>
+                            </th>
+                            <th class="text-end" th:attr="aria-sort=${sort == 'owed-desc' ? 'descending' : (sort == 'owed-asc' ? 'ascending' : 'none')}">
+                                <a class="th-sort" data-keep-scroll th:href="@{/(sort=${sort == 'owed-desc' ? 'owed-asc' : 'owed-desc'})}">Total Owed<span class="sort-icon" aria-hidden="true"></span></a>
+                            </th>
+                            <th class="text-end" th:attr="aria-sort=${sort == 'pastdue-desc' ? 'descending' : (sort == 'pastdue-asc' ? 'ascending' : 'none')}">
+                                <a class="th-sort" data-keep-scroll th:href="@{/(sort=${sort == 'pastdue-desc' ? 'pastdue-asc' : 'pastdue-desc'})}">Past Due<span class="sort-icon" aria-hidden="true"></span></a>
+                            </th>
+                            <th class="text-end" th:attr="aria-sort=${sort == 'paid-desc' ? 'descending' : (sort == 'paid-asc' ? 'ascending' : 'none')}">
+                                <a class="th-sort" data-keep-scroll th:href="@{/(sort=${sort == 'paid-desc' ? 'paid-asc' : 'paid-desc'})}">Paid (Mo)<span class="sort-icon" aria-hidden="true"></span></a>
+                            </th>
+                            <th>Status</th>
+                            <th>Last Texted</th>
+                            <th class="text-center" data-export-skip>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="m : ${members}" class="member-row" th:attr="data-status=${m.status},id=|member-${m.id}|">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="history-link member-name"
+                                            data-bs-toggle="modal"
+                                            th:attr="data-bs-target=|#paymentHistory-${m.id}|"
+                                            th:title="'View payment history for ' + ${m.name}"
+                                            th:text="${m.name}"></button>
+                                    <span th:if="${m.muteReminders}" class="badge-muted" title="Excluded from automated &amp; bulk SMS">
+                                        <i class="bi bi-bell-slash"></i> Muted
+                                    </span>
+                                </div>
+                                <div class="text-muted tabular-nums member-phone" style="font-size: 0.78rem;" th:text="${m.phoneNumber}"></div>
+                            </td>
+                            <td class="text-end tabular-nums fw-medium">
+                                $<span th:text="${#numbers.formatDecimal(m.totalOwed, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                            </td>
+                            <td class="text-end tabular-nums" th:classappend="${m.pastDueBalance > 0} ? 'text-danger fw-bold' : 'text-muted'">
+                                $<span th:text="${#numbers.formatDecimal(m.pastDueBalance, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                            </td>
+                            <td class="text-end tabular-nums text-success fw-medium">
+                                $<span th:text="${#numbers.formatDecimal(m.paidThisMonth, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                            </td>
+                            <td>
+                                <span class="badge-status"
+                                      th:classappend="${m.pastDueBalance > 0 ? 'badge-delinquent' : (m.status == 'Paid in Full' ? 'badge-paid' : 'badge-plan')}"
+                                      th:text="${m.pastDueBalance > 0 ? 'Past due' : (m.status == 'Paid in Full' ? 'Paid' : (m.status == 'Payment Plan' ? 'Payment plan' : m.status))}"></span>
+                                <span class="remind-actions" th:if="${reminderTexts.containsKey(m.id)}" role="group" th:attr="aria-label='Send ' + ${m.name} + ' a reminder'">
+                                    <button type="button" class="btn btn-ghost btn-sm" data-reminder-action="email" title="Open in Email"
+                                            th:attr="data-reminder-text=${reminderTexts[m.id]},data-email=${m.email},data-subject='Dues reminder for ' + ${m.name},aria-label='Email ' + ${m.name} + ' a reminder'"><i class="bi bi-envelope" aria-hidden="true"></i></button>
+                                    <button type="button" class="btn btn-ghost btn-sm" data-reminder-action="sms" title="Open in Messages"
+                                            th:attr="data-reminder-text=${reminderTexts[m.id]},data-phone=${m.phoneNumber},aria-label='Text ' + ${m.name} + ' a reminder from your Messages app'"><i class="bi bi-chat-dots" aria-hidden="true"></i></button>
+                                    <button type="button" class="btn btn-ghost btn-sm" data-reminder-action="copy" title="Copy reminder"
+                                            th:attr="data-reminder-text=${reminderTexts[m.id]},aria-label='Copy the reminder for ' + ${m.name}"><i class="bi bi-clipboard" aria-hidden="true"></i></button>
+                                </span>                            </td>
+                            <td class="text-muted small tabular-nums" th:text="${m.lastTextedDate}"></td>
+                            <td class="text-center">
+                                <div class="dropdown table-actions-menu">
+                                    <button type="button" class="btn btn-fintech-outline btn-action-sm dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-expanded="false"
+                                            th:attr="aria-label='Actions for ' + ${m.name}">...</button>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <form th:action="@{/send-text/{id}(id=${m.id})}" method="post"
+                                              th:attr="data-send-dues-name=${m.name},data-phone=${m.phoneNumber},data-balance=${m.totalOwed},data-past-due=${m.pastDueBalance},data-live=${liveSmsEnabled},data-sms-remaining=${smsRemainingToday}">
+                                            <button type="submit" class="dropdown-item" th:disabled="${smsRemainingToday == 0}">Text</button>
+                                        </form>
+                                        <form th:action="@{/toggle-mute/{id}(id=${m.id})}" method="post">
+                                            <button type="submit" class="dropdown-item"
+                                                    th:text="${m.muteReminders ? 'Unmute' : 'Mute'}"></button>
+                                        </form>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                                th:attr="data-bs-target=|#editMember-${m.id}|">Edit</button>
+                                        <form th:action="@{/delete-member/{id}(id=${m.id})}" method="post"
+                                              th:attr="data-confirm-member=${m.name},data-balance=${m.totalOwed},data-past-due=${m.pastDueBalance}">
+                                            <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(members)}">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-people fs-3 d-block mb-2"></i>
+                                No chapter members found. <a href="#addMemberDrawer">Add a member</a> to build the roster, or <a href="/upload-docs">import a GreekBill CSV</a>.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav th:if="${totalPages > 1}" class="d-flex justify-content-between align-items-center px-3 px-md-4 py-3 border-top" aria-label="Roster pages">
+                    <span class="small text-muted" th:text="'Showing ' + ${((currentPage - 1) * 25) + 1} + '–' + ${((currentPage - 1) * 25) + #lists.size(members)} + ' of ' + ${totalMembers} + ' members'"></span>
+                    <div class="btn-group btn-group-sm">
+                        <a class="btn btn-outline-secondary" data-keep-scroll th:if="${hasPreviousPage}" th:href="@{/(page=${currentPage - 1},sort=${sort})}">Previous</a>
+                        <span class="btn btn-outline-secondary disabled" th:text="${currentPage} + ' / ' + ${totalPages}"></span>
+                        <a class="btn btn-outline-secondary" data-keep-scroll th:if="${hasNextPage}" th:href="@{/(page=${currentPage + 1},sort=${sort})}">Next</a>
+                    </div>
+                </nav>
+                </div>
+
+                <div th:each="m : ${members}" class="modal fade payment-history-modal" th:id="|paymentHistory-${m.id}|"
+                     tabindex="-1" aria-hidden="true" th:attr="aria-labelledby=|paymentHistoryTitle-${m.id}|">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <div>
+                                    <h2 class="modal-title fs-5" th:id="|paymentHistoryTitle-${m.id}|"
+                                        th:text="${m.name} + ' - Payment History'"></h2>
+                                    <p class="section-subtitle mt-1" th:text="${m.phoneNumber}"></p>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 ms-auto">
+                                    <button type="button" class="btn btn-sm btn-fintech-outline" data-open-edit-profile
+                                            th:attr="data-profile-modal=|#paymentHistory-${m.id}|,data-edit-modal=|#editMember-${m.id}|">
+                                        Edit profile
+                                    </button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row g-2 mb-4" aria-label="Member account summary">
+                                    <div class="col-6 col-md-3">
+                                        <div class="border rounded-3 p-2 h-100">
+                                            <div class="small text-muted">Current balance</div>
+                                            <div class="fw-semibold tabular-nums" th:text="'$' + ${#numbers.formatDecimal(m.totalOwed, 1, 'COMMA', 2, 'POINT')}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="border rounded-3 p-2 h-100">
+                                            <div class="small text-muted">Past due</div>
+                                            <div class="fw-semibold tabular-nums" th:text="'$' + ${#numbers.formatDecimal(m.pastDueBalance, 1, 'COMMA', 2, 'POINT')}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="border rounded-3 p-2 h-100">
+                                            <div class="small text-muted">Next due</div>
+                                            <div class="fw-semibold" th:text="${accountSummaries[m.id].nextDueDate != null ? accountSummaries[m.id].nextDueDate : 'No scheduled due date'}"></div>
+                                            <span class="badge rounded-pill text-bg-warning mt-1" th:text="${accountSummaries[m.id].nextDueStatus}"></span>
+                                            <div class="small text-muted tabular-nums" th:if="${accountSummaries[m.id].nextDueDate != null}"
+                                                 th:text="'$' + ${#numbers.formatDecimal(accountSummaries[m.id].nextDueAmount, 1, 'COMMA', 2, 'POINT')}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="border rounded-3 p-2 h-100">
+                                            <div class="small text-muted">Payment-plan progress</div>
+                                            <div class="fw-semibold" th:if="${accountSummaries[m.id].installmentCount == 0}">No installments</div>
+                                            <div class="fw-semibold tabular-nums" th:unless="${accountSummaries[m.id].installmentCount == 0}"
+                                                 th:text="'$' + ${#numbers.formatDecimal(accountSummaries[m.id].installmentPaidAmount, 1, 'COMMA', 2, 'POINT')} + ' of $' + ${#numbers.formatDecimal(accountSummaries[m.id].installmentTotalAmount, 1, 'COMMA', 2, 'POINT')} + ' paid'"></div>
+                                            <div class="small text-muted" th:if="${accountSummaries[m.id].installmentCount > 0}"
+                                                 th:text="${accountSummaries[m.id].installmentsPaid} + ' of ' + ${accountSummaries[m.id].installmentCount} + ' installments complete'"></div>
+                                            <div class="progress-slim mt-2" th:if="${accountSummaries[m.id].installmentTotalAmount > 0}"
+                                                 th:with="planPct=${accountSummaries[m.id].installmentPaidAmount * 100 / accountSummaries[m.id].installmentTotalAmount}">
+                                                <div class="progress-fill tone-success" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                                                     th:attr="aria-valuenow=${planPct > 100 ? 100 : planPct},aria-label='Payment-plan progress'"
+                                                     th:style="'width: ' + ${planPct > 100 ? 100 : planPct} + '%;'"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <section class="border rounded-3 p-3 mb-4">
+                                    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                        <div>
+                                            <div class="small text-muted">Social clearance</div>
+                                            <div class="fw-semibold" th:classappend="${socialClearanceByMember[m.id]} ? 'text-success' : 'text-danger'"
+                                                 th:text="${socialClearanceByMember[m.id]} ? 'CLEARED' : 'NOT CLEARED'"></div>
+                                        </div>
+                                        <form th:action="@{/members/{id}/social-clearance(id=${m.id})}" method="post"
+                                              class="d-flex align-items-end gap-2">
+                                            <div>
+                                                <label class="form-label small mb-1" th:for="|clear-until-${m.id}|">Manual vouch through</label>
+                                                <input class="form-control form-control-sm" type="date" name="clearedUntilDate"
+                                                       th:id="|clear-until-${m.id}|" th:value="${m.clearedUntilDate}" required>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary" type="submit">Save vouch</button>
+                                        </form>
+                                    </div>
+                                    <div class="small text-muted mt-2">Vouches expire on the selected date. Automatic clearance uses the configured dues tolerance and eligible payment plans.</div>
+                                </section>
+                                <section th:if="${!#lists.isEmpty(m.credits)}" class="mb-4">
+                                    <h3 class="section-title mb-2">Applied discounts &amp; credits</h3>
+                                    <div class="table-responsive border rounded-3">
+                                        <table class="table table-fintech mb-0">
+                                            <thead><tr><th>Date</th><th>Details</th><th class="text-end">Credit</th></tr></thead>
+                                            <tbody>
+                                            <tr th:each="credit : ${m.credits}">
+                                                <td th:text="${credit.date}"></td>
+                                                <td th:text="${credit.description}"></td>
+                                                <td class="text-end tabular-nums" th:text="'$' + ${#numbers.formatDecimal(credit.amount, 1, 'COMMA', 2, 'POINT')}"></td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                                <div th:if="${#lists.isEmpty(paymentHistoryByMember[m.id])}" class="text-center py-4 text-muted">
+                                    <i class="bi bi-receipt fs-3 d-block mb-2"></i>
+                                    No payment history has been recorded for this member. <a href="/calendar">Open Calendar</a> to record a payment.
+                                </div>
+                                <section th:each="month : ${paymentHistoryByMember[m.id]}" class="mb-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h3 class="section-title" th:text="${month.month}"></h3>
+                                        <span class="fw-semibold text-success tabular-nums">
+                                            $<span th:text="${#numbers.formatDecimal(month.total, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                                        </span>
+                                    </div>
+                                    <div class="table-responsive border rounded-3">
+                                        <table class="table table-fintech mb-0">
+                                            <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Details</th>
+                                                <th class="text-end">Amount</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr th:each="payment : ${month.payments}">
+                                                <td class="text-muted tabular-nums" th:text="${payment.date} ?: '—'"></td>
+                                                <td th:text="${payment.description} ?: '—'"></td>
+                                                <td class="text-end tabular-nums fw-medium">
+                                                    $<span th:text="${#numbers.formatDecimal(payment.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                                                    <a th:if="${payment.idempotencyKey != null and !payment.idempotencyKey.isBlank()}"
+                                                       class="btn btn-sm btn-link p-0 ms-2 desktop-document" target="_blank"
+                                                       data-document-type="receipt" th:attr="data-member-id=${m.id},data-payment-key=${payment.idempotencyKey}"
+                                                       th:href="@{/members/{id}/receipts/{key}.pdf(id=${m.id},key=${payment.idempotencyKey})}">Receipt</a>
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:each="m : ${members}" class="modal fade" th:id="|editMember-${m.id}|"
+                             tabindex="-1" aria-hidden="true" th:attr="aria-labelledby=|editMemberTitle-${m.id}|">
+                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <div>
+                                            <h2 class="modal-title fs-5" th:id="|editMemberTitle-${m.id}|" th:text="'Edit ' + ${m.name}"></h2>
+                                            <p class="section-subtitle mt-1">Update member details and manage itemized charges.</p>
+                                        </div>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form th:action="@{/edit-member/{id}(id=${m.id})}" method="post" class="mb-4">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label-fintech">Full Name</label>
+                                                    <input type="text" name="name" class="form-control" th:value="${m.name}" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label-fintech">Phone Number</label>
+                                                    <input type="text" name="phoneNumber" class="form-control" th:value="${m.phoneNumber}" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label-fintech">Email (optional)</label>
+                                                    <input type="email" name="email" maxlength="200" class="form-control" th:value="${m.email}" placeholder="for email reminders">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label-fintech">Total Owed ($)</label>
+                                                    <input type="number" min="0" step="0.01" name="totalOwed" class="form-control" th:value="${m.totalOwed}" required>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label-fintech">Past Due ($)</label>
+                                                    <input type="number" min="0" step="0.01" name="pastDueBalance" class="form-control" th:value="${m.pastDueBalance}" required>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label-fintech">Paid This Month ($)</label>
+                                                    <input type="number" min="0" step="0.01" name="paidThisMonth" class="form-control" th:value="${m.paidThisMonth}" required>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-fintech-primary mt-3"><i class="bi bi-check2 me-1"></i>Save Profile</button>
+                                        </form>
+
+                                        <hr>
+                                        <h3 class="section-title mb-2">Charges</h3>
+                                        <p class="section-subtitle mb-3">Adding a charge increases the balance; removing one reverses its balance impact.</p>
+                                        <div th:if="${#lists.isEmpty(m.charges)}" class="text-muted small py-2">No itemized charges recorded. Add the first charge using the form below.</div>
+                                        <div th:each="charge : ${m.charges}" class="d-flex justify-content-between align-items-center gap-3 border rounded-3 p-2 mb-2">
+                                            <div>
+                                                <div class="fw-semibold small" th:text="${charge.description}"></div>
+                                                <div class="text-muted small" th:text="${charge.date + (charge.dueDate != null ? ' · Due ' + charge.dueDate : '')}"></div>
+                                                <span class="badge rounded-pill"
+                                                      th:classappend="${charge.remainingAmount <= 0.005 ? ' text-bg-success' : (charge.pastDueAmount > 0 ? ' text-bg-danger' : (charge.dueDate == today ? ' text-bg-warning' : (charge.dueDate == null ? ' text-bg-secondary' : ' text-bg-primary')))}"
+                                                      th:text="${charge.remainingAmount <= 0.005 ? 'Paid' : (charge.pastDueAmount > 0 ? 'Past due' : (charge.dueDate == null ? 'Open' : (charge.dueDate == today ? 'Due today' : 'Upcoming')))}"></span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="tabular-nums fw-semibold" th:text="'$' + ${#numbers.formatDecimal(charge.remainingAmount, 1, 'COMMA', 2, 'POINT')}"></span>
+                                                <form th:action="@{/members/{id}/charges/{chargeId}/remove(id=${m.id},chargeId=${charge.id})}" method="post"
+                                                      th:attr="data-confirm-charge=${charge.description},data-remaining=${charge.remainingAmount}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Remove charge" data-loading-label="Removing…">Remove</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        <form th:action="@{/members/{id}/charges(id=${m.id})}" method="post" class="row g-2 align-items-end mt-2" data-duplicate-guard>
+                                            <div class="col-md-4">
+                                                <label class="form-label-fintech">Charge description</label>
+                                                <input type="text" name="description" class="form-control form-control-sm" placeholder="e.g. Fall dues" required>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label-fintech">Amount ($)</label>
+                                                <input type="number" min="0.01" step="0.01" name="amount" class="form-control form-control-sm" required>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label-fintech">Due date</label>
+                                                <input type="date" name="dueDate" class="form-control form-control-sm">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-check mb-1">
+                                                    <input class="form-check-input" type="checkbox" name="pastDue" value="true" th:id="|pastDue-${m.id}|">
+                                                    <label class="form-check-label small" th:for="|pastDue-${m.id}|">Past due</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="submit" class="btn btn-fintech-primary btn-sm w-100" data-loading-label="Adding…"><i class="bi bi-plus-lg me-1"></i>Add</button>
+                                            </div>
+                                        </form>
+                                        <hr class="my-4">
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                            <div>
+                                                <h3 class="section-title mb-1">Payment plan installments</h3>
+                                                <p class="section-subtitle">Payments apply to the earliest unpaid installment automatically.</p>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <a class="btn btn-sm btn-outline-primary desktop-document" data-document-type="statement-pdf"
+                                                   th:attr="data-member-id=${m.id}" th:href="@{/members/{id}/statement.pdf(id=${m.id})}">PDF statement</a>
+                                                <a class="btn btn-sm btn-outline-secondary desktop-document" data-document-type="statement-csv"
+                                                   th:attr="data-member-id=${m.id}" th:href="@{/members/{id}/statement.csv(id=${m.id})}">CSV statement</a>
+                                                <a class="btn btn-sm btn-fintech-primary desktop-document" data-document-type="agreement"
+                                                   th:if="${!#lists.isEmpty(m.installments)}"
+                                                   th:attr="data-member-id=${m.id}" th:href="@{/members/{id}/agreement.pdf(id=${m.id})}"
+                                                   title="A printable payment plan agreement with the schedule, policies and signature lines">
+                                                    <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Generate agreement</a>
+                                            </div>
+                                        </div>
+                                        <div class="small mb-2 d-flex flex-wrap align-items-center gap-1" th:if="${!m.recognizedPayerAliases.isEmpty()}">
+                                            <span class="text-muted me-1"><i class="bi bi-person-check" aria-hidden="true"></i> Payments also arrive as:</span>
+                                            <form th:each="alias : ${m.recognizedPayerAliases}" th:action="@{/members/{id}/payer-aliases/remove(id=${m.id})}"
+                                                  method="post" class="m-0 d-inline">
+                                                <input type="hidden" name="alias" th:value="${alias}">
+                                                <button type="submit" class="badge rounded-pill text-bg-light border" th:title="'Stop suggesting ' + ${m.name} + ' for payments from ' + ${alias}">
+                                                    <span th:text="${alias}"></span> <i class="bi bi-x" aria-hidden="true"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <div th:if="${#lists.isEmpty(m.installments)}" class="small text-muted mb-2">No custom installments scheduled. Create a schedule below if this member is paying in installments.</div>
+                                        <div th:each="installment : ${m.installments}" class="d-flex justify-content-between align-items-center gap-2 small border rounded-2 p-2 mb-1">
+                                            <span>
+                                                <span th:text="${installment.dueDate + ' · ' + installment.description}"></span>
+                                                <span class="badge rounded-pill ms-1"
+                                                      th:classappend="${installment.paid ? ' text-bg-success' : (installment.overdue ? ' text-bg-danger' : (installment.dueDate == today ? ' text-bg-warning' : ' text-bg-primary'))}"
+                                                      th:text="${installment.paid ? 'Paid' : (installment.overdue ? 'Past due' : (installment.dueDate == today ? 'Due today' : 'Upcoming'))}"></span>
+                                            </span>
+                                            <span class="text-nowrap" th:text="'$' + ${#numbers.formatDecimal(installment.remainingAmount, 1, 'COMMA', 2, 'POINT')} + ' remaining'"></span>
+                                            <form th:if="${!installment.paid}" th:action="@{/members/{id}/installments/{installmentId}/remove(id=${m.id},installmentId=${installment.id})}"
+                                                  method="post" class="m-0" th:attr="data-confirm-installment=${installment.description},data-remaining=${installment.remainingAmount},data-due-date=${installment.dueDate}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0" data-loading-label="Removing…">Remove</button>
+                                            </form>
+                                        </div>
+                                        <form th:action="@{/members/{id}/installments(id=${m.id})}" method="post" class="installment-form mt-3" data-duplicate-guard>
+                                            <div class="installment-rows">
+                                                <div class="row g-2 align-items-end installment-row mb-2">
+                                                    <div class="col-12 col-md-4"><label class="form-label-fintech">Due date</label><input type="date" name="dueDates" class="form-control form-control-sm" required></div>
+                                                    <div class="col-12 col-md-3"><label class="form-label-fintech">Amount</label><input type="number" name="amounts" min="0.01" step="0.01" class="form-control form-control-sm" required></div>
+                                                    <div class="col-12 col-md-5"><label class="form-label-fintech">Description</label><input type="text" name="descriptions" value="Payment plan installment" maxlength="120" class="form-control form-control-sm" required></div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary add-installment-row">Add installment</button>
+                                                <button type="submit" class="btn btn-sm btn-primary" data-loading-label="Saving plan…">Save plan</button>
+                                            </div>
+                                            <div class="form-text">The sum of new installments must not exceed the member's current balance.</div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <section id="memberAdjustments" class="surface-card hover-expand-card mb-4" aria-labelledby="memberAdjustmentsTitle" data-hover-expand>
+        <div class="hover-expand-card__header">
+            <h2 id="memberAdjustmentsTitle" class="section-title mb-0">
+                <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="memberAdjustmentsContent">
+                    <span class="d-inline-flex align-items-center gap-2 flex-wrap">
+                        <span>Member charges &amp; discounts</span>
+                        <span class="badge rounded-pill text-bg-light border" th:if="${!#lists.isEmpty(chargePresets)}"
+                              th:text="${#lists.size(chargePresets)} + ' saved'"></span>
+                    </span>
+                    <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                </button>
+            </h2>
+        </div>
+        <div id="memberAdjustmentsContent" class="hover-expand-card__content" aria-hidden="true" inert>
+            <div class="hover-expand-card__inner">
+                <div class="hover-expand-card__body">
+                    <p class="section-subtitle mt-2 mb-3">Add a fine or a discount to one member's account. Fines are added as a charge; discounts lower the balance without counting as money received.</p>
+
+                    <div class="mb-3" th:if="${!#lists.isEmpty(chargePresets)}">
+                        <div class="form-label-fintech mb-1">Saved charges</div>
+                        <div class="preset-chips">
+                            <span class="preset-chip" th:each="preset : ${chargePresets}">
+                                <button type="button" class="preset-chip__use" data-use-preset
+                                        th:attr="data-name=${preset.name},data-amount=${preset.amount},data-type=${preset.type}"
+                                        th:title="'Fill in ' + ${preset.name}">
+                                    <span th:text="${preset.name}"></span>
+                                    <span class="preset-chip__amt" th:classappend="${preset.discount} ? 'discount' : 'fine'"
+                                          th:text="(${preset.discount} ? '−$' : '+$') + ${#numbers.formatDecimal(preset.amount, 1, 'COMMA', 2, 'POINT')}"></span>
+                                </button>
+                                <form th:action="@{/charge-presets/{id}/remove(id=${preset.id})}" method="post" class="m-0 d-inline-flex">
+                                    <button type="submit" class="preset-chip__remove" th:title="'Delete saved charge ' + ${preset.name}"
+                                            th:attr="aria-label='Delete saved charge ' + ${preset.name}"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                                </form>
+                            </span>
+                        </div>
+                    </div>
+
+                    <form action="/members/adjustments" method="post" id="memberAdjustmentForm" data-type="FINE" data-duplicate-guard>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="adjMember">Member</label>
+                                <select id="adjMember" name="memberId" class="form-select form-select-sm" required>
+                                    <option value="" disabled selected>Choose a member…</option>
+                                    <option th:each="member : ${allRosterMembers}" th:value="${member.id}"
+                                            th:text="${member.name} + ' — $' + ${#numbers.formatDecimal(member.totalOwed, 1, 'COMMA', 2, 'POINT')} + ' owed'"></option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <span class="form-label-fintech d-block" id="adjTypeLabel">Type</span>
+                                <div class="adj-type" role="radiogroup" aria-labelledby="adjTypeLabel">
+                                    <input type="radio" class="btn-check" name="type" id="adjFine" value="FINE" checked>
+                                    <label class="fine" for="adjFine"><i class="bi bi-plus-circle" aria-hidden="true"></i>Fine / charge</label>
+                                    <input type="radio" class="btn-check" name="type" id="adjDiscount" value="DISCOUNT">
+                                    <label class="discount" for="adjDiscount"><i class="bi bi-dash-circle" aria-hidden="true"></i>Discount</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <label class="form-label-fintech" for="adjName">Name</label>
+                                <input id="adjName" name="name" class="form-control form-control-sm" maxlength="120" required
+                                       placeholder="e.g. Missed chapter fine">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label-fintech" for="adjAmount">Amount ($)</label>
+                                <input id="adjAmount" name="amount" type="number" min="0.01" max="100000" step="0.01" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-6 col-md-3 adj-fine-only">
+                                <label class="form-label-fintech" for="adjDueDate">Due date</label>
+                                <input id="adjDueDate" name="dueDate" type="date" class="form-control form-control-sm" title="Leave blank to make it due today">
+                            </div>
+                            <div class="col-12 col-md-4 d-flex align-items-center">
+                                <div class="form-check mb-1">
+                                    <input class="form-check-input" type="checkbox" name="savePreset" value="true" id="adjSavePreset">
+                                    <label class="form-check-label small" for="adjSavePreset">Save this charge for future use</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-3 ms-md-auto">
+                                <button type="submit" id="adjSubmit" class="btn btn-fintech-primary btn-sm w-100" data-loading-label="Saving…">
+                                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i><span>Add fine</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="small text-muted mt-2 adj-fine-only">Leave the due date blank to make the fine due today. A past date marks it past due.</div>
+                        <div class="small text-muted mt-2" data-discount-note hidden>Discounts are capped at what the member owes and settle their earliest charges first.</div>
+                        <div class="small text-muted" th:if="${#lists.isEmpty(allRosterMembers)}">The roster is empty. <a href="#addMemberDrawer">Add a member</a> first.</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="smsReminders" class="surface-card hover-expand-card mb-4" aria-labelledby="smsRemindersTitle" data-hover-expand>
+        <div class="hover-expand-card__header">
+            <h2 id="smsRemindersTitle" class="section-title mb-0">
+                <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="smsRemindersContent">
+                    <span class="d-inline-flex align-items-center gap-2 flex-wrap">
+                        <span>SMS reminders &amp; schedule</span>
+                        <span class="badge rounded-pill text-bg-primary" th:text="${#lists.size(reminderPreview)} + ' eligible today'"></span>
+                    </span>
+                    <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                </button>
+            </h2>
+        </div>
+        <div id="smsRemindersContent" class="hover-expand-card__content" aria-hidden="true" inert>
+            <div class="hover-expand-card__inner">
+                <div class="hover-expand-card__body">
+                    <p class="section-subtitle mt-2 mb-3">Configure automated outreach for unmuted past-due accounts. The Twilio connection lives in <a href="/settings">Settings</a>.</p>
+                    <form th:action="@{/settings}" method="post">
+                        <div class="row g-4">
+                            <div class="col-12 col-lg-7">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label-fintech mb-0" for="smsTemplateInput">Message template</label>
+                                    <span class="text-muted" style="font-size: 0.72rem;">Click tag to insert</span>
+                                </div>
+                                <textarea id="smsTemplateInput" name="smsTemplate" rows="4" maxlength="1600" class="form-control form-control-sm mb-2" th:text="${settings.smsTemplate}" required></textarea>
+                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                    <span class="tag-chip" data-tag="{name}"><i class="bi bi-plus"></i>{name}</span>
+                                    <span class="tag-chip" data-tag="{pastDue}"><i class="bi bi-plus"></i>{pastDue}</span>
+                                    <span class="tag-chip" data-tag="{totalOwed}"><i class="bi bi-plus"></i>{totalOwed}</span>
+                                    <span class="tag-chip" data-tag="{dueDate}"><i class="bi bi-plus"></i>{dueDate}</span>
+                                    <span class="tag-chip" data-tag="{dueAmount}"><i class="bi bi-plus"></i>{dueAmount}</span>
+                                    <span class="tag-chip" data-tag="{reason}"><i class="bi bi-plus"></i>{reason}</span>
+                                </div>
+                                <div class="sms-preview-box">
+                                    <div class="fw-semibold text-uppercase text-muted mb-1" style="font-size: 0.65rem; letter-spacing: 0.05em;">Live preview</div>
+                                    <div id="smsLivePreview" class="text-dark"></div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-5">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="autoSwitch" name="autoSendEnabled" th:checked="${settings.autoSendEnabled}">
+                                    <label class="form-check-label fw-semibold small text-dark" for="autoSwitch">Enable automated scheduled dispatch</label>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label-fintech" for="reminderFrequency">Frequency</label>
+                                        <select id="reminderFrequency" name="frequency" class="form-select form-select-sm">
+                                            <option value="DAILY" th:selected="${settings.frequency == 'DAILY'}">Daily</option>
+                                            <option value="WEEKLY" th:selected="${settings.frequency == 'WEEKLY'}">Weekly</option>
+                                            <option value="BIWEEKLY" th:selected="${settings.frequency == 'BIWEEKLY'}">Bi-Weekly</option>
+                                            <option value="MONTHLY" th:selected="${settings.frequency == 'MONTHLY'}">Monthly (1st)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label-fintech" for="reminderDayOfWeek">Day of week</label>
+                                        <select id="reminderDayOfWeek" name="dayOfWeek" class="form-select form-select-sm">
+                                            <option value="MONDAY" th:selected="${settings.dayOfWeek == 'MONDAY'}">Monday</option>
+                                            <option value="TUESDAY" th:selected="${settings.dayOfWeek == 'TUESDAY'}">Tuesday</option>
+                                            <option value="WEDNESDAY" th:selected="${settings.dayOfWeek == 'WEDNESDAY'}">Wednesday</option>
+                                            <option value="THURSDAY" th:selected="${settings.dayOfWeek == 'THURSDAY'}">Thursday</option>
+                                            <option value="FRIDAY" th:selected="${settings.dayOfWeek == 'FRIDAY'}">Friday</option>
+                                            <option value="SATURDAY" th:selected="${settings.dayOfWeek == 'SATURDAY'}">Saturday</option>
+                                            <option value="SUNDAY" th:selected="${settings.dayOfWeek == 'SUNDAY'}">Sunday</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label-fintech" for="reminderSendTime">Dispatch time (24h)</label>
+                                    <input id="reminderSendTime" type="time" name="sendTime" class="form-control form-control-sm tabular-nums" th:value="${settings.sendTime}" required>
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label-fintech" for="reminderBefore">Remind before due date (days)</label>
+                                        <input id="reminderBefore" type="number" min="0" max="60" name="reminderDaysBeforeDue"
+                                               class="form-control form-control-sm" th:value="${reminderDaysBeforeDue}" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label-fintech" for="reminderAfter">Remind after due date (days)</label>
+                                        <input id="reminderAfter" type="number" min="0" max="60" name="reminderDaysAfterDue"
+                                               class="form-control form-control-sm" th:value="${reminderDaysAfterDue}" required>
+                                    </div>
+                                </div>
+                                <p class="small text-muted">These offsets select members whose dated charges or installments are due on those days. Existing unitemized past-due balances remain eligible for reminders.</p>
+                                <button type="submit" class="btn btn-fintech-primary w-100" data-loading-label="Saving…">
+                                    <i class="bi bi-check2"></i><span>Save configuration</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+                    <div id="reminderPreview" class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <div>
+                            <h3 class="h6 fw-bold mb-1">Reminder recipient preview</h3>
+                            <p class="small text-muted mb-0">Review who is eligible today before you dispatch a reminder batch.</p>
+                        </div>
+                        <span class="badge rounded-pill text-bg-primary" th:text="${#lists.size(reminderPreview)} + ' eligible'"></span>
+                    </div>
+                    <div th:if="${#lists.isEmpty(reminderPreview)}" class="small text-muted py-3">
+                        No unmuted members are due for a reminder today. Review member balances above or adjust the reminder window.
+                    </div>
+                    <div class="table-responsive mb-3" th:unless="${#lists.isEmpty(reminderPreview)}">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead><tr><th>Member</th><th>Reason</th><th>Date</th><th>Status</th><th class="text-end">Amount</th></tr></thead>
+                            <tbody>
+                            <tr th:each="candidate : ${reminderPreview}">
+                                <td th:text="${candidate.member.name}"></td>
+                                <td th:text="${candidate.reason}"></td>
+                                <td th:text="${candidate.dueDate} ?: '—'"></td>
+                                <td><span class="badge rounded-pill text-bg-warning">Needs review</span></td>
+                                <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(candidate.amount, 1, 'COMMA', 2, 'POINT')}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <form th:if="${!#lists.isEmpty(reminderPreview)}" th:action="@{/settings/reminders/send}" method="post"
+                          id="sendReminderPreviewForm"
+                          th:attr="data-recipient-count=${#lists.size(reminderPreview)},data-total=${reminderPreviewTotal},data-live=${liveSmsEnabled},data-sms-remaining=${smsRemainingToday}">
+                        <button type="submit" class="btn btn-fintech-danger w-100" th:disabled="${smsRemainingToday == 0}" data-loading-label="Sending…">
+                            <i class="bi bi-send-fill"></i><span>Send previewed reminders</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="statusMessaging" class="surface-card hover-expand-card mb-4" aria-labelledby="statusMessagingTitle" data-hover-expand>
+        <div class="hover-expand-card__header">
+            <h2 id="statusMessagingTitle" class="section-title mb-0">
+                <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="statusMessagingContent">
+                    <span>Text members by status</span>
+                    <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                </button>
+            </h2>
+        </div>
+        <div id="statusMessagingContent" class="hover-expand-card__content" aria-hidden="true" inert>
+            <div class="hover-expand-card__inner">
+                <div class="hover-expand-card__body">
+                    <p class="section-subtitle mt-2 mb-3">Send one message to unmuted members in a selected account status. Use <code>{name}</code> to personalize it.</p>
+                    <form id="statusMessageForm" action="/send-status-text" method="post"
+                          th:attr="data-live=${liveSmsEnabled},data-sms-remaining=${smsRemainingToday}">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="statusMessageStatus">Member status</label>
+                                <select id="statusMessageStatus" name="status" class="form-select" required>
+                                    <option th:each="group : ${statusRecipientGroups}" th:value="${group.status}"
+                                            th:attr="data-recipient-count=${group.recipientCount}"
+                                            th:text="${group.status} + ' (' + ${group.recipientCount} + ' unmuted)'"></option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-8">
+                                <label class="form-label-fintech" for="statusMessageBody">Message</label>
+                                <textarea id="statusMessageBody" name="message" class="form-control" rows="3"
+                                          maxlength="1600" placeholder="Hi {name}, ..." required></textarea>
+                            </div>
+                            <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <span class="small text-muted">
+                                    Recipients: <strong id="statusMessageRecipientCount">0</strong>
+                                    · <span th:text="${smsRemainingToday} + ' SMS remaining today'"></span>
+                                    · Muted members are excluded.
+                                </span>
+                                <button type="submit" class="btn btn-fintech-primary" id="sendStatusMessageButton"
+                                        data-loading-label="Sending…" th:disabled="${smsRemainingToday == 0}">Review and send</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="batchCharges" class="surface-card hover-expand-card mb-4" aria-labelledby="batchChargeTitle" data-hover-expand>
+        <div class="hover-expand-card__header">
+            <h2 id="batchChargeTitle" class="section-title mb-0">
+                <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="batchChargeContent">
+                    <span>Create charges for selected members</span>
+                    <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                </button>
+            </h2>
+        </div>
+        <div id="batchChargeContent" class="hover-expand-card__content" aria-hidden="true" inert>
+            <div class="hover-expand-card__inner">
+                <div class="hover-expand-card__body">
+                    <p class="section-subtitle mt-2 mb-3">Post one charge and due date to selected member accounts. Existing payments are not changed.</p>
+                    <form action="/charges/batch" method="post" id="batchChargeForm" data-duplicate-guard>
+                        <div class="row g-2 align-items-end mb-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label-fintech" for="batchDescription">Charge description</label>
+                                <input id="batchDescription" name="description" class="form-control form-control-sm" maxlength="200" required>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label-fintech" for="batchAmount">Amount per member</label>
+                                <input id="batchAmount" name="amount" type="number" min="0.01" step="0.01" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-fintech" for="batchDueDate">Due date</label>
+                                <input id="batchDueDate" name="dueDate" type="date" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <button type="submit" class="btn btn-fintech-primary w-100" data-loading-label="Adding charges…">Add charge to selected</button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <input class="form-check-input" id="selectAllBatchMembers" type="checkbox">
+                            <label class="small fw-semibold" for="selectAllBatchMembers">Select all roster members</label>
+                        </div>
+                        <div class="row g-2 border rounded-3 p-2 mx-0" style="max-height:180px;overflow:auto;">
+                            <div class="col-12 col-sm-6 col-lg-4" th:each="member : ${allRosterMembers}">
+                                <div class="form-check">
+                                    <input class="form-check-input batch-member-check" type="checkbox" name="memberIds"
+                                           th:id="|batch-member-${member.id}|" th:value="${member.id}">
+                                    <label class="form-check-label small" th:for="|batch-member-${member.id}|" th:text="${member.name}"></label>
+                                </div>
+                            </div>
+                            <div class="small text-muted" th:if="${#lists.isEmpty(allRosterMembers)}">The roster is empty. <a href="#addMemberDrawer">Add a member</a> or <a href="/upload-docs">import a roster</a> before creating a batch charge.</div>
+                        </div>
+                        <div id="batchChargeError" class="small text-danger mt-2" role="alert" hidden>Select at least one member.</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script th:replace="~{fragments :: tableFullscreenScript}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Client-side Roster Filtering & Search
+        const searchInput = document.getElementById('memberSearchInput');
+        const filterButtons = document.querySelectorAll('.filter-pill');
+        const rows = document.querySelectorAll('.member-row');
+        let activeFilter = 'ALL';
+
+        function applyFilters() {
+            const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status') || '';
+                const name = (row.querySelector('.member-name')?.textContent || '').toLowerCase();
+                const phone = (row.querySelector('.member-phone')?.textContent || '').toLowerCase();
+
+                const matchesStatus = (activeFilter === 'ALL') || (status.toLowerCase() === activeFilter.toLowerCase());
+                const matchesSearch = !query || name.includes(query) || phone.includes(query);
+
+                row.style.display = (matchesStatus && matchesSearch) ? '' : 'none';
+            });
+        }
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                filterButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                activeFilter = this.getAttribute('data-filter');
+                applyFilters();
+            });
+        });
+
+        if (searchInput) {
+            searchInput.addEventListener('input', applyFilters);
+        }
+
+        document.addEventListener('submit', function (event) {
+            if (event.defaultPrevented) return;
+            const form = event.target;
+            // The button that was clicked (each stat-picker option is its own name="stat" button). It's disabled
+            // only after the browser has collected the form data: a button disabled during the submit event
+            // drops its name/value from the request.
+            const button = event.submitter || form.querySelector('button[type="submit"], button:not([type])');
+            if (!button || button.disabled || button.dataset.busy === 'true') return;
+            button.dataset.busy = 'true';
+            button.setAttribute('aria-busy', 'true');
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>'
+                + (button.dataset.loadingLabel || 'Working…');
+            setTimeout(function () { button.disabled = true; }, 0);
+        });
+
+        // 2. Live SMS Template Preview & Tag Insertion
+        const templateInput = document.getElementById('smsTemplateInput');
+        const previewBox = document.getElementById('smsLivePreview');
+        const tagChips = document.querySelectorAll('.tag-chip');
+
+        function updateSmsPreview() {
+            if (!templateInput || !previewBox) return;
+            const raw = templateInput.value || '';
+            previewBox.textContent = raw
+                .replace(/\{name\}/g, 'Marcus Vance')
+                .replace(/\{pastDue\}/g, '250.00')
+                .replace(/\{totalOwed\}/g, '850.00')
+                .replace(/\{dueDate\}/g, 'Oct 24, 2026')
+                .replace(/\{dueAmount\}/g, '75.00')
+                .replace(/\{reason\}/g, 'Installment due soon');
+        }
+
+        if (templateInput) {
+            templateInput.addEventListener('input', updateSmsPreview);
+            updateSmsPreview();
+        }
+
+        tagChips.forEach(chip => {
+            chip.addEventListener('click', function () {
+                if (!templateInput) return;
+                const tag = this.getAttribute('data-tag');
+                const start = templateInput.selectionStart;
+                const end = templateInput.selectionEnd;
+                const text = templateInput.value;
+                templateInput.value = text.substring(0, start) + tag + text.substring(end);
+                templateInput.focus();
+                templateInput.selectionStart = templateInput.selectionEnd = start + tag.length;
+                updateSmsPreview();
+            });
+        });
+    });
+</script>
+<script>
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+</script>
+<script>
+    // Lift a box above its neighbours while its stat picker is open.
+    document.addEventListener('show.bs.dropdown', function (e) {
+        e.target.closest('.kpi-card')?.classList.add('picker-open');
+    });
+    document.addEventListener('hidden.bs.dropdown', function (e) {
+        e.target.closest('.kpi-card')?.classList.remove('picker-open');
+    });
+</script>
+<script th:replace="~{fragments :: modalScript}"></script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    (function () {
+        const targetId = window.location.hash.slice(1);
+        const targetRow = targetId ? document.getElementById(targetId) : null;
+        if (targetRow && targetRow.classList.contains('member-row')) {
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    const ledgerView = document.getElementById('duesLedgerView');
+                    const fullscreenToggle = document.querySelector('[data-fullscreen-target="duesLedgerView"]');
+                    if (ledgerView && fullscreenToggle && !ledgerView.classList.contains('is-fullscreen')) {
+                        fullscreenToggle.click();
+                    }
+                    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                    const tableScroller = targetRow.closest('.table-responsive');
+                    if (ledgerView && ledgerView.classList.contains('is-fullscreen') && tableScroller) {
+                        // The page is locked in full-screen mode: center the row inside the table, under its sticky header.
+                        const scrollerBounds = tableScroller.getBoundingClientRect();
+                        const rowBounds = targetRow.getBoundingClientRect();
+                        const centeredTop = tableScroller.scrollTop + rowBounds.top - scrollerBounds.top
+                            - Math.max(0, (tableScroller.clientHeight - rowBounds.height) / 2);
+                        tableScroller.scrollTo({ top: Math.max(0, centeredTop), behavior: reducedMotion ? 'auto' : 'smooth' });
+                    } else {
+                        const stickyHeader = document.querySelector('.app-header-stack');
+                        const offset = stickyHeader ? stickyHeader.getBoundingClientRect().height : 0;
+                        const top = targetRow.getBoundingClientRect().top + window.scrollY - offset - 12;
+                        window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? 'auto' : 'smooth' });
+                    }
+                    targetRow.classList.add('member-review-highlight');
+                    window.setTimeout(function () {
+                        targetRow.classList.remove('member-review-highlight');
+                    }, 1200);
+                });
+            });
+        }
+
+        document.querySelectorAll('[data-open-edit-profile]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const profileModal = document.querySelector(button.dataset.profileModal);
+                const editModal = document.querySelector(button.dataset.editModal);
+                if (!profileModal || !editModal || !window.bootstrap) return;
+
+                const openEditor = function () {
+                    window.bootstrap.Modal.getOrCreateInstance(editModal).show();
+                };
+                const activeProfile = window.bootstrap.Modal.getInstance(profileModal);
+                if (profileModal.classList.contains('show') && activeProfile) {
+                    profileModal.addEventListener('hidden.bs.modal', openEditor, { once: true });
+                    activeProfile.hide();
+                } else {
+                    openEditor();
+                }
+            });
+        });
+
+        // Member charges & discounts: the type switch relabels the form; a saved charge fills it in.
+        const adjustmentForm = document.getElementById('memberAdjustmentForm');
+        if (adjustmentForm) {
+            const submitLabel = adjustmentForm.querySelector('#adjSubmit span');
+            const discountNote = adjustmentForm.querySelector('[data-discount-note]');
+            const syncType = function () {
+                const discount = adjustmentForm.querySelector('#adjDiscount').checked;
+                adjustmentForm.dataset.type = discount ? 'DISCOUNT' : 'FINE';
+                submitLabel.textContent = discount ? 'Apply discount' : 'Add fine';
+                adjustmentForm.querySelector('#adjName').placeholder = discount ? 'e.g. Early payment discount' : 'e.g. Missed chapter fine';
+                discountNote.hidden = !discount;
+            };
+            adjustmentForm.querySelectorAll('input[name="type"]').forEach(function (radio) {
+                radio.addEventListener('change', syncType);
+            });
+            document.querySelectorAll('[data-use-preset]').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    adjustmentForm.querySelector(chip.dataset.type === 'DISCOUNT' ? '#adjDiscount' : '#adjFine').checked = true;
+                    adjustmentForm.querySelector('#adjName').value = chip.dataset.name;
+                    adjustmentForm.querySelector('#adjAmount').value = Number(chip.dataset.amount).toFixed(2);
+                    adjustmentForm.querySelector('#adjSavePreset').checked = false;
+                    syncType();
+                    const member = adjustmentForm.querySelector('#adjMember');
+                    (member.value ? adjustmentForm.querySelector('#adjSubmit') : (member.previousElementSibling || member)).focus();
+                });
+            });
+            syncType();
+        }
+
+        const selectAll = document.getElementById('selectAllBatchMembers');
+        const memberChecks = Array.from(document.querySelectorAll('.batch-member-check'));
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                memberChecks.forEach(function (check) { check.checked = selectAll.checked; });
+            });
+            memberChecks.forEach(function (check) {
+                check.addEventListener('change', function () {
+                    selectAll.checked = memberChecks.length > 0 && memberChecks.every(function (item) { return item.checked; });
+                });
+            });
+        }
+        const batchForm = document.getElementById('batchChargeForm');
+        if (batchForm) {
+            batchForm.addEventListener('submit', function (event) {
+                const selected = memberChecks.filter(function (check) { return check.checked; });
+                if (selected.length === 0) {
+                    event.preventDefault();
+                    document.getElementById('batchChargeError').hidden = false;
+                    return;
+                }
+                const amount = Number(document.getElementById('batchAmount').value);
+                const description = document.getElementById('batchDescription').value.trim();
+                const dueDate = document.getElementById('batchDueDate').value;
+                const total = (amount * selected.length).toFixed(2);
+                const question = 'Create "' + description + '" charges for ' + selected.length +
+                    ' member(s)?\n\nAmount per member: $' + amount.toFixed(2) +
+                    '\nTotal new charges: $' + total + '\nDue date: ' + dueDate +
+                    '\nExisting payments will not be changed.';
+                if (!window.confirm(question)) event.preventDefault();
+            });
+        }
+        const reminderForm = document.getElementById('sendReminderPreviewForm');
+        if (reminderForm) {
+            reminderForm.addEventListener('submit', function (event) {
+                const total = Number(reminderForm.dataset.total || 0).toFixed(2);
+                const delivery = reminderForm.dataset.live === 'true' ? 'This will send real SMS messages through Twilio.' : 'SMS simulation mode is active.';
+                if (!window.confirm('Attempt reminders for ' + reminderForm.dataset.recipientCount + ' listed member(s)?\n\n' +
+                    'Combined balance shown: $' + total + '\nSMS allowance remaining today: ' +
+                    reminderForm.dataset.smsRemaining + '\n' + delivery)) {
+                    event.preventDefault();
+                }
+            });
+        }
+        const statusMessageForm = document.getElementById('statusMessageForm');
+        if (statusMessageForm) {
+            const statusSelect = document.getElementById('statusMessageStatus');
+            const recipientCount = document.getElementById('statusMessageRecipientCount');
+            const sendButton = document.getElementById('sendStatusMessageButton');
+            function updateStatusRecipientCount() {
+                const selected = statusSelect.options[statusSelect.selectedIndex];
+                const count = Number(selected.dataset.recipientCount || 0);
+                recipientCount.textContent = String(count);
+                sendButton.disabled = count === 0 || Number(statusMessageForm.dataset.smsRemaining || 0) === 0;
+            }
+            statusSelect.addEventListener('change', updateStatusRecipientCount);
+            updateStatusRecipientCount();
+            statusMessageForm.addEventListener('submit', function (event) {
+                const selected = statusSelect.options[statusSelect.selectedIndex];
+                const count = Number(selected.dataset.recipientCount || 0);
+                const message = document.getElementById('statusMessageBody').value.trim();
+                if (!count || !message) {
+                    event.preventDefault();
+                    return;
+                }
+                const delivery = statusMessageForm.dataset.live === 'true'
+                    ? 'Real SMS will be sent through Twilio.' : 'SMS simulation mode is active.';
+                const preview = message.replace(/\{name\}/g, 'Member');
+                if (!window.confirm('Send this message to ' + count + ' unmuted members with status "' +
+                    selected.value + '"?\n\nPreview: ' + preview.slice(0, 220) +
+                    (preview.length > 220 ? '…' : '') + '\n\nSMS allowance remaining today: ' +
+                    statusMessageForm.dataset.smsRemaining + '\n' + delivery)) {
+                    event.preventDefault();
+                }
+            });
+        }
+        document.querySelectorAll('[data-confirm-member]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                const name = form.dataset.confirmMember;
+                const balance = Number(form.dataset.balance || 0).toFixed(2);
+                const pastDue = Number(form.dataset.pastDue || 0).toFixed(2);
+                if (!window.confirm('Delete ' + name + ' from the active save?\n\nCurrent balance: $' + balance +
+                    '\nPast due: $' + pastDue + '\nThis also removes the member account and its payment/charge history.')) {
+                    event.preventDefault();
+                }
+            });
+        });
+        document.querySelectorAll('[data-confirm-charge]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                const amount = Number(form.dataset.remaining || 0).toFixed(2);
+                if (!window.confirm('Remove charge "' + form.dataset.confirmCharge + '" with $' + amount +
+                    ' remaining? This reverses the charge balance impact.')) event.preventDefault();
+            });
+        });
+        document.querySelectorAll('[data-confirm-installment]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                const amount = Number(form.dataset.remaining || 0).toFixed(2);
+                if (!window.confirm('Remove installment "' + form.dataset.confirmInstallment + '" due ' +
+                    form.dataset.dueDate + ' with $' + amount + ' remaining from the payment plan?')) {
+                    event.preventDefault();
+                }
+            });
+        });
+        document.querySelectorAll('[data-send-dues-name]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                const live = form.dataset.live === 'true' ? 'Real SMS will be sent through Twilio.' : 'SMS simulation mode is active.';
+                if (!window.confirm('Send a dues reminder to ' + form.dataset.sendDuesName + ' (' + form.dataset.phone +
+                    ')?\n\nBalance: $' + Number(form.dataset.balance || 0).toFixed(2) +
+                    '\nPast due: $' + Number(form.dataset.pastDue || 0).toFixed(2) +
+                    '\nSMS allowance remaining today: ' + form.dataset.smsRemaining + '\n' + live)) {
+                    event.preventDefault();
+                }
+            });
+        });
+        document.querySelectorAll('.installment-form').forEach(function (form) {
+            form.querySelector('.add-installment-row').addEventListener('click', function () {
+                const rows = form.querySelector('.installment-rows');
+                const row = rows.querySelector('.installment-row').cloneNode(true);
+                row.querySelector('[name="dueDates"]').value = '';
+                row.querySelector('[name="amounts"]').value = '';
+                row.querySelector('[name="descriptions"]').value = 'Payment plan installment';
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'btn btn-sm btn-outline-danger mt-2 remove-installment-row';
+                remove.textContent = 'Remove';
+                remove.addEventListener('click', function () { row.remove(); });
+                row.appendChild(remove);
+                rows.appendChild(row);
+            });
+        });
+        document.querySelectorAll('.desktop-document').forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                if (window.desktopBridge) {
+                    event.preventDefault();
+                    var original = link.innerHTML;
+                    link.classList.add('is-busy');
+                    link.setAttribute('aria-busy', 'true');
+                    link.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Preparing…';
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            window.desktopBridge.exportMemberDocument(
+                                link.dataset.memberId,
+                                link.dataset.documentType,
+                                link.dataset.paymentKey || ''
+                            );
+                            link.innerHTML = original;
+                            link.classList.remove('is-busy');
+                            link.removeAttribute('aria-busy');
+                        });
+                    });
+                }
+            });
+        });
+    }());
+</script>
+</body>
+</html>

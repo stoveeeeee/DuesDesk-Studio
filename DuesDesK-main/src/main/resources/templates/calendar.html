@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar &amp; Bills | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg-canvas);color:var(--text-secondary); }
+        .banner { background:var(--bg-surface);border-bottom:1px solid var(--border-subtle);padding:1rem 0; }
+        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
+        .panel { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;box-shadow: var(--shadow-card);animation:enter .4s ease backwards; }
+        .calendar-grid { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.45rem; }
+        .weekday { color:var(--text-muted);font-weight:700;text-align:center;font-size:.72rem;text-transform:uppercase;padding:.25rem; }
+        .day-cell { min-height:94px;border:1px solid var(--border-subtle);border-radius:10px;background:var(--bg-surface);padding:.4rem;transition:border-color .16s ease,background .16s ease,transform .16s ease; }
+        .day-cell:hover { border-color:var(--border-focus);background:var(--bg-hover);transform:translateY(-1px); }
+        .day-cell.selected { border-color:var(--btn-primary-bg);box-shadow:0 0 0 2px var(--focus-ring);background:var(--status-info-bg); }
+        .day-cell.today .day-number { color:var(--btn-primary-bg);font-weight:800; }
+        .day-link { width:100%;height:100%;min-height:78px;display:flex;flex-direction:column;align-items:flex-start;gap:.35rem;color:inherit;text-decoration:none; }
+        .day-link:focus { outline:none; }
+        .day-link:focus-visible { outline:2px solid var(--border-focus); outline-offset:3px; border-radius:6px; }
+        .day-number { font-weight:700;font-size:.85rem; }
+        .payment-count { background:var(--status-success-bg);color:var(--status-success-text);border-radius:999px;font-size:.68rem;font-weight:700;padding:.18rem .42rem; }
+        .day-total { font-size:.68rem;color:var(--text-muted);font-variant-numeric:tabular-nums; }
+        .payment-count.out { background:var(--status-danger-bg);color:var(--status-danger-text); }
+        .day-total.out { color:var(--status-danger-text); }
+        .hide-in .flow-in, .hide-out .flow-out { display:none !important; }
+        .flow-toggles { display:flex;gap:1rem;flex-wrap:wrap;align-items:center; }
+        @keyframes enter { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
+
+        /* ---- Record a transaction: money in / money out switch ---- */
+        .txn-direction { display:grid; grid-template-columns:1fr 1fr; gap:.25rem; padding:.25rem; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:10px; }
+        .txn-dir { display:flex; align-items:center; justify-content:center; gap:.4rem; margin:0; padding:.45rem .5rem; border-radius:7px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:background-color .15s ease, color .15s ease, box-shadow .2s var(--ease-snappy); }
+        .txn-dir:hover { color:var(--text-primary); }
+        .btn-check:checked + .txn-dir { background:var(--bg-surface); box-shadow:var(--shadow-card); }
+        .btn-check:checked + .txn-dir.in { color:var(--status-success-text); }
+        .btn-check:checked + .txn-dir.out { color:var(--status-danger-text); }
+        .btn-check:focus-visible + .txn-dir { box-shadow:0 0 0 3px var(--focus-ring); }
+        #recordTransactionForm[data-direction="out"] #txnSubmit { background:var(--btn-danger-bg); border-color:var(--btn-danger-bg); color:var(--btn-primary-text); box-shadow:var(--shadow-btn); }
+        #recordTransactionForm[data-direction="out"] #txnSubmit:hover:not(:disabled) { background:var(--btn-danger-hover); border-color:var(--btn-danger-hover); box-shadow:var(--shadow-btn), var(--progress-glow-danger); }
+
+        /* ---- Recurring bills ---- */
+        .bill-chip { display:inline-flex; align-items:center; gap:.22rem; background:var(--status-warning-bg); color:var(--status-warning-text); border-radius:999px; font-size:.66rem; font-weight:700; padding:.14rem .4rem; }
+        .bill-chip.overdue { background:var(--status-danger-bg); color:var(--status-danger-text); }
+        .mode-badge { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; font-size:11px; font-weight:600; padding:.1rem .5rem; border:1px solid transparent; white-space:nowrap; }
+        .mode-badge.auto { background:var(--status-info-bg); color:var(--status-info-text); border-color:var(--status-info-border); }
+        .mode-badge.manual { background:var(--status-neutral-bg); color:var(--status-neutral-text); border-color:var(--status-neutral-border); }
+        .bill-reminder { display:flex; align-items:center; gap:.85rem; padding:.75rem 0; border-top:1px solid var(--border-subtle); flex-wrap:wrap; }
+        .bill-reminder:first-of-type { border-top:0; padding-top:.25rem; }
+        .bill-icon { flex:0 0 2.25rem; height:2.25rem; border-radius:50%; display:grid; place-items:center; font-size:1rem; }
+        .bill-icon.tone-danger { background:var(--status-danger-bg); color:var(--status-danger-text); }
+        .bill-icon.tone-warning { background:var(--status-warning-bg); color:var(--status-warning-text); }
+        .bill-icon.tone-info { background:var(--status-info-bg); color:var(--status-info-text); }
+        .bill-when { font-weight:600; font-size:12.5px; }
+        .bill-when.tone-danger { color:var(--status-danger-text); }
+        .bill-when.tone-warning { color:var(--status-warning-text); }
+        .bill-when.tone-info { color:var(--status-info-text); }
+        .bill-when.tone-muted { color:var(--text-muted); }
+        .bill-actions { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-left:auto; }
+        .bill-details summary { cursor:pointer; font-size:12px; color:var(--text-muted); list-style:none; padding:.2rem 0; }
+        .bill-details summary::-webkit-details-marker { display:none; }
+        .bill-details summary:hover { color:var(--text-primary); }
+        .bill-details[open] summary { margin-bottom:.4rem; }
+        .bill-row { display:flex; align-items:flex-start; gap:.85rem; padding:.85rem 0; border-top:1px solid var(--border-subtle); flex-wrap:wrap; }
+        .bill-row:first-of-type { border-top:0; padding-top:.25rem; }
+        .bill-name { color:var(--text-primary); font-weight:600; }
+        .bill-meta { font-size:12px; color:var(--text-muted); }
+        .pay-mode { display:grid; grid-template-columns:1fr 1fr; gap:.25rem; padding:.25rem; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:10px; }
+        .pay-mode label { display:flex; align-items:center; justify-content:center; gap:.4rem; margin:0; padding:.45rem .5rem; border-radius:7px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:background-color .15s ease, color .15s ease, box-shadow .2s var(--ease-snappy); }
+        .pay-mode label:hover { color:var(--text-primary); }
+        .pay-mode .btn-check:checked + label { background:var(--bg-surface); color:var(--text-primary); box-shadow:var(--shadow-card); }
+        .pay-mode .btn-check:focus-visible + label { box-shadow:0 0 0 3px var(--focus-ring); }
+        .lead-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
+        .lead-chips label { margin:0; cursor:pointer; padding:.28rem .65rem; border-radius:999px; font-size:12px; font-weight:500; border:1px solid var(--border-subtle); background:var(--bg-surface); color:var(--text-secondary); transition:background-color .12s ease, color .12s ease, border-color .12s ease; }
+        .lead-chips label:hover { border-color:var(--border-strong); color:var(--text-primary); }
+        .lead-chips .btn-check:checked + label { background:var(--status-info-bg); color:var(--status-info-text); border-color:var(--status-info-border); font-weight:600; }
+        .lead-chips .btn-check:focus-visible + label { box-shadow:0 0 0 3px var(--focus-ring); }
+        #bills, #billReminders, #recordTransaction, #billFormCard, #selectedDay { scroll-margin-top:7rem; }
+
+        /* ---- Day peek + full-day view: shared .hover-peek / .expand-panel component (fragments) ----*/
+        #dayPeek .peek-row .who { display:flex; align-items:center; gap:.45rem; min-width:0; }
+        #dayPeek .peek-label { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        #dayPeek .peek-dot { flex:0 0 7px; width:7px; height:7px; border-radius:50%; background:var(--text-muted); }
+        #dayPeek .peek-row.is-in .peek-dot { background:var(--status-success-text); }
+        #dayPeek .peek-row.is-out .peek-dot { background:var(--status-danger-text); }
+        #dayPeek .peek-row.is-bill .peek-dot { background:var(--status-warning-text); }
+        #dayPeek .peek-tag { flex:0 0 auto; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding:.05rem .35rem; border-radius:999px; background:var(--status-warning-bg); color:var(--status-warning-text); }
+        #dayPeek .peek-tag.is-overdue { background:var(--status-danger-bg); color:var(--status-danger-text); }
+        #dayPeek .peek-list li { align-items:center; }
+        #dayPeek .peek-list .amt { flex:0 0 auto; font-variant-numeric:tabular-nums; font-weight:600; }
+        #dayPeek .peek-foot { justify-content:center; }
+        .day-cell.is-peeking { border-color:var(--border-focus);background:var(--bg-hover);box-shadow:0 0 0 3px var(--focus-ring); }
+        @media(max-width:575px) { .calendar-grid { gap:.2rem; }.day-cell { min-height:68px;padding:.25rem; }.day-link { min-height:58px; }.day-total { display:none; }.payment-count { font-size:.58rem;padding:.12rem .28rem; } }
+        @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important; } }
+    </style>
+<th:block th:replace="~{fragments :: navStyles}"></th:block>
+<script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+    <div class="app-header-stack">
+    <header class="banner">
+    <div class="container-xxl px-3 px-md-4 header-grid">
+        <div></div>
+        <div class="d-flex align-items-center gap-3 justify-content-center">
+            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
+            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
+        </div>
+        <div></div>
+    </div>
+</header>
+<nav th:replace="~{fragments :: nav('calendar')}"></nav>
+</div>
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="4000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+        <div>
+            <div class="page-eyebrow">Payment activity</div>
+            <h2 class="page-title">Calendar &amp; Bills</h2>
+            <p class="page-lede">Hover a day for a quick look, then click the preview to see everything from that day. Use the switches to show or hide inflows and outflows. Set up recurring bills with reminders <a href="#billFormCard">beside the calendar</a>; your bills are listed at the bottom.</p>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="flow-toggles" role="group" aria-label="Show on calendar">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="toggleInflows" checked>
+                    <label class="form-check-label small fw-semibold" for="toggleInflows">Inflows</label>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="toggleOutflows" checked>
+                    <label class="form-check-label small fw-semibold" for="toggleOutflows">Outflows</label>
+                </div>
+            </div>
+            <div class="badge text-bg-success rounded-pill px-3 py-2 flow-in">
+                <i class="bi bi-check2-circle me-1"></i><span th:text="${monthPaymentCount}"></span> inflows this month
+            </div>
+            <div class="badge text-bg-danger rounded-pill px-3 py-2 flow-out" th:if="${monthOutflowCount > 0}">
+                <i class="bi bi-arrow-up-right-circle me-1"></i><span th:text="${monthOutflowCount}"></span> outflows this month
+            </div>
+        </div>
+    </div>
+    <!-- Bill reminders: bills due within their reminder window, plus manual bills that are overdue -->
+    <section id="billReminders" class="panel p-3 p-md-4 mb-4" th:if="${!#lists.isEmpty(billReminders)}" aria-labelledby="billRemindersTitle">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h3 class="h6 fw-bold mb-0" id="billRemindersTitle"><i class="bi bi-bell me-1" aria-hidden="true"></i>Bill reminders</h3>
+            <span class="small text-muted" th:text="${#lists.size(billReminders)} + (${#lists.size(billReminders) == 1} ? ' bill needs attention' : ' bills need attention')"></span>
+        </div>
+        <div class="bill-reminder" th:each="r : ${billReminders}">
+            <span class="bill-icon" th:classappend="'tone-' + ${r.tone}"><i class="bi" th:classappend="${r.overdue} ? 'bi-exclamation-triangle' : 'bi-receipt'" aria-hidden="true"></i></span>
+            <div class="min-w-0">
+                <div class="bill-name" th:text="${r.bill.name}"></div>
+                <div class="bill-meta">
+                    <span th:text="'$' + ${#numbers.formatDecimal(r.bill.amount, 1, 'COMMA', 2, 'POINT')}"></span> ·
+                    <span th:text="${r.dueDate}"></span>
+                    <span class="mode-badge ms-1" th:classappend="${r.bill.automatic} ? 'auto' : 'manual'"
+                          th:text="${r.bill.automatic} ? 'Automatic' : 'Manual'"></span>
+                </div>
+                <div class="bill-when" th:classappend="'tone-' + ${r.tone}">
+                    <span th:text="${r.when}"></span><span class="text-muted fw-normal"
+                        th:if="${!r.overdue and !r.bill.reminderDays.isEmpty()}"
+                        th:text="' · reminder: ' + ${r.leadLabel}"></span>
+                </div>
+            </div>
+            <div class="bill-actions" th:if="${!r.bill.automatic}">
+                <form th:action="@{/calendar/bills/{id}/pay(id=${r.bill.id})}" method="post" class="m-0">
+                    <input type="hidden" name="dueDate" th:value="${r.dueDate}">
+                    <button type="submit" class="btn btn-fintech-primary btn-sm">Mark paid</button>
+                </form>
+                <form th:action="@{/calendar/bills/{id}/skip(id=${r.bill.id})}" method="post" class="m-0"
+                      onsubmit="return window.confirm('Skip this due date? Nothing will be recorded as paid.');">
+                    <input type="hidden" name="dueDate" th:value="${r.dueDate}">
+                    <button type="submit" class="btn btn-fintech-outline btn-sm">Skip</button>
+                </form>
+            </div>
+            <div class="bill-actions small text-muted" th:if="${r.bill.automatic}">
+                <i class="bi bi-lightning-charge" aria-hidden="true"></i>Charged automatically. DuesDesk records it on the due date.
+            </div>
+            <details class="bill-details w-100" th:if="${!r.bill.automatic}">
+                <summary>Paid a different amount or on a different day?</summary>
+                <form th:action="@{/calendar/bills/{id}/pay(id=${r.bill.id})}" method="post" class="row g-2 align-items-end">
+                    <input type="hidden" name="dueDate" th:value="${r.dueDate}">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small fw-semibold" th:for="|payAmount-${r.bill.id}|">Amount paid ($)</label>
+                        <input th:id="|payAmount-${r.bill.id}|" name="amount" type="number" min="0.01" step="0.01" class="form-control form-control-sm"
+                               th:value="${#numbers.formatDecimal(r.bill.amount, 1, 2, 'POINT')}" required>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small fw-semibold" th:for="|payDate-${r.bill.id}|">Paid on</label>
+                        <input th:id="|payDate-${r.bill.id}|" name="paidDate" type="date" class="form-control form-control-sm" th:value="${today}" required>
+                    </div>
+                    <div class="col-12 col-md-3 d-grid">
+                        <button type="submit" class="btn btn-fintech-outline btn-sm">Record this payment</button>
+                    </div>
+                </form>
+            </details>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <section class="col-12 col-xl-8">
+            <div class="panel p-3 p-md-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/calendar(month=${previousMonth})}" aria-label="Previous month" data-keep-scroll>Previous</a>
+                    <h3 class="h5 fw-bold mb-0" th:text="${monthLabel}"></h3>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/calendar(month=${nextMonth})}" aria-label="Next month" data-keep-scroll>Next</a>
+                </div>
+                <div class="calendar-grid mb-2">
+                    <div class="weekday">Sun</div><div class="weekday">Mon</div><div class="weekday">Tue</div>
+                    <div class="weekday">Wed</div><div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
+                </div>
+                <div class="calendar-grid">
+                    <div th:each="day : ${days}" class="day-cell"
+                         th:classappend="${day.date != null and day.date == selectedDate ? ' selected' : ''} + ${day.date != null and day.date == today ? ' today' : ''}">
+                        <a th:if="${day.date != null}" class="day-link" th:href="@{/calendar(month=${month},date=${day.date})}"
+                           th:attr="data-peek-key=${day.date}">
+                            <span class="day-number" th:text="${#strings.substring(day.date, 8, 10)}"></span>
+                            <span th:if="${day.paymentCount > 0}" class="payment-count flow-in"
+                                  th:text="${day.paymentCount}" th:attr="aria-label=|${day.paymentCount} inflows|"></span>
+                            <span th:if="${day.paymentCount > 0}" class="day-total flow-in"
+                                  th:text="'+$' + ${#numbers.formatDecimal(day.total, 1, 'COMMA', 2, 'POINT')}"></span>
+                            <span th:if="${day.outflowCount > 0}" class="payment-count out flow-out"
+                                  th:text="${day.outflowCount}" th:attr="aria-label=|${day.outflowCount} outflows|"></span>
+                            <span th:if="${day.outflowCount > 0}" class="day-total out flow-out"
+                                  th:text="'-$' + ${#numbers.formatDecimal(day.outflowTotal, 1, 'COMMA', 2, 'POINT')}"></span>
+                            <span th:if="${day.billCount > 0}" class="bill-chip"
+                                  th:attr="aria-label=${day.billCount} + (${day.billCount == 1} ? ' bill due' : ' bills due')">
+                                <i class="bi bi-receipt" aria-hidden="true"></i><span th:text="${day.billCount}"></span>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+                <p class="small text-muted mt-3 mb-0"><span class="payment-count me-1">1</span> inflows <span class="payment-count out ms-2 me-1">1</span> outflows <span class="bill-chip ms-2 me-1"><i class="bi bi-receipt" aria-hidden="true"></i>1</span> bills due &mdash; the amount below each count is the daily total.</p>
+            </div>
+        </section>
+        <aside class="col-12 col-xl-4">
+            <div class="panel hover-expand-card mb-4" id="selectedDay" data-hover-expand>
+                <div class="hover-expand-card__header">
+                    <h3 class="h6 fw-bold mb-0">
+                        <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="selectedDayContent">
+                            <span>
+                                <span class="d-block small text-muted text-uppercase fw-bold">Selected date</span>
+                                <span class="h5 fw-bold" th:text="${selectedDate}"></span>
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-3">
+                                <span class="text-end">
+                                    <span class="d-block h6 fw-bold text-success mb-0 flow-in" th:text="'+$' + ${#numbers.formatDecimal(selectedTotal, 1, 'COMMA', 2, 'POINT')}"></span>
+                                    <span class="d-block h6 fw-bold text-danger mb-0 flow-out" th:if="${selectedOutflowTotal > 0}" th:text="'-$' + ${#numbers.formatDecimal(selectedOutflowTotal, 1, 'COMMA', 2, 'POINT')}"></span>
+                                </span>
+                                <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                            </span>
+                        </button>
+                    </h3>
+                </div>
+                <div id="selectedDayContent" class="hover-expand-card__content" aria-hidden="true" inert>
+                  <div class="hover-expand-card__inner">
+                    <div class="hover-expand-card__body">
+                <div th:if="${#lists.isEmpty(selectedPayments) and #lists.isEmpty(billSelectedDay)}" class="text-center text-muted py-4">
+                    <i class="bi bi-receipt fs-3 d-block mb-2"></i>No transactions on this day.
+                </div>
+                <div th:each="due : ${billSelectedDay}" class="border-top py-3">
+                    <div class="d-flex justify-content-between gap-2">
+                        <div>
+                            <div class="fw-semibold" th:text="${due.name}"></div>
+                            <div class="small text-muted">
+                                <span th:text="${due.overdue} ? 'Bill overdue' : 'Bill due'"></span>
+                                <span class="mode-badge ms-1" th:classappend="${due.mode == 'AUTOMATIC'} ? 'auto' : 'manual'"
+                                      th:text="${due.mode == 'AUTOMATIC'} ? 'Automatic' : 'Manual'"></span>
+                            </div>
+                        </div>
+                        <span class="fw-bold text-nowrap text-warning-emphasis" th:text="'$' + ${#numbers.formatDecimal(due.amount, 1, 'COMMA', 2, 'POINT')}"></span>
+                    </div>
+                </div>
+                <div th:each="entry : ${selectedPayments}" class="border-top py-3" th:classappend="${entry.payment.amount < 0} ? 'flow-out' : 'flow-in'">
+                    <div class="d-flex justify-content-between gap-2">
+                        <div>
+                            <div class="fw-semibold" th:text="${entry.memberName}"></div>
+                            <div class="small text-muted" th:text="${entry.payment.description} ?: 'Payment received'"></div>
+                        </div>
+                        <span class="fw-bold text-nowrap" th:classappend="${entry.payment.amount < 0} ? 'text-danger' : 'text-success'"
+                              th:text="(${entry.payment.amount < 0} ? '-$' : '+$') + ${#numbers.formatDecimal(entry.payment.amount < 0 ? -entry.payment.amount : entry.payment.amount, 1, 'COMMA', 2, 'POINT')}"></span>
+                    </div>
+                </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <div class="panel hover-expand-card mb-4" id="recordTransaction" data-hover-expand>
+                <div class="hover-expand-card__header">
+                    <h3 class="h6 fw-bold mb-0">
+                        <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="recordTransactionContent">
+                            <span>Record a transaction</span>
+                            <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                        </button>
+                    </h3>
+                </div>
+                <div id="recordTransactionContent" class="hover-expand-card__content" aria-hidden="true" inert>
+                  <div class="hover-expand-card__inner">
+                    <div class="hover-expand-card__body">
+                <p class="small text-muted mb-3 mt-2">Log money coming in or going out. It shows on this calendar and in Cash Flow. Member dues also update that member's balance. For a charge that repeats, set up a <a href="#billFormCard">recurring bill</a> instead.</p>
+                <form action="/calendar/transactions" method="post" id="recordTransactionForm" data-direction="in" data-duplicate-guard
+                      th:attr="data-dues-category=${memberDuesCategory}">
+                    <input type="hidden" name="idempotencyKey" th:value="${paymentRequestId}">
+                    <div class="txn-direction mb-3" role="radiogroup" aria-label="Transaction type">
+                        <input type="radio" class="btn-check" name="direction" id="txnIn" value="in" checked>
+                        <label class="txn-dir in" for="txnIn">Money in</label>
+                        <input type="radio" class="btn-check" name="direction" id="txnOut" value="out">
+                        <label class="txn-dir out" for="txnOut">Money out</label>
+                    </div>
+
+                    <label class="form-label small fw-semibold" for="txnCategory">Category</label>
+                    <select id="txnCategory" name="category" class="form-select form-select-sm mb-3" required>
+                        <option th:each="c : ${inflowCategories}" th:value="${c}" data-direction="in"
+                                th:disabled="${c == memberDuesCategory and #lists.isEmpty(members)}"
+                                th:text="${c == memberDuesCategory and #lists.isEmpty(members)} ? ${c} + ' (add a member first)' : ${c}"></option>
+                        <option th:each="c : ${outflowCategories}" th:value="${c}" th:text="${c}" data-direction="out" hidden></option>
+                    </select>
+
+                    <div id="txnMemberField" class="mb-3">
+                        <label class="form-label small fw-semibold" for="txnMember">Member</label>
+                        <select id="txnMember" name="memberId" class="form-select form-select-sm">
+                            <option value="" disabled selected>Select a member</option>
+                            <option th:each="member : ${members}" th:value="${member.id}" th:text="${member.name}"></option>
+                        </select>
+                        <div class="form-text">Recorded as a dues payment on this member's account.</div>
+                    </div>
+                    <div id="txnPartyField" class="mb-3" hidden>
+                        <label class="form-label small fw-semibold" for="txnParty" id="txnPartyLabel">Received from (optional)</label>
+                        <input id="txnParty" type="text" name="party" maxlength="120" class="form-control form-control-sm" placeholder="e.g. Alumni association" disabled>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold" for="txnDate">Date</label>
+                            <input id="txnDate" type="date" name="date" class="form-control form-control-sm" th:value="${selectedDate}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold" for="txnAmount">Amount ($)</label>
+                            <input id="txnAmount" type="number" name="amount" min="0.01" step="0.01" class="form-control form-control-sm" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <label class="form-label small fw-semibold" for="txnDescription">Description (optional)</label>
+                    <input id="txnDescription" type="text" name="description" maxlength="200" class="form-control form-control-sm mb-3" placeholder="e.g. October dues, formal venue deposit">
+                    <button type="submit" id="txnSubmit" class="btn btn-primary w-100" data-loading-label="Saving…">
+                        <span id="txnSubmitLabel">Save inflow</span>
+                    </button>
+                </form>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <!-- Recurring bills: set up or change a bill that repeats (the list of bills is at the bottom of the page) -->
+            <div class="panel hover-expand-card mb-4" id="billFormCard" data-hover-expand>
+                <div class="hover-expand-card__header">
+                    <h3 class="h6 fw-bold mb-0">
+                        <button type="button" class="hover-expand-card__toggle" aria-expanded="false" aria-controls="billFormContent">
+                            <span id="billFormTitle">Add a recurring bill</span>
+                            <i class="bi bi-chevron-down hover-expand-card__icon" aria-hidden="true"></i>
+                        </button>
+                    </h3>
+                </div>
+                <div id="billFormContent" class="hover-expand-card__content" aria-hidden="true" inert>
+                  <div class="hover-expand-card__inner">
+                    <div class="hover-expand-card__body">
+                <p class="small text-muted mb-3 mt-2">Rent, insurance, a subscription: anything the chapter pays on a schedule. Choose whether it pays itself or you pay it by hand, and when to be reminded.</p>
+                <form th:action="@{/calendar/bills}" method="post" id="billForm" data-duplicate-guard>
+                    <input type="hidden" name="id" id="billId" value="">
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-7">
+                            <label class="form-label small fw-semibold" for="billName">Bill name</label>
+                            <input id="billName" name="name" class="form-control form-control-sm" maxlength="100" placeholder="e.g. House rent, Insurance" required>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label class="form-label small fw-semibold" for="billAmount">Amount ($)</label>
+                            <input id="billAmount" name="amount" type="number" min="0.01" step="0.01" class="form-control form-control-sm" placeholder="0.00" required>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold" for="billFrequency">Repeats</label>
+                            <select id="billFrequency" name="frequency" class="form-select form-select-sm" required>
+                                <option th:each="f : ${billFrequencies}" th:value="${f.key}" th:text="${f.value}" th:selected="${f.key == 'MONTHLY'}"></option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label small fw-semibold" for="billStart">First due</label>
+                            <input id="billStart" name="startDate" type="date" class="form-control form-control-sm" th:value="${selectedDate}" required>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label small fw-semibold" for="billEnd">Ends (optional)</label>
+                            <input id="billEnd" name="endDate" type="date" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-semibold" for="billCategory">Category</label>
+                            <select id="billCategory" name="category" class="form-select form-select-sm" required>
+                                <option th:each="c : ${outflowCategories}" th:value="${c}" th:text="${c}"></option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-semibold" for="billPayee">Paid to (optional)</label>
+                            <input id="billPayee" name="payee" class="form-control form-control-sm" maxlength="120" placeholder="e.g. Landlord, State Farm">
+                        </div>
+                    </div>
+
+                    <span class="form-label small fw-semibold d-block" id="billModeLabel">How is it paid?</span>
+                    <div class="pay-mode mb-1" role="radiogroup" aria-labelledby="billModeLabel">
+                        <input type="radio" class="btn-check" name="paymentMode" id="modeManual" value="MANUAL" checked>
+                        <label for="modeManual">Manual</label>
+                        <input type="radio" class="btn-check" name="paymentMode" id="modeAuto" value="AUTOMATIC">
+                        <label for="modeAuto">Automatic</label>
+                    </div>
+                    <p class="form-text mb-3" id="billModeHelp">You pay it yourself. DuesDesk reminds you until you mark it paid.</p>
+
+                    <span class="form-label small fw-semibold d-block" id="billRemindLabel">Remind me</span>
+                    <div class="lead-chips mb-2" role="group" aria-labelledby="billRemindLabel">
+                        <th:block th:each="lead : ${ {30, 14, 7, 3, 1, 0} }">
+                            <input type="checkbox" class="btn-check" name="reminderDays" th:id="|lead-${lead}|" th:value="${lead}" th:checked="${lead == 7 or lead == 1 or lead == 0}" data-lead>
+                            <label th:for="|lead-${lead}|" th:text="${lead == 0 ? 'On the due date' : (lead == 1 ? '1 day before' : (lead == 7 ? '1 week before' : (lead == 14 ? '2 weeks before' : (lead == 30 ? '1 month before' : lead + ' days before'))))}"></label>
+                        </th:block>
+                    </div>
+                    <div class="row g-2 align-items-center mb-3">
+                        <div class="col-auto"><label class="form-label small mb-0" for="billCustomLeads">Other days before:</label></div>
+                        <div class="col"><input id="billCustomLeads" name="customReminderDays" class="form-control form-control-sm" maxlength="40" placeholder="e.g. 10, 21" inputmode="numeric" autocomplete="off"></div>
+                    </div>
+                    <p class="form-text mb-3">A bill shows under Bill reminders at the top of this page, and on the Dues page, once it is inside your earliest reminder. Pick none to turn reminders off (an overdue manual bill always shows).</p>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-fintech-primary flex-grow-1" id="billSubmit"><span id="billSubmitLabel">Add recurring bill</span></button>
+                        <button type="button" class="btn btn-fintech-outline" id="billCancel" hidden>Cancel</button>
+                    </div>
+                </form>
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Your recurring bills: track, edit and pay the bills that repeat -->
+    <div class="row g-4 mt-1" id="bills">
+        <section class="col-12">
+            <div class="panel p-3 p-md-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h3 class="h6 fw-bold mb-0"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Your recurring bills</h3>
+                    <span class="small text-muted" th:text="${#lists.size(billRows)} + (${#lists.size(billRows) == 1} ? ' bill' : ' bills')"></span>
+                </div>
+                <div th:if="${#lists.isEmpty(billRows)}" class="text-center text-muted py-5">
+                    <i class="bi bi-receipt fs-3 d-block mb-2"></i>No recurring bills yet. Add one on the left and it will show up here and on the calendar.
+                </div>
+                <div class="bill-row" th:each="row : ${billRows}">
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="bill-name" th:text="${row.bill.name}"></span>
+                            <span class="mode-badge" th:classappend="${row.bill.automatic} ? 'auto' : 'manual'">
+                                <i class="bi" th:classappend="${row.bill.automatic} ? 'bi-lightning-charge' : 'bi-hand-index-thumb'" aria-hidden="true"></i>
+                                <span th:text="${row.bill.automatic} ? 'Automatic' : 'Manual'"></span>
+                            </span>
+                        </div>
+                        <div class="bill-meta">
+                            <span th:text="'$' + ${#numbers.formatDecimal(row.bill.amount, 1, 'COMMA', 2, 'POINT')}"></span> ·
+                            <span th:text="${row.bill.frequencyLabel}"></span> ·
+                            <span th:text="${row.bill.category}"></span><span th:if="${!#strings.isEmpty(row.bill.payee)}" th:text="' · ' + ${row.bill.payee}"></span>
+                        </div>
+                        <div class="bill-when mt-1" th:classappend="'tone-' + ${row.tone}">
+                            <span th:text="${row.status}"></span><span class="text-muted fw-normal" th:if="${row.nextDue != null}" th:text="' · ' + ${row.nextDue}"></span>
+                        </div>
+                        <div class="bill-meta" th:if="${row.bill.reminderDays.isEmpty()}">No reminders</div>
+                        <div class="bill-meta" th:unless="${row.bill.reminderDays.isEmpty()}">
+                            <i class="bi bi-bell" aria-hidden="true"></i>
+                            <span th:text="'Reminds ' + ${#strings.listJoin(row.bill.reminderDays.![ (#this == 0 ? 'on the due date' : (#this == 1 ? '1 day before' : #this + ' days before')) ], ', ')}"></span>
+                        </div>
+                        <div class="bill-meta" th:if="${!#strings.isEmpty(row.lastPaid)}" th:text="'Last paid ' + ${row.lastPaid}"></div>
+                    </div>
+                    <div class="bill-actions">
+                        <button type="button" class="btn btn-fintech-outline btn-sm" th:attr="data-bill-edit=${row.bill.id}">Edit</button>
+                        <form th:action="@{/calendar/bills/{id}/delete(id=${row.bill.id})}" method="post" class="m-0"
+                              onsubmit="return window.confirm('Remove this recurring bill? Payments already recorded stay in Cash Flow.');">
+                            <button type="submit" class="btn btn-ghost btn-sm" th:attr="aria-label='Remove ' + ${row.bill.name}" title="Remove this bill">Remove</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<!-- Hover preview for a day; clicking it opens the full-day view below (shared .hover-peek / .expand-panel). -->
+<div id="dayPeek" class="hover-peek" role="button" tabindex="-1" aria-hidden="true"></div>
+<div id="dayFullBackdrop" class="expand-backdrop" hidden></div>
+<section id="dayFull" class="expand-panel" role="dialog" aria-modal="true" aria-labelledby="dayFullTitle" hidden>
+    <div class="expand-inner">
+        <header class="expand-header">
+            <div>
+                <h2 id="dayFullTitle" class="expand-title"></h2>
+                <div id="dayFullSub" class="expand-sub"></div>
+            </div>
+            <button type="button" class="btn btn-fintech-outline expand-close" data-expand-close aria-label="Close day view">
+                <span class="label">Close</span><kbd>Esc</kbd>
+            </button>
+        </header>
+        <div class="expand-body" id="dayFullBody"></div>
+        <footer class="expand-footer">
+            <a id="dayFullSelect" class="btn btn-fintech-outline btn-sm" href="#"><span>Record a transaction on this day</span></a>
+            <button type="button" class="btn btn-fintech-primary btn-sm" data-expand-close><span>Back to calendar</span></button>
+        </footer>
+    </div>
+</section>
+
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script>
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+</script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    (function () {
+        var inBox = document.getElementById('toggleInflows');
+        var outBox = document.getElementById('toggleOutflows');
+        function load(key) { try { return localStorage.getItem(key) !== '0'; } catch (e) { return true; } }
+        function save(key, on) { try { localStorage.setItem(key, on ? '1' : '0'); } catch (e) { /* not persisted */ } }
+        function apply() {
+            document.body.classList.toggle('hide-in', !inBox.checked);
+            document.body.classList.toggle('hide-out', !outBox.checked);
+        }
+        inBox.checked = load('calendarInflows');
+        outBox.checked = load('calendarOutflows');
+        inBox.addEventListener('change', function () { save('calendarInflows', inBox.checked); apply(); });
+        outBox.addEventListener('change', function () { save('calendarOutflows', outBox.checked); apply(); });
+        apply();
+    })();
+</script>
+<script>
+    // Record a transaction: the Money in / Money out switch picks which categories are offered, and
+    // "Member dues" swaps the free-text "from/to" field for a member picker.
+    (function () {
+        var form = document.getElementById('recordTransactionForm');
+        if (!form) return;
+        var category = document.getElementById('txnCategory');
+        var memberField = document.getElementById('txnMemberField');
+        var member = document.getElementById('txnMember');
+        var partyField = document.getElementById('txnPartyField');
+        var party = document.getElementById('txnParty');
+        var partyLabel = document.getElementById('txnPartyLabel');
+        var submitLabel = document.getElementById('txnSubmitLabel');
+        var duesCategory = form.dataset.duesCategory;
+
+        function direction() { return form.querySelector('input[name="direction"]:checked').value; }
+
+        function updateFields() {
+            var dir = direction();
+            var dues = dir === 'in' && category.value === duesCategory;
+            memberField.hidden = !dues;
+            member.disabled = !dues;
+            member.required = dues;
+            partyField.hidden = dues;
+            party.disabled = dues;
+            partyLabel.textContent = dir === 'in' ? 'Received from (optional)' : 'Paid to (optional)';
+            party.placeholder = dir === 'in' ? 'e.g. Alumni association' : 'e.g. Venue or vendor name';
+            submitLabel.textContent = dir === 'in' ? 'Save inflow' : 'Save outflow';
+            form.dataset.direction = dir;
+        }
+
+        function syncCategories(pickFirst) {
+            var dir = direction();
+            var options = Array.prototype.slice.call(category.options);
+            options.forEach(function (option) { option.hidden = option.dataset.direction !== dir; });
+            var current = category.options[category.selectedIndex];
+            if (pickFirst || !current || current.hidden || current.disabled) {
+                var first = options.filter(function (option) { return !option.hidden && !option.disabled; })[0];
+                if (first) first.selected = true;
+                // Lets the themed dropdown refresh its label.
+                category.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            updateFields();
+        }
+
+        form.querySelectorAll('input[name="direction"]').forEach(function (radio) {
+            radio.addEventListener('change', function () { syncCategories(true); });
+        });
+        category.addEventListener('change', updateFields);
+        syncCategories(false);
+    })();
+</script>
+<script th:inline="javascript">
+    // Recurring bills form: explains Automatic vs Manual, and fills the form to edit an existing bill.
+    (function () {
+        var form = document.getElementById('billForm');
+        if (!form) return;
+        var bills = /*[[${billEditData}]]*/ [];
+        var byId = {};
+        bills.forEach(function (b) { byId[b.id] = b; });
+        var help = document.getElementById('billModeHelp');
+        var title = document.getElementById('billFormTitle');
+        var submitLabel = document.getElementById('billSubmitLabel');
+        var cancel = document.getElementById('billCancel');
+        var presetLeads = Array.prototype.map.call(form.querySelectorAll('[data-lead]'), function (box) { return box.value; });
+        var blank = {
+            name: '', amount: '', frequency: 'MONTHLY', startDate: form.elements.startDate.value, endDate: '',
+            category: form.elements.category.options[0].value, payee: '', paymentMode: 'MANUAL', reminderDays: [7, 1, 0]
+        };
+        var texts = {
+            MANUAL: 'You pay it yourself. DuesDesk reminds you until you mark it paid.',
+            AUTOMATIC: 'The bank or card pays it on the due date. DuesDesk records the payment for you and gives you a heads-up before.'
+        };
+        function mode() { return form.querySelector('input[name="paymentMode"]:checked').value; }
+        function showMode() { help.textContent = texts[mode()]; }
+        function setSelect(select, value) {
+            select.value = value;
+            // Lets the themed dropdown refresh its label.
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        function fill(bill, editing) {
+            document.getElementById('billId').value = editing ? bill.id : '';
+            form.elements.name.value = bill.name;
+            form.elements.amount.value = bill.amount === '' ? '' : Number(bill.amount).toFixed(2);
+            setSelect(form.elements.frequency, bill.frequency);
+            form.elements.startDate.value = bill.startDate;
+            form.elements.endDate.value = bill.endDate || '';
+            setSelect(form.elements.category, bill.category);
+            form.elements.payee.value = bill.payee || '';
+            form.querySelector('input[name="paymentMode"][value="' + bill.paymentMode + '"]').checked = true;
+            var leads = (bill.reminderDays || []).map(String);
+            form.querySelectorAll('[data-lead]').forEach(function (box) { box.checked = leads.indexOf(box.value) !== -1; });
+            form.elements.customReminderDays.value = leads.filter(function (d) { return presetLeads.indexOf(d) === -1; }).join(', ');
+            title.textContent = editing ? 'Edit ' + bill.name : 'Add a recurring bill';
+            submitLabel.textContent = editing ? 'Save changes' : 'Add recurring bill';
+            cancel.hidden = !editing;
+            showMode();
+        }
+        form.querySelectorAll('input[name="paymentMode"]').forEach(function (radio) { radio.addEventListener('change', showMode); });
+        document.querySelectorAll('[data-bill-edit]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var bill = byId[button.dataset.billEdit];
+                if (!bill) return;
+                fill(bill, true);
+                var card = document.getElementById('billFormCard');
+                if (!card.classList.contains('is-pinned')) card.querySelector('.hover-expand-card__toggle').click();
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                form.elements.name.focus();
+            });
+        });
+        cancel.addEventListener('click', function () { fill(blank, false); });
+        showMode();
+    })();
+</script>
+<script th:inline="javascript">
+    // Day peek + full-day view. Hovering a day with activity unfolds a small preview beside it; clicking the
+    // preview (or pressing Space on a focused day) morphs it into a near full-screen panel listing everything
+    // from that day. Both follow the Inflows/Outflows switches. The animation and exits are shared
+    // (window.duesDeskPeek in fragments); this script only supplies the day's content.
+    (function () {
+        var details = /*[[${dayDetails}]]*/ {};
+        // Recurring bills still waiting to be paid, by day: {id, name, amount, mode, overdue}.
+        var billsDue = /*[[${billDetails}]]*/ {};
+        var month = /*[[${month}]]*/ '';
+        var peek = document.getElementById('dayPeek');
+        var fullTitle = document.getElementById('dayFullTitle');
+        var fullSub = document.getElementById('dayFullSub');
+        var fullBody = document.getElementById('dayFullBody');
+        var fullSelect = document.getElementById('dayFullSelect');
+        var inBox = document.getElementById('toggleInflows');
+        var outBox = document.getElementById('toggleOutflows');
+        var money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+        var PEEK_ROWS = 4;
+
+        function toDate(iso) { var p = iso.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+        function longDate(iso) { return toDate(iso).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }); }
+        function shortDate(iso) { return toDate(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); }
+        function signed(amount) { return (amount < 0 ? '−' : '+') + money.format(Math.abs(amount)); }
+        function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+        function byAmount(a, b) { return Math.abs(b.amount) - Math.abs(a.amount); }
+        function sourceLabel(source) {
+            if (!source) return '';
+            return source === source.toUpperCase() ? source.toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }) : source;
+        }
+        function node(tag, cls, text) {
+            var el = document.createElement(tag);
+            if (cls) el.className = cls;
+            if (text != null) el.textContent = text;
+            return el;
+        }
+        function cellFor(iso) {
+            var link = document.querySelector('.day-link[data-peek-key="' + iso + '"]');
+            return link ? link.closest('.day-cell') : null;
+        }
+
+        // One day's activity, filtered by the Inflows/Outflows switches.
+        function summarize(iso) {
+            var all = details[iso] || [];
+            var inflows = all.filter(function (e) { return e.amount >= 0; });
+            var outflows = all.filter(function (e) { return e.amount < 0; });
+            function sum(list) { return list.reduce(function (t, e) { return t + e.amount; }, 0); }
+            return {
+                all: all, inflows: inflows, outflows: outflows,
+                showIn: inBox.checked, showOut: outBox.checked,
+                inTotal: sum(inflows), outTotal: sum(outflows),
+                visible: all.filter(function (e) { return e.amount >= 0 ? inBox.checked : outBox.checked; })
+            };
+        }
+
+        function renderPeek(iso) {
+            var s = summarize(iso);
+            peek.textContent = '';
+            var head = node('div', 'peek-head');
+            head.appendChild(node('span', 'peek-title', shortDate(iso)));
+            var dueCount = (billsDue[iso] || []).length;
+            head.appendChild(node('span', 'peek-count', plural(s.visible.length, 'transaction') + (dueCount ? ' · ' + plural(dueCount, 'bill') : '')));
+            peek.appendChild(head);
+
+            var totals = node('div', 'peek-totals');
+            if (s.showIn && s.inflows.length) totals.appendChild(node('span', 'flow-chip in', signed(s.inTotal) + ' in'));
+            if (s.showOut && s.outflows.length) totals.appendChild(node('span', 'flow-chip out', signed(s.outTotal) + ' out'));
+            if (totals.childNodes.length) peek.appendChild(totals);
+
+            // Transactions and bills due share one list, biggest amounts first, and the peek stops at a handful of rows
+            // so it stays compact: the rest are summed up in one "+ N more" line (a lone leftover just gets its row).
+            var due = billsDue[iso] || [];
+            var rows = s.visible.map(function (e) {
+                var detail = e.description && !/^payment( received)?$/i.test(e.description.trim()) ? e.description : '';
+                return { label: detail || e.name || 'Transaction', amount: e.amount, kind: e.amount < 0 ? 'out' : 'in', size: Math.abs(e.amount) };
+            }).concat(due.map(function (b) {
+                return { label: b.name, amount: b.amount, kind: 'bill', tag: b.overdue ? 'Overdue' : 'Bill', size: b.amount };
+            })).sort(function (a, b) { return b.size - a.size; });
+            var limit = rows.length === PEEK_ROWS + 1 ? rows.length : PEEK_ROWS;
+            var shown = rows.slice(0, limit);
+            if (shown.length) {
+                var list = node('ul', 'peek-list');
+                shown.forEach(function (row) {
+                    var li = node('li', 'peek-row is-' + row.kind);
+                    var who = node('span', 'who');
+                    who.appendChild(node('span', 'peek-dot'));
+                    who.appendChild(node('span', 'peek-label', row.label));
+                    if (row.tag) who.appendChild(node('span', 'peek-tag' + (row.tag === 'Overdue' ? ' is-overdue' : ''), row.tag));
+                    li.appendChild(who);
+                    li.appendChild(node('span', 'amt ' + (row.kind === 'bill' ? '' : row.kind), row.kind === 'bill' ? money.format(row.amount) : signed(row.amount)));
+                    list.appendChild(li);
+                });
+                peek.appendChild(list);
+            }
+            if (rows.length > shown.length) peek.appendChild(node('div', 'peek-more', '+ ' + (rows.length - shown.length) + ' more'));
+            var hidden = s.all.length - s.visible.length;
+            if (hidden) peek.appendChild(node('div', 'peek-note', plural(hidden, 'transaction') + ' hidden by your filters'));
+
+            peek.appendChild(node('div', 'peek-foot', 'Click to see the full day'));
+            peek.setAttribute('aria-label', 'Open full details for ' + longDate(iso));
+        }
+
+        function entryRow(e) {
+            var li = node('li');
+            var left = node('div', 'min-w-0');
+            left.appendChild(node('div', 'who', e.name || 'Transaction'));
+            var meta = [e.description, sourceLabel(e.source)].filter(Boolean).join(' · ');
+            if (meta) left.appendChild(node('div', 'what', meta));
+            li.appendChild(left);
+            li.appendChild(node('span', 'amt ' + (e.amount < 0 ? 'out' : 'in'), signed(e.amount)));
+            return li;
+        }
+
+        function column(title, list, total, cls, emptyText) {
+            var col = node('section', 'expand-col');
+            var h = node('h3');
+            h.appendChild(node('span', null, title + ' (' + list.length + ')'));
+            h.appendChild(node('span', 'amt ' + cls, list.length ? signed(total) : money.format(0)));
+            col.appendChild(h);
+            if (!list.length) {
+                col.appendChild(node('div', 'expand-empty', emptyText));
+            } else {
+                var ul = node('ul', 'expand-list');
+                list.slice().sort(byAmount).forEach(function (e, i) {
+                    var li = entryRow(e);
+                    li.style.animationDelay = (180 + Math.min(i, 10) * 25) + 'ms';
+                    ul.appendChild(li);
+                });
+                col.appendChild(ul);
+            }
+            return col;
+        }
+
+        function filterNote(text, label, box) {
+            var note = node('div', 'expand-note');
+            note.appendChild(node('span', null, text));
+            var btn = node('button', 'btn btn-fintech-outline btn-sm', label);
+            btn.type = 'button';
+            btn.addEventListener('click', function () {
+                box.checked = true;
+                box.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            note.appendChild(btn);
+            return note;
+        }
+
+        function renderPanel(iso) {
+            var s = summarize(iso);
+            fullTitle.textContent = longDate(iso);
+            var hidden = s.all.length - s.visible.length;
+            var dueCount = (billsDue[iso] || []).length;
+            fullSub.textContent = (!s.all.length ? 'No transactions recorded on this day'
+                : plural(s.visible.length, 'transaction') + (hidden ? ' shown of ' + s.all.length : ''))
+                + (dueCount ? ' · ' + plural(dueCount, 'bill') + ' due' : '');
+            fullBody.textContent = '';
+
+            if (!s.showIn && s.inflows.length) fullBody.appendChild(filterNote(plural(s.inflows.length, 'inflow') + ' hidden by your calendar filter.', 'Show inflows', inBox));
+            if (!s.showOut && s.outflows.length) fullBody.appendChild(filterNote(plural(s.outflows.length, 'outflow') + ' hidden by your calendar filter.', 'Show outflows', outBox));
+
+            if (s.visible.length) {
+                var totals = node('div', 'expand-totals');
+                if (s.showIn) totals.appendChild(node('span', 'flow-chip in', signed(s.inTotal) + ' in'));
+                if (s.showOut) totals.appendChild(node('span', 'flow-chip out', signed(s.outTotal) + ' out'));
+                if (s.showIn && s.showOut) totals.appendChild(node('span', 'flow-chip net', 'Net ' + signed(s.inTotal + s.outTotal)));
+                fullBody.appendChild(totals);
+            }
+
+            var cols = node('div', 'expand-cols');
+            if (s.showIn) cols.appendChild(column('Money in', s.inflows, s.inTotal, 'in', 'No inflows on this day.'));
+            if (s.showOut) cols.appendChild(column('Money out', s.outflows, s.outTotal, 'out', 'No outflows on this day.'));
+            if (cols.childNodes.length) fullBody.appendChild(cols);
+            else fullBody.appendChild(node('div', 'expand-empty', 'Inflows and outflows are both switched off.'));
+
+            var due = billsDue[iso] || [];
+            if (due.length) {
+                var billCol = node('section', 'expand-col mt-4');
+                var bh = node('h3');
+                bh.appendChild(node('span', null, 'Bills due (' + due.length + ')'));
+                bh.appendChild(node('span', 'amt', money.format(due.reduce(function (t, b) { return t + b.amount; }, 0))));
+                billCol.appendChild(bh);
+                var billUl = node('ul', 'expand-list');
+                due.forEach(function (b) {
+                    var li = node('li');
+                    var left = node('div', 'min-w-0');
+                    left.appendChild(node('div', 'who', b.name));
+                    left.appendChild(node('div', 'what', (b.overdue ? 'Overdue' : 'Due') + ' · ' + (b.mode === 'AUTOMATIC' ? 'Paid automatically on the due date' : 'Pay it yourself, then mark it paid under Bill reminders')));
+                    li.appendChild(left);
+                    li.appendChild(node('span', 'amt', money.format(b.amount)));
+                    billUl.appendChild(li);
+                });
+                billCol.appendChild(billUl);
+                fullBody.appendChild(billCol);
+            }
+
+            fullSelect.href = '/calendar?month=' + encodeURIComponent(month) + '&date=' + encodeURIComponent(iso);
+        }
+
+        var links = Array.prototype.slice.call(document.querySelectorAll('.day-link[data-peek-key]'));
+        var view = window.duesDeskPeek({
+            peek: peek,
+            panel: document.getElementById('dayFull'),
+            backdrop: document.getElementById('dayFullBackdrop'),
+            triggers: links,
+            hoverTarget: function (link) { return link.closest('.day-cell'); },
+            anchor: function (link) { return link.closest('.day-cell'); },
+            onAnchor: function (cell, on) { cell.classList.toggle('is-peeking', on); },
+            hasPreview: function (iso) { return Boolean(details[iso] || billsDue[iso]); },
+            renderPeek: renderPeek,
+            renderPanel: renderPanel,
+            returnRect: function (iso) { var cell = cellFor(iso); return cell ? cell.getBoundingClientRect() : null; }
+        });
+
+        // Space on a focused day opens its full view (Enter still selects the day).
+        links.forEach(function (link) {
+            link.addEventListener('keydown', function (e) {
+                if (e.key === ' ' || e.key === 'Spacebar') {
+                    e.preventDefault();
+                    view.open(link.dataset.peekKey, link.closest('.day-cell'), link);
+                }
+            });
+        });
+        [inBox, outBox].forEach(function (box) { box.addEventListener('change', view.refresh); });
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+services:
+  duesdesk:
+    build: .
+    ports:
+      # DuesDesk has no login, so publish on this computer only. Do not change 127.0.0.1 without putting
+      # authentication in front of it.
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - duesdesk-data:/data
+    environment:
+      # Live SMS needs Twilio; leave these unset to stay in simulation mode.
+      TWILIO_SIMULATION_MODE: ${TWILIO_SIMULATION_MODE:-true}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+    restart: unless-stopped
+
+volumes:
+  duesdesk-data:
