@@ -372,6 +372,10 @@
                 min -= padding;
                 max += padding;
             }
+            // Every tracked stat is a non-negative amount or a rate, so the padding must not push the axis below zero
+            // (or a rate past 100%).
+            if (values.every(value => value >= 0)) min = Math.max(0, min);
+            if (isPercent(metric)) max = Math.min(max, Math.max(100, ...values));
             const inset = { left: 58, right: 16, top: 18, bottom: 42 };
             const chartWidth = Math.max(1, width - inset.left - inset.right);
             const chartHeight = Math.max(1, height - inset.top - inset.bottom);
@@ -434,14 +438,20 @@
             const labelCount = Math.min(5, points.length);
             for (let i = 0; i < labelCount; i++) {
                 const index = labelCount === 1 ? 0 : Math.round(i * (points.length - 1) / (labelCount - 1));
-                context.fillText(points[index].date, x(index), height - inset.bottom + 12);
+                // The end labels hug the plot edges so they are not clipped by the canvas.
+                context.textAlign = labelCount > 1 && i === 0 ? 'left' : labelCount > 1 && i === labelCount - 1 ? 'right' : 'center';
+                const labelX = context.textAlign === 'left' ? inset.left : context.textAlign === 'right' ? width - inset.right : x(index);
+                context.fillText(points[index].date, labelX, height - inset.bottom + 12);
             }
         }
 
+        function isPercent(metric) {
+            return metric === 'net-collection-rate' || metric === 'delinquency-default-rate';
+        }
+
         function formatValue(value, metric) {
-            return metric === 'net-collection-rate' || metric === 'delinquency-default-rate'
-                ? value.toFixed(1) + '%'
-                : '$' + value.toFixed(2);
+            if (isPercent(metric)) return value.toFixed(1) + '%';
+            return (value < 0 ? '-$' : '$') + Math.abs(value).toFixed(2);
         }
 
         async function loadHistory() {

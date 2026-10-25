@@ -261,11 +261,12 @@ const demoData = {
   smsLogs: [],
   residents: generateResidents(),
   flowEntries: generateFlowEntries(),
+  // The keys must match the four stats the Numbers page can chart, or the history graphs stay empty.
   metricHistory: [
-    { date: '2024-09-15', values: { collected: 38700, outstanding: 14500, pastDue: 3200, rate: 72.8 } },
-    { date: '2024-09-30', values: { collected: 42100, outstanding: 11900, pastDue: 2800, rate: 77.9 } },
-    { date: '2024-10-15', values: { collected: 48250, outstanding: 8750, pastDue: 1850, rate: 84.6 } },
-    { date: '2024-10-20', values: { collected: 48250, outstanding: 8750, pastDue: 1850, rate: 84.6 } }
+    { date: '2024-09-15', values: { 'collection-velocity-run-rate': 1290.00, 'net-collection-rate': 72.8, 'delinquency-default-rate': 5.2, 'average-dues-per-member-adpm': 530.14 } },
+    { date: '2024-09-30', values: { 'collection-velocity-run-rate': 1403.33, 'net-collection-rate': 77.9, 'delinquency-default-rate': 4.4, 'average-dues-per-member-adpm': 576.71 } },
+    { date: '2024-10-15', values: { 'collection-velocity-run-rate': 3216.67, 'net-collection-rate': 84.6, 'delinquency-default-rate': 3.2, 'average-dues-per-member-adpm': 660.96 } },
+    { date: '2024-10-20', values: { 'collection-velocity-run-rate': 2412.50, 'net-collection-rate': 84.6, 'delinquency-default-rate': 3.2, 'average-dues-per-member-adpm': 660.96 } }
   ],
   counterpartyAliases: {},
   chairBudgets: generateChairBudgets(),
