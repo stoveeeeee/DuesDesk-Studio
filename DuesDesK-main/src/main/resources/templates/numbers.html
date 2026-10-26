@@ -8,10 +8,11 @@
     <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body { font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg-canvas); color:var(--text-secondary); }
-        .banner { background:var(--bg-surface); border-bottom:1px solid var(--border-subtle); padding:1rem 0; }
-        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
-        .metric-card { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:1.1rem;height:100%;animation:enter .4s ease backwards;transition:transform .2s ease,box-shadow .2s ease; }
+        /* Financial Overview: only what the shared design system does not already provide */
+        .metric-card { padding:1.15rem 1.3rem;height:100%;animation:enter .35s var(--ease-snappy) backwards; }
+        .cash-card .metric-value { font-size:clamp(1.6rem,2.2vw,2.1rem); }
+        .metric-head { display:flex; justify-content:space-between; align-items:flex-start; gap:.5rem; margin-bottom:.5rem; }
+        .metric-head h4 { font-size:12.5px; font-weight:600; color:var(--text-muted); margin:0; }
         /* Only cards you can click lift on hover; cards that hold forms or results stay still (no jitter while working in them). */
         button.metric-card:hover { transform:translateY(-2px);box-shadow: var(--shadow-hover); }
         .metric-card.is-static { cursor:default; }
@@ -27,10 +28,10 @@
         button.metric-card { color:inherit;text-decoration:none;cursor:pointer;text-align:left;font:inherit; }
         button.metric-card:focus-visible { outline:3px solid var(--focus-ring);outline-offset:2px; }
         .metric-chart { width:100%;height:clamp(180px,38vh,300px);display:block; }
-        .metric-value { color:var(--text-primary);font-size:1.35rem;font-weight:700;letter-spacing:-.03em; }
+        .metric-value { color:var(--text-primary);font-size:1.45rem;font-weight:700;letter-spacing:-.03em;line-height:1.1; }
         .metric-description { color:var(--text-muted);font-size:.82rem;line-height:1.5; }
         .metric-status { font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;font-weight:700; }
-        .advice-stat { background:var(--bg-canvas);border:1px solid var(--border-subtle);border-radius:10px;padding:.85rem;height:100%; }
+        .advice-stat { background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-sub);padding:.85rem;height:100%; }
         .advice-stat-label { color:var(--text-muted);font-size:.75rem;font-weight:600; }
         .advice-stat-value { color:var(--text-primary);font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums; }
         #calculatorResult .small { font-size:.98rem;line-height:1.65; }
@@ -42,13 +43,14 @@
             box-sizing:border-box;position:fixed;top:calc(var(--desktop-header-h, 0px) + .75rem);
             right:.75rem;bottom:.75rem;left:.75rem;z-index:1100;overflow-y:auto;
             overscroll-behavior:contain;margin:0!important;padding:clamp(1rem,3vw,2rem);
-            background:var(--bg-surface);box-shadow:var(--shadow-modal);border-radius:14px;
+            background:var(--bg-surface);box-shadow:var(--shadow-modal);border-radius:20px;
         }
+        .metric-chart-wrap { position:relative; }
+        .chart-tools { display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:.75rem; }
         .calculator-result.is-fullscreen .metric-description { font-size:1rem;line-height:1.7; }
         .calculator-result.is-fullscreen .small { font-size:1.05rem;line-height:1.75; }
         .calculator-result.is-fullscreen .advice-stat-label { font-size:1rem; }
         .calculator-result.is-fullscreen .advice-stat-value { font-size:1.4rem; }
-        @keyframes enter { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
         #metricHistoryModal .modal-content { max-height: calc(100vh - 2rem); }
         #metricHistoryModal .modal-body { overflow-y: auto; }
         @media (max-width:575px) {
@@ -61,19 +63,7 @@
 <script th:replace="~{fragments :: themeInit}"></script>
 </head>
 <body>
-    <div class="app-header-stack">
-    <header class="banner">
-    <div class="container-xxl px-3 px-md-4 header-grid">
-        <div></div>
-        <div class="d-flex align-items-center gap-3 justify-content-center">
-            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
-            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
-        </div>
-        <div></div>
-    </div>
-</header>
-<nav th:replace="~{fragments :: nav('numbers')}"></nav>
-</div>
+    <div th:replace="~{fragments :: appHeader('numbers')}"></div>
 <main class="container-xxl px-3 px-md-4 py-4 pb-5">
     <div class="page-header">
         <div>
@@ -93,10 +83,10 @@
         </div>
         <div class="row g-3">
             <div class="col-12 col-md-4">
-                <div class="metric-card">
-                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                        <h4 class="h6 fw-semibold mb-0">Overall cash available</h4>
-                        <i class="bi bi-wallet2 text-primary" aria-hidden="true"></i>
+                <div class="metric-card cash-card">
+                    <div class="metric-head">
+                        <h4>Overall cash available</h4>
+                        <span class="kpi-icon" aria-hidden="true"><i class="bi bi-wallet2"></i></span>
                     </div>
                     <div class="metric-value mb-2" th:classappend="${financialSnapshot.overallCash < 0} ? 'text-danger'"
                          th:text="(${financialSnapshot.overallCash < 0} ? '-$' : '$') + ${#numbers.formatDecimal(financialSnapshot.overallCash < 0 ? -financialSnapshot.overallCash : financialSnapshot.overallCash, 1, 'COMMA', 2, 'POINT')}"></div>
@@ -104,10 +94,10 @@
                 </div>
             </div>
             <div class="col-12 col-md-4">
-                <div class="metric-card">
-                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                        <h4 class="h6 fw-semibold mb-0">Cash available to spend</h4>
-                        <i class="bi bi-cash-coin text-success" aria-hidden="true"></i>
+                <div class="metric-card cash-card">
+                    <div class="metric-head">
+                        <h4>Cash available to spend</h4>
+                        <span class="kpi-icon tone-emerald" aria-hidden="true"><i class="bi bi-cash-coin"></i></span>
                     </div>
                     <div class="metric-value mb-2" th:classappend="${financialSnapshot.spendableCash < 0} ? 'text-danger' : 'text-success'"
                          th:text="(${financialSnapshot.spendableCash < 0} ? '-$' : '$') + ${#numbers.formatDecimal(financialSnapshot.spendableCash < 0 ? -financialSnapshot.spendableCash : financialSnapshot.spendableCash, 1, 'COMMA', 2, 'POINT')}"></div>
@@ -122,10 +112,10 @@
                 </div>
             </div>
             <div class="col-12 col-md-4">
-                <div class="metric-card">
-                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                        <h4 class="h6 fw-semibold mb-0">Expected dues within one week</h4>
-                        <i class="bi bi-calendar-week text-primary" aria-hidden="true"></i>
+                <div class="metric-card cash-card">
+                    <div class="metric-head">
+                        <h4>Expected dues within one week</h4>
+                        <span class="kpi-icon tone-amber" aria-hidden="true"><i class="bi bi-calendar-week"></i></span>
                     </div>
                     <div class="metric-value mb-2"
                          th:text="'$' + ${#numbers.formatDecimal(financialSnapshot.scheduledDuesNextWeek, 1, 'COMMA', 2, 'POINT')}"></div>
@@ -173,7 +163,7 @@
                     </select>
                 </div>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-dark">Check expense</button>
+                    <button type="submit" class="btn btn-fintech-primary"><i class="bi bi-calculator" aria-hidden="true"></i><span>Check expense</span></button>
                 </div>
             </form>
             <div th:if="${expenseError}" class="alert alert-warning mt-3 mb-0 small" th:text="${expenseError}"></div>
@@ -270,7 +260,7 @@
                         th:attr="data-metric-key=${metric.key},data-metric-name=${metric.name},data-metric-value=${metric.value}">
                     <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                         <h4 class="h6 fw-semibold mb-0" th:text="${metric.name}"></h4>
-                        <span class="metric-status badge rounded-pill text-bg-primary">View history</span>
+                        <span class="context-select"><i class="bi bi-graph-up" aria-hidden="true"></i>History</span>
                     </div>
                     <div class="metric-value mb-2 tabular-nums" th:text="${metric.value}"></div>
                     <p class="metric-description mb-0" th:text="${metric.description}"></p>
@@ -321,8 +311,20 @@
                     </div>
                 </form>
                 <p class="small text-secondary mb-2">History is calculated from the dated payments and charges in the ledger, including graduated members, so it covers everything the ledger holds.</p>
-                <div id="metricHistoryMessage" class="small text-secondary mb-2" role="status"></div>
-                <canvas id="metricHistoryChart" class="metric-chart" aria-label="Stat history graph"></canvas>
+                <div class="chart-tools">
+                    <div id="metricHistoryMessage" class="small text-secondary" role="status"></div>
+                    <div class="chart-timeframes" role="group" aria-label="Quick date range">
+                        <button type="button" data-range-days="30">1M</button>
+                        <button type="button" data-range-days="90" class="is-active">3M</button>
+                        <button type="button" data-range-days="180">6M</button>
+                        <button type="button" data-range-days="365">1Y</button>
+                        <button type="button" data-range-days="0">ALL</button>
+                    </div>
+                </div>
+                <div class="metric-chart-wrap">
+                    <canvas id="metricHistoryChart" class="metric-chart" aria-label="Stat history graph"></canvas>
+                    <div id="metricHistoryTooltip" class="chart-tooltip" hidden></div>
+                </div>
             </div>
         </div>
     </div>
@@ -358,6 +360,8 @@
             const width = bounds.width;
             const height = bounds.height;
             context.clearRect(0, 0, width, height);
+            const emptyTip = document.getElementById('metricHistoryTooltip');
+            if (emptyTip) emptyTip.hidden = true;
             if (!points.length) return;
 
             const values = points.map(point => point.value);
@@ -384,10 +388,12 @@
             const styles = getComputedStyle(document.documentElement);
             // Fallbacks keep the chart drawing even if a token goes missing (an empty color makes addColorStop throw).
             const textColor = styles.getPropertyValue('--bs-secondary-color').trim() || '#64748b';
-            const lineColor = styles.getPropertyValue('--chart-primary').trim() || '#2563eb';
-            const areaTop = styles.getPropertyValue('--chart-area-top').trim() || 'rgba(37, 99, 235, 0.22)';
-            const areaBottom = styles.getPropertyValue('--chart-area-bottom').trim() || 'rgba(37, 99, 235, 0)';
-            const baselineColor = styles.getPropertyValue('--chart-baseline').trim() || '#94a3b8';
+            const lineColor = styles.getPropertyValue('--chart-primary').trim() || '#5b4fe9';
+            const lineColor2 = styles.getPropertyValue('--chart-primary-2').trim() || '#8b82f2';
+            const areaTop = styles.getPropertyValue('--chart-area-top').trim() || 'rgba(91, 79, 233, 0.22)';
+            const areaBottom = styles.getPropertyValue('--chart-area-bottom').trim() || 'rgba(91, 79, 233, 0)';
+            const baselineColor = styles.getPropertyValue('--chart-baseline').trim() || '#cbd5e1';
+            const surfaceColor = styles.getPropertyValue('--bg-elevated').trim() || '#ffffff';
 
             context.font = '12px Inter, sans-serif';
             context.textAlign = 'right';
@@ -418,20 +424,49 @@
             context.closePath();
             context.fillStyle = gradient;
             context.fill();
-            context.strokeStyle = lineColor;
+            const stroke = context.createLinearGradient(inset.left, 0, inset.left + chartWidth, 0);
+            stroke.addColorStop(0, lineColor2);
+            stroke.addColorStop(1, lineColor);
+            context.strokeStyle = stroke;
             context.lineWidth = 2.5;
+            context.lineJoin = 'round';
             context.beginPath();
             points.forEach((point, index) => {
                 if (index === 0) context.moveTo(x(index), y(point.value));
                 else context.lineTo(x(index), y(point.value));
             });
             context.stroke();
-            context.fillStyle = lineColor;
+            // Contrast by exception: history points stay quiet, the latest point is illuminated.
+            context.fillStyle = baselineColor;
             points.forEach((point, index) => {
+                if (index === points.length - 1) return;
                 context.beginPath();
-                context.arc(x(index), y(point.value), points.length > 80 ? 1.5 : 3, 0, Math.PI * 2);
+                context.arc(x(index), y(point.value), points.length > 80 ? 1.2 : 2.2, 0, Math.PI * 2);
                 context.fill();
             });
+            const lastIndex = points.length - 1;
+            const lx = x(lastIndex);
+            const ly = y(points[lastIndex].value);
+            context.save();
+            context.shadowColor = lineColor;
+            context.shadowBlur = 14;
+            context.fillStyle = lineColor;
+            context.beginPath();
+            context.arc(lx, ly, 6, 0, Math.PI * 2);
+            context.fill();
+            context.restore();
+            context.fillStyle = surfaceColor;
+            context.beginPath();
+            context.arc(lx, ly, 2.5, 0, Math.PI * 2);
+            context.fill();
+            const tooltip = document.getElementById('metricHistoryTooltip');
+            if (tooltip) {
+                tooltip.textContent = formatValue(points[lastIndex].value, metric) + ' · ' + points[lastIndex].date;
+                tooltip.hidden = false;
+                const tipWidth = tooltip.offsetWidth || 120;
+                tooltip.style.left = Math.max(0, Math.min(width - tipWidth, lx - tipWidth / 2)) + 'px';
+                tooltip.style.top = Math.max(0, ly - 38) + 'px';
+            }
             context.textAlign = 'center';
             context.textBaseline = 'top';
             context.fillStyle = textColor;
@@ -489,12 +524,27 @@
                 endInput.value = localDate(today);
                 today.setDate(today.getDate() - 90);
                 startInput.value = localDate(today);
+                rangeButtons.forEach(b => b.classList.toggle('is-active', b.dataset.rangeDays === '90'));
                 modal.show();
             });
         });
         form.addEventListener('submit', function (event) {
             event.preventDefault();
             loadHistory();
+        });
+        // Timeframe pills inside the chart card set the range and reload; "ALL" reaches back ten years.
+        const rangeButtons = Array.prototype.slice.call(document.querySelectorAll('[data-range-days]'));
+        rangeButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                rangeButtons.forEach(b => b.classList.toggle('is-active', b === button));
+                const days = Number(button.dataset.rangeDays);
+                const end = new Date();
+                const start = new Date();
+                if (days > 0) start.setDate(start.getDate() - days); else start.setFullYear(start.getFullYear() - 10);
+                endInput.value = localDate(end);
+                startInput.value = localDate(start);
+                loadHistory();
+            });
         });
         modalElement.addEventListener('shown.bs.modal', function () { loadHistory(); });
         window.addEventListener('resize', function () {

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Log | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        /* Activity Log: only what the shared design system does not already provide */
+        .log-day { margin-top: 1.25rem; }
+        .log-day:first-child { margin-top: .25rem; }
+        .log-item { border-radius: 14px; border: 1px solid transparent; }
+        .log-item + .log-item { margin-top: .25rem; }
+        .log-item[open] { border-color: var(--border-subtle); background: var(--bg-subtle); }
+        .log-summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .85rem; align-items: center; padding: .7rem .8rem; border-radius: 14px; cursor: pointer; list-style: none; }
+        .log-summary::-webkit-details-marker { display: none; }
+        .log-summary:hover { background: var(--bg-hover); }
+        .log-summary:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+        .log-icon { width: 36px; height: 36px; border-radius: 50%; display: inline-grid; place-items: center; font-size: .95rem; background: var(--status-neutral-bg); color: var(--status-neutral-text); }
+        .log-item.tone-danger .log-icon { background: var(--status-danger-bg); color: var(--status-danger-text); }
+        .log-item.tone-success .log-icon { background: var(--status-success-bg); color: var(--status-success-text); }
+        .log-item.tone-accent .log-icon { background: var(--accent-soft); color: var(--accent); }
+        .log-item.tone-muted { opacity: .72; }
+        .log-title { font-weight: 600; font-size: 13.5px; color: var(--text-primary); line-height: 1.35; overflow-wrap: anywhere; }
+        .log-item.tone-muted .log-title { text-decoration: line-through; text-decoration-color: var(--text-placeholder); }
+        .log-meta { display: flex; flex-wrap: wrap; gap: .35rem .6rem; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: .15rem; }
+        .log-end { display: flex; align-items: center; gap: .5rem; }
+        .log-chevron { color: var(--text-placeholder); transition: transform .15s ease; }
+        .log-item[open] .log-chevron { transform: rotate(180deg); }
+        .log-detail { padding: .25rem .9rem .9rem 3.65rem; }
+        .log-entry { padding: .65rem 0; border-top: 1px solid var(--border-subtle); }
+        .log-entry:first-child { border-top: 0; }
+        .log-entry-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; font-size: 13px; }
+        .log-balance { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        .log-balance strong { color: var(--text-primary); }
+        .log-cat { display: inline-flex; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--bg-subtle); border: 1px solid var(--border-subtle); font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+        @media (max-width: 575px) {
+            .log-summary { grid-template-columns: auto minmax(0, 1fr); }
+            .log-end { grid-column: 2; }
+            .log-detail { padding-left: .9rem; }
+        }
+    </style>
+    <th:block th:replace="~{fragments :: navStyles}"></th:block>
+    <script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+<div th:replace="~{fragments :: appHeader('activity')}"></div>
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="7000" class="alert shadow-sm" role="status"
+         th:classappend="${toastTone == 'warning'} ? 'alert-warning' : 'alert-success'" th:text="${toast}"></div>
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Finance</div>
+            <h2 class="page-title">Activity Log</h2>
+            <p class="page-lede">Every change to members, payments, charges, rent, bills, events and settings, with the value before and after and what made the change. Deletions from the last <span th:text="${undoWindowDays}">30</span> days can be undone.</p>
+        </div>
+        <div class="page-actions">
+            <a href="/charges#greekbill" class="btn btn-fintech-outline btn-sm"><i class="bi bi-file-earmark-ruled" aria-hidden="true"></i><span>Template for Greekbill charges</span></a>
+        </div>
+    </div>
+
+    <div class="kpi-bento mb-4">
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span class="kpi-name">Actions</span><span class="kpi-icon" aria-hidden="true"><i class="bi bi-lightning-charge"></i></span></div><div class="kpi-value tabular-nums" th:text="${batchCount}">0</div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span class="kpi-name">Changes recorded</span><span class="kpi-icon tone-emerald" aria-hidden="true"><i class="bi bi-list-check"></i></span></div><div class="kpi-value tabular-nums" th:text="${changeCount}">0</div><div class="kpi-sub" th:text="${peopleCount} + (${peopleCount == 1} ? ' member or record' : ' members or records')"></div></div></div>
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span class="kpi-name">Deletions</span><span class="kpi-icon tone-rose" aria-hidden="true"><i class="bi bi-trash3"></i></span></div><div class="kpi-value tabular-nums" th:text="${removalCount}">0</div><div class="kpi-sub">Undo is on each deletion below</div></div></div>
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span class="kpi-name">Undone</span><span class="kpi-icon tone-slate" aria-hidden="true"><i class="bi bi-arrow-counterclockwise"></i></span></div><div class="kpi-value tabular-nums" th:text="${undoneCount}">0</div><div class="kpi-sub">Changes reversed</div></div></div>
+    </div>
+
+    <section class="surface-card" aria-labelledby="logTitle" id="log" style="scroll-margin-top:7rem">
+        <div class="card-head">
+            <div>
+                <h3 class="section-title" id="logTitle">Changes</h3>
+                <p class="section-subtitle" th:text="${#strings.isEmpty(logStarted)} ? 'Newest first.' : 'Newest first. Recording began ' + ${logStarted} + '.'">Newest first.</p>
+            </div>
+        </div>
+        <form method="get" action="/activity" class="filter-strip" id="logFilters" data-keep-scroll>
+            <select name="period" id="logPeriod" class="form-select form-select-sm w-auto" aria-label="Time period">
+                <option th:each="p : ${periods}" th:value="${p.key}" th:text="${p.value}" th:selected="${p.key == period.key}"></option>
+            </select>
+            <span id="logCustom" class="d-inline-flex gap-2 align-items-center" th:hidden="${period.key != 'custom'}">
+                <input type="date" name="from" class="form-control form-control-sm w-auto" aria-label="From" th:value="${period.fromText}" th:disabled="${period.key != 'custom'}">
+                <input type="date" name="to" class="form-control form-control-sm w-auto" aria-label="To" th:value="${period.toText}" th:disabled="${period.key != 'custom'}">
+            </span>
+            <select name="category" class="form-select form-select-sm w-auto" aria-label="Kind of change">
+                <option value="">All kinds of change</option>
+                <option th:each="c : ${categories}" th:value="${c}" th:text="${c}" th:selected="${c == category}"></option>
+            </select>
+            <select name="member" class="form-select form-select-sm w-auto" aria-label="Member">
+                <option value="">All members</option>
+                <option th:each="m : ${rosterMembers}" th:value="${m.id}" th:text="${m.name}" th:selected="${m.id == memberFilter}"></option>
+            </select>
+            <div class="search-box">
+                <input type="search" name="q" class="form-control form-control-sm" placeholder="Search changes" aria-label="Search changes" th:value="${q}" data-search-shortcut>
+            </div>
+            <div class="filter-strip-end">
+                <span class="small text-muted d-inline-flex align-items-center gap-1">Filters <span class="count-badge"
+                      th:text="${(#strings.isEmpty(category) ? 0 : 1) + (#strings.isEmpty(memberFilter) ? 0 : 1) + (#strings.isEmpty(q) ? 0 : 1)}">0</span></span>
+                <button type="submit" class="btn btn-fintech-outline btn-sm">Apply</button>
+                <a href="/activity" class="btn btn-ghost btn-sm" data-keep-scroll>Clear</a>
+            </div>
+        </form>
+        <div class="card-body-pad pt-2">
+            <div th:if="${#lists.isEmpty(days)}" class="text-center text-muted py-5">
+                <i class="bi bi-clock-history fs-3 d-block mb-2" aria-hidden="true"></i>
+                <span th:text="${batchCount == 0 and #strings.isEmpty(category) and #strings.isEmpty(memberFilter) and #strings.isEmpty(q)} ? 'No changes have been recorded in this period yet. Every change from now on appears here.' : 'No changes match these filters.'"></span>
+            </div>
+            <div class="log-day" th:each="day : ${days}">
+                <div class="micro-header mb-2" th:text="${day.label}"></div>
+                <details class="log-item" th:each="batch : ${day.batches}" th:classappend="'tone-' + ${batch.tone}">
+                    <summary class="log-summary">
+                        <span class="log-icon" aria-hidden="true"><i class="bi" th:classappend="${batch.icon}"></i></span>
+                        <span class="min-w-0">
+                            <span class="log-title d-block" th:text="${batch.summary}"></span>
+                            <span class="log-meta">
+                                <span class="tabular-nums" th:text="${batch.time}"></span>
+                                <span aria-hidden="true">·</span>
+                                <span th:text="${batch.source}"></span>
+                                <span class="log-cat" th:each="c : ${batch.categories}" th:text="${c}"></span>
+                                <span class="badge-muted" th:if="${batch.undone}" th:text="'Undone ' + ${batch.undoneAt}"></span>
+                            </span>
+                        </span>
+                        <span class="log-end">
+                            <form th:if="${batch.undoable and !batch.undone}" th:action="@{/activity/{id}/undo(id=${batch.id})}" method="post"
+                                  data-undo-confirm th:attr="data-summary=${batch.summary}">
+                                <input type="hidden" name="back" value="/activity">
+                                <button type="submit" class="btn btn-fintech-outline btn-sm"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span>Undo</span></button>
+                            </form>
+                            <i class="bi bi-chevron-down log-chevron" aria-hidden="true"></i>
+                        </span>
+                    </summary>
+                    <div class="log-detail">
+                        <div class="log-entry" th:each="entry : ${batch.entries}">
+                            <div class="log-entry-head">
+                                <span class="fw-semibold text-dark" th:text="${entry.summary}"></span>
+                                <span class="log-balance" th:if="${entry.balanceBefore != null and entry.balanceAfter != null}">
+                                    Balance <span th:text="'$' + ${#numbers.formatDecimal(entry.balanceBefore, 1, 'COMMA', 2, 'POINT')}"></span>
+                                    <span aria-hidden="true">→</span><span class="visually-hidden">to</span>
+                                    <strong th:text="'$' + ${#numbers.formatDecimal(entry.balanceAfter, 1, 'COMMA', 2, 'POINT')}"></strong>
+                                </span>
+                            </div>
+                            <ul class="change-list mt-2" th:if="${!#lists.isEmpty(entry.changes)}">
+                                <li class="change-row" th:each="change : ${entry.changes}">
+                                    <span class="change-label" th:text="${change.label}"></span>
+                                    <span class="change-values">
+                                        <span class="change-before" th:text="${change.before}"></span>
+                                        <span class="change-arrow" aria-hidden="true">→</span><span class="visually-hidden">changed to</span>
+                                        <span class="change-after" th:text="${change.after}"></span>
+                                    </span>
+                                </li>
+                            </ul>
+                            <div class="small text-muted mt-1" th:if="${entry.removal and entry.undone}">Put back by an undo.</div>
+                            <a class="small" th:if="${entry.memberId != null and memberFilter != entry.memberId}"
+                               th:href="@{/activity(member=${entry.memberId},period=${period.key},from=${period.fromText},to=${period.toText})}"
+                               th:text="'All activity for ' + ${entry.memberName}"></a>
+                        </div>
+                    </div>
+                </details>
+            </div>
+            <nav th:if="${totalPages > 1}" class="d-flex justify-content-between align-items-center pt-3" aria-label="Activity pages">
+                <span class="small text-muted" th:text="'Page ' + ${currentPage} + ' of ' + ${totalPages}"></span>
+                <div class="btn-group btn-group-sm">
+                    <a class="btn btn-outline-secondary" th:if="${currentPage > 1}"
+                       th:href="@{/activity(page=${currentPage - 1},period=${period.key},from=${period.fromText},to=${period.toText},category=${category},member=${memberFilter},q=${q})}">Newer</a>
+                    <a class="btn btn-outline-secondary" th:if="${currentPage < totalPages}"
+                       th:href="@{/activity(page=${currentPage + 1},period=${period.key},from=${period.fromText},to=${period.toText},category=${category},member=${memberFilter},q=${q})}">Older</a>
+                </div>
+            </nav>
+        </div>
+    </section>
+</main>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        setTimeout(function () {
+            el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 400);
+        }, parseInt(el.dataset.autoDismiss, 10));
+    });
+    (function () {
+        var period = document.getElementById('logPeriod');
+        var custom = document.getElementById('logCustom');
+        if (period && custom) {
+            period.addEventListener('change', function () {
+                var isCustom = period.value === 'custom';
+                custom.hidden = !isCustom;
+                custom.querySelectorAll('input').forEach(function (input) { input.disabled = !isCustom; });
+                if (!isCustom) period.form.requestSubmit ? period.form.requestSubmit() : period.form.submit();
+            });
+        }
+        // Undo sits inside the row's summary: keep the click from also opening or closing the row.
+        document.querySelectorAll('form[data-undo-confirm]').forEach(function (form) {
+            form.addEventListener('click', function (event) { event.stopPropagation(); });
+            form.addEventListener('submit', function (event) {
+                if (!window.confirm('Undo this change?\n\n' + form.dataset.summary + '\n\nEverything it deleted is put back and balances return to what they were.')) {
+                    event.preventDefault();
+                }
+            });
+        });
+    })();
+</script>
+</body>
+</html>

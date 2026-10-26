@@ -10,13 +10,17 @@
     <th:block th:replace="~{fragments :: navStyles}"></th:block>
     <script th:replace="~{fragments :: themeInit}"></script>
 </head>
-<body class="bg-light">
+<body>
 <main class="container py-5">
-    <section class="mx-auto bg-white border rounded-4 shadow-sm p-4 p-md-5" style="max-width:38rem">
-        <div class="text-danger fs-2 mb-3"><i class="bi bi-exclamation-circle"></i></div>
-        <h1 class="h4 fw-bold" th:text="${errorTitle}">Request could not be completed</h1>
-        <p class="text-secondary" th:text="${errorMessage}"></p>
-        <a href="/" class="btn btn-dark">Return to DuesDesk</a>
+    <section class="mx-auto surface-card p-4 p-md-5" style="max-width:38rem">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <span class="brand-icon" aria-hidden="true"><i class="bi bi-bank2"></i></span>
+            <div><div class="micro-header">DuesDesk</div><div class="small text-muted">Something needs your attention</div></div>
+        </div>
+        <span class="icon-tile icon-tile--danger mb-3" aria-hidden="true"><i class="bi bi-exclamation-circle"></i></span>
+        <h1 class="page-title" th:text="${errorTitle}">Request could not be completed</h1>
+        <p class="page-lede mb-4" th:text="${errorMessage}"></p>
+        <a href="/" class="btn btn-fintech-primary"><i class="bi bi-arrow-left" aria-hidden="true"></i><span>Return to DuesDesk</span></a>
     </section>
 </main>
 </body>

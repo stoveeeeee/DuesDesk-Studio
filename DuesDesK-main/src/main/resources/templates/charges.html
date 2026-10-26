@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charges | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        /* Charges: only what the shared design system does not already provide */
+        .charges-workspace { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+        @media (min-width: 1200px) { .charges-workspace { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }
+        .apply-panel { position: sticky; top: calc(var(--desktop-header-h, 0px) + 8.5rem); }
+        @media (max-width: 1199px) { .apply-panel { position: static; } }
+        .apply-panel .seg-tabs { display: flex; width: 100%; }
+        .apply-panel .seg-tab { flex: 1 1 0; justify-content: center; text-align: center; }
+        .apply-pane[hidden] { display: none !important; }
+        .ledger-scroll { max-height: min(68vh, 720px); overflow: auto; }
+        .ledger-scroll thead th { position: sticky; top: 0; z-index: 2; background: var(--bg-surface); }
+        .charge-desc { font-weight: 600; color: var(--text-primary); line-height: 1.3; overflow-wrap: anywhere; }
+        .charge-meta { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        .charge-amount-of { font-size: 11.5px; color: var(--text-muted); }
+        .balance-preview { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; padding: .7rem .85rem; border-radius: var(--radius-sub); background: var(--bg-subtle); border: 1px solid var(--border-subtle); font-size: 13px; }
+        .balance-preview strong { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+        .member-picks { max-height: 220px; overflow: auto; }
+        .member-pick { display: flex; align-items: center; gap: .5rem; padding: .3rem .4rem; border-radius: 10px; font-size: 13px; }
+        .member-pick:hover { background: var(--bg-hover); }
+        .member-pick .roster-tag { margin-left: auto; font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+        .quick-picks { display: flex; flex-wrap: wrap; gap: .35rem; }
+        .quick-pick { border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-secondary); border-radius: 999px; padding: .15rem .65rem; font-size: 12px; font-weight: 600; }
+        .quick-pick:hover { color: var(--text-primary); border-color: var(--border-strong); }
+        .focus-banner { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; }
+        .focus-banner .figure { font-variant-numeric: tabular-nums; }
+        /* Fine / discount toggle and saved-charge chips (moved here from the Dues page) */
+        .adj-type { display:grid; grid-template-columns:1fr 1fr; gap:.2rem; padding:.2rem; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:999px; }
+        .adj-type label { display:flex; align-items:center; justify-content:center; gap:.4rem; margin:0; padding:.25rem .5rem; border-radius:999px; font-size:13px; line-height:1.5; font-weight:500; color:var(--text-muted); cursor:pointer; transition:background-color .15s ease, color .15s ease, box-shadow .2s var(--ease-snappy); }
+        .adj-type label:hover { color:var(--text-primary); }
+        .adj-type .btn-check:checked + label { background:var(--bg-surface); box-shadow:var(--shadow-card); color:var(--text-primary); }
+        .adj-type .btn-check:checked + label.fine { color:var(--status-danger-text); }
+        .adj-type .btn-check:checked + label.discount { color:var(--status-success-text); }
+        .adj-type .btn-check:focus-visible + label { box-shadow:0 0 0 3px var(--focus-ring); }
+        .preset-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
+        .preset-chip { display:inline-flex; align-items:stretch; border:1px solid var(--border-subtle); border-radius:999px; background:var(--bg-surface); overflow:hidden; font-size:12px; }
+        .preset-chip__use { border:0; background:transparent; color:var(--text-secondary); padding:.28rem .3rem .28rem .65rem; display:inline-flex; align-items:center; gap:.35rem; cursor:pointer; }
+        .preset-chip__use:hover { color:var(--text-primary); background:var(--bg-subtle); }
+        .preset-chip__amt { font-variant-numeric:tabular-nums; font-weight:600; }
+        .preset-chip__amt.fine { color:var(--status-danger-text); }
+        .preset-chip__amt.discount { color:var(--status-success-text); }
+        .preset-chip__remove { border:0; background:transparent; color:var(--text-muted); padding:0 .5rem 0 .25rem; cursor:pointer; }
+        .preset-chip__remove:hover { color:var(--status-danger-text); }
+        #memberAdjustmentForm[data-type="DISCOUNT"] .adj-fine-only { display:none; }
+        html.desktop-webview .quick-pick, html.desktop-webview .preset-chip, html.desktop-webview .adj-type, html.desktop-webview .adj-type label { border-radius: 999px !important; }
+    </style>
+    <th:block th:replace="~{fragments :: navStyles}"></th:block>
+    <script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+<div th:replace="~{fragments :: appHeader('charges')}"></div>
+<main class="container-xxl px-3 px-md-4 py-4 pb-5">
+    <div th:if="${toast}" data-auto-dismiss="6000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
+
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Members</div>
+            <h2 class="page-title">Charges</h2>
+            <p class="page-lede">Apply dues, fines and discounts to member accounts, and see every itemized charge in one ledger. Each charge is added to the member's dues balance as soon as it is saved.</p>
+        </div>
+        <div class="page-actions">
+            <a href="#greekbill" class="btn btn-fintech-primary"><i class="bi bi-file-earmark-ruled" aria-hidden="true"></i><span>Template for Greekbill charges</span></a>
+            <a th:href="@{/activity(category='Charges',period='last-90')}" class="btn btn-fintech-outline"><i class="bi bi-clock-history" aria-hidden="true"></i><span>Charge history</span></a>
+        </div>
+    </div>
+
+    <!-- One member in focus (from a member's profile): their figures, with a way back to everyone -->
+    <section class="surface-card card-body-pad mb-4 focus-banner" th:if="${focusMember != null}" aria-label="Member in focus">
+        <div class="row-id">
+            <span class="avatar" aria-hidden="true" th:attr="data-avatar-name=${focusMember.name}" th:text="${#strings.substring(focusMember.name, 0, 1)}"></span>
+            <div>
+                <div class="row-title" th:text="${focusMember.name}"></div>
+                <div class="row-meta" th:text="${focusMember.membershipStatus == 'Member'} ? 'Active member' : ${focusMember.membershipStatus}"></div>
+            </div>
+        </div>
+        <div><div class="micro-header">Balance</div><div class="figure fw-bold" th:text="'$' + ${#numbers.formatDecimal(focusMember.totalOwed, 1, 'COMMA', 2, 'POINT')}"></div></div>
+        <div><div class="micro-header">Past due</div><div class="figure fw-bold" th:classappend="${focusMember.pastDueBalance > 0} ? 'text-danger'" th:text="'$' + ${#numbers.formatDecimal(focusMember.pastDueBalance, 1, 'COMMA', 2, 'POINT')}"></div></div>
+        <div class="ms-auto d-flex flex-wrap gap-2">
+            <a class="btn btn-fintech-outline btn-sm" th:href="${focusMember.membershipStatus == 'Member'} ? '/#member-' + ${focusMember.id} : '/?group=' + ${#strings.toLowerCase(focusMember.membershipStatus)} + '#member-' + ${focusMember.id}">Open on Dues</a>
+            <a class="btn btn-ghost btn-sm" href="/charges" data-keep-scroll>Show every member</a>
+        </div>
+    </section>
+
+    <div class="kpi-bento mb-4">
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span class="kpi-name">Charged this month</span><span class="kpi-icon" aria-hidden="true"><i class="bi bi-receipt"></i></span></div>
+            <div class="kpi-value tabular-nums" th:text="'$' + ${#numbers.formatDecimal(chargedThisMonth, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
+            <div class="kpi-sub" th:text="${chargesThisMonth} + (${chargesThisMonth == 1} ? ' charge in ' : ' charges in ') + ${monthLabel}"></div></div></div>
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span class="kpi-name">Still owed on charges</span><span class="kpi-icon tone-amber" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span></div>
+            <div class="kpi-value tabular-nums" id="chargesOwedValue" th:text="'$' + ${#numbers.formatDecimal(outstandingOnCharges, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
+            <div class="kpi-sub" th:text="${openChargeCount} + (${openChargeCount == 1} ? ' open charge' : ' open charges')"></div></div></div>
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span class="kpi-name">Past due on charges</span><span class="kpi-icon tone-rose" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span></div>
+            <div class="kpi-value tabular-nums" th:classappend="${pastDueOnCharges > 0} ? 'text-danger'" th:text="'$' + ${#numbers.formatDecimal(pastDueOnCharges, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
+            <div class="kpi-sub" th:text="${pastDueChargeCount} + (${pastDueChargeCount == 1} ? ' charge past due' : ' charges past due')"></div></div></div>
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span class="kpi-name">Members with open charges</span><span class="kpi-icon tone-slate" aria-hidden="true"><i class="bi bi-people"></i></span></div>
+            <div class="kpi-value tabular-nums" th:text="${membersWithOpenCharges}">0</div>
+            <div class="kpi-sub" th:text="'of ' + ${#lists.size(rosterMembers)} + ' on the roster'"></div></div></div>
+    </div>
+
+    <div class="charges-workspace mb-4">
+        <!-- Left: the ledger of every charge -->
+        <section class="surface-card" aria-labelledby="ledgerTitle">
+            <div class="card-head">
+                <div>
+                    <h3 class="section-title" id="ledgerTitle" th:text="${focusMember != null} ? ${focusMember.name} + '\'s charges' : 'Charge ledger'">Charge ledger</h3>
+                    <p class="section-subtitle" th:text="${#lists.size(chargeRows)} + (${#lists.size(chargeRows) == 1} ? ' charge, newest first' : ' charges, newest first')"></p>
+                </div>
+            </div>
+            <div class="filter-strip">
+                <span class="active-filters">Active filters <span class="count-badge" id="chargeFilterCount">0</span></span>
+                <div class="filter-pill-group" role="group" aria-label="Filter charges by status">
+                    <button type="button" class="filter-pill active" data-charge-filter="all">All</button>
+                    <button type="button" class="filter-pill" data-charge-filter="open">Open</button>
+                    <button type="button" class="filter-pill" data-charge-filter="pastdue">Past due</button>
+                    <button type="button" class="filter-pill" data-charge-filter="paid">Paid</button>
+                </div>
+                <div class="filter-strip-end">
+                    <form method="get" action="/charges" class="m-0" data-keep-scroll>
+                        <select name="member" class="form-select form-select-sm pill-select" style="width:auto;" aria-label="Show one member's charges"
+                                onchange="window.duesDeskRememberScroll &amp;&amp; window.duesDeskRememberScroll(); this.form.submit();">
+                            <option value="">All members</option>
+                            <option th:each="m : ${rosterMembers}" th:value="${m.id}" th:text="${m.name}" th:selected="${focusMember != null and focusMember.id == m.id}"></option>
+                        </select>
+                    </form>
+                    <div class="position-relative search-box" style="min-width: 200px;">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input type="search" id="chargeSearch" class="form-control form-control-sm ps-4" placeholder="Search charges..." aria-label="Search charges" data-search-shortcut>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive ledger-scroll">
+                <table class="table table-fintech mb-0" id="chargeTable">
+                    <thead>
+                    <tr>
+                        <th th:if="${focusMember == null}">Member</th>
+                        <th>Charge</th>
+                        <th>Due</th>
+                        <th>Status</th>
+                        <th class="text-end">Still owed</th>
+                        <th class="text-end" data-export-skip><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${chargeRows}" th:if="${focusMember == null or focusMember.id == row.memberId}" class="charge-row"
+                        th:attr="data-paid=${row.paid},data-pastdue=${row.pastDue >= 0.005},data-search=${row.searchText}">
+                        <td th:if="${focusMember == null}">
+                            <div class="row-id">
+                                <span class="avatar" aria-hidden="true" th:attr="data-avatar-name=${row.memberName}" th:text="${#strings.substring(row.memberName, 0, 1)}"></span>
+                                <div class="min-w-0">
+                                    <a class="row-title text-decoration-none" th:href="@{/charges(member=${row.memberId})}" data-keep-scroll th:text="${row.memberName}"></a>
+                                    <div class="row-meta" th:if="${row.roster != 'Member'}" th:text="${row.roster}"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="charge-desc" th:text="${row.description}"></div>
+                            <div class="charge-meta" th:text="'Applied ' + ${row.appliedText} + (${row.lateFee} ? ' · late fee' : '')"></div>
+                        </td>
+                        <td class="small text-nowrap" th:text="${row.dueText}"></td>
+                        <td><span class="badge-status" th:classappend="'badge-' + ${row.tone}" th:text="${row.status}"></span></td>
+                        <td class="text-end">
+                            <div class="fw-semibold tabular-nums" th:text="'$' + ${#numbers.formatDecimal(row.remaining, 1, 'COMMA', 2, 'POINT')}"></div>
+                            <div class="charge-amount-of tabular-nums" th:if="${row.remaining != row.amount}" th:text="'of $' + ${#numbers.formatDecimal(row.amount, 1, 'COMMA', 2, 'POINT')}"></div>
+                        </td>
+                        <td class="text-end">
+                            <form th:action="@{/members/{id}/charges/{chargeId}/remove(id=${row.memberId},chargeId=${row.chargeId})}" method="post" class="m-0"
+                                  th:attr="data-confirm-charge=${row.description},data-member=${row.memberName},data-remaining=${row.remaining}">
+                                <input type="hidden" name="back" th:value="${back}">
+                                <button type="submit" class="btn btn-ghost btn-sm text-danger" data-loading-label="Removing…"
+                                        th:attr="aria-label='Remove ' + ${row.description} + ' from ' + ${row.memberName}" title="Remove charge"><i class="bi bi-trash3" aria-hidden="true"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(chargeRows)}">
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-receipt fs-3 d-block mb-2" aria-hidden="true"></i>
+                            <span th:text="${focusMember != null} ? ${focusMember.name} + ' has no itemized charges yet. Apply one with the panel.' : 'No charges yet. Apply the first one with the panel.'"></span>
+                        </td>
+                    </tr>
+                    <tr id="chargeNoMatch" hidden>
+                        <td colspan="6" class="text-center py-4 text-muted small">No charges match these filters.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Right: apply a charge -->
+        <section class="surface-card apply-panel" aria-labelledby="applyTitle">
+            <div class="card-head">
+                <div>
+                    <h3 class="section-title" id="applyTitle">Apply a charge</h3>
+                    <p class="section-subtitle">Every charge is added to the member's dues balance right away.</p>
+                </div>
+            </div>
+            <div class="card-body-pad">
+                <div class="seg-tabs mb-3" role="tablist" aria-label="How to charge">
+                    <button type="button" class="seg-tab is-active" role="tab" aria-selected="true" aria-controls="paneSingle" id="tabSingle" data-pane="paneSingle">One member</button>
+                    <button type="button" class="seg-tab" role="tab" aria-selected="false" aria-controls="paneBatch" id="tabBatch" data-pane="paneBatch">Several</button>
+                    <button type="button" class="seg-tab" role="tab" aria-selected="false" aria-controls="paneAdjust" id="tabAdjust" data-pane="paneAdjust">Fine or discount</button>
+                </div>
+
+                <!-- One member -->
+                <div id="paneSingle" class="apply-pane" role="tabpanel" aria-labelledby="tabSingle">
+                    <form th:action="@{/charges/apply}" method="post" id="singleChargeForm" data-duplicate-guard>
+                        <input type="hidden" name="back" th:value="${back}">
+                        <div class="mb-2">
+                            <label class="form-label-fintech" for="singleMember">Member</label>
+                            <select id="singleMember" name="memberId" class="form-select form-select-sm" required>
+                                <option value="" th:selected="${focusMember == null}" disabled>Choose a member…</option>
+                                <option th:each="m : ${rosterMembers}" th:value="${m.id}" th:attr="data-owed=${m.totalOwed},data-past-due=${m.pastDueBalance}"
+                                        th:selected="${focusMember != null and focusMember.id == m.id}"
+                                        th:text="${m.name} + (${m.membershipStatus != 'Member'} ? ' (' + ${m.membershipStatus} + ')' : '')"></option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label-fintech" for="singleDescription">Charge description</label>
+                            <input id="singleDescription" name="description" class="form-control form-control-sm" maxlength="200" placeholder="e.g. Fall dues" required>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label-fintech" for="singleAmount">Amount ($)</label>
+                                <input id="singleAmount" name="amount" type="number" min="0.01" step="0.01" class="form-control form-control-sm tabular-nums" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-fintech" for="singleDueDate">Due date</label>
+                                <input id="singleDueDate" name="dueDate" type="date" class="form-control form-control-sm" title="Leave blank to make it due today">
+                            </div>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="pastDue" value="true" id="singlePastDue">
+                            <label class="form-check-label small" for="singlePastDue">Already past due</label>
+                        </div>
+                        <div class="balance-preview mb-3" aria-live="polite">
+                            <span class="text-muted">Balance after this charge</span>
+                            <span><span id="singleBefore">—</span> <span aria-hidden="true">→</span><span class="visually-hidden">becomes</span> <strong id="singleAfter">—</strong></span>
+                        </div>
+                        <button type="submit" class="btn btn-fintech-primary w-100" data-loading-label="Adding…"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Add charge</span></button>
+                        <div class="small text-muted mt-2">Leave the due date blank to make it due today. A past date marks it past due.</div>
+                    </form>
+                </div>
+
+                <!-- Several members (moved from the Dues page) -->
+                <div id="paneBatch" class="apply-pane" role="tabpanel" aria-labelledby="tabBatch" hidden>
+                    <form action="/charges/batch" method="post" id="batchChargeForm" data-duplicate-guard data-ceremony="batch-charge">
+                        <input type="hidden" name="back" th:value="${back}">
+                        <div class="mb-2">
+                            <label class="form-label-fintech" for="batchDescription">Charge description</label>
+                            <input id="batchDescription" name="description" class="form-control form-control-sm" maxlength="200" placeholder="e.g. Formal fee" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label-fintech" for="batchAmount">Amount per member</label>
+                                <input id="batchAmount" name="amount" type="number" min="0.01" step="0.01" class="form-control form-control-sm tabular-nums" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-fintech" for="batchDueDate">Due date</label>
+                                <input id="batchDueDate" name="dueDate" type="date" class="form-control form-control-sm" required>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
+                            <span class="form-label-fintech mb-0">Members</span>
+                            <div class="quick-picks" role="group" aria-label="Quick select">
+                                <button type="button" class="quick-pick" data-pick="all">All</button>
+                                <button type="button" class="quick-pick" data-pick="Member">Members</button>
+                                <button type="button" class="quick-pick" data-pick="Inactive">Inactive</button>
+                                <button type="button" class="quick-pick" data-pick="Alumni">Alumni</button>
+                                <button type="button" class="quick-pick" data-pick="none">None</button>
+                            </div>
+                        </div>
+                        <input type="search" id="batchFilter" class="form-control form-control-sm mb-2" placeholder="Find a member" aria-label="Find a member to select">
+                        <div class="sub-card p-1 member-picks mb-2">
+                            <label class="member-pick" th:each="m : ${rosterMembers}" th:attr="data-roster=${m.membershipStatus},data-name=${#strings.toLowerCase(m.name)}">
+                                <input class="form-check-input mt-0 batch-member-check" type="checkbox" name="memberIds" th:value="${m.id}">
+                                <span th:text="${m.name}"></span>
+                                <span class="roster-tag" th:if="${m.membershipStatus != 'Member'}" th:text="${m.membershipStatus}"></span>
+                            </label>
+                            <div class="small text-muted p-2" th:if="${#lists.isEmpty(rosterMembers)}">The roster is empty. <a href="/#addMemberDrawer">Add a member</a> or <a href="/upload-docs">import a roster</a> first.</div>
+                        </div>
+                        <div class="balance-preview mb-3" aria-live="polite">
+                            <span class="text-muted" id="batchSelected">0 members selected</span>
+                            <strong id="batchTotal">$0.00 total</strong>
+                        </div>
+                        <div id="batchChargeError" class="small text-danger mb-2" role="alert" hidden>Select at least one member.</div>
+                        <button type="submit" class="btn btn-fintech-primary w-100" data-loading-label="Adding charges…"><i class="bi bi-people" aria-hidden="true"></i><span>Add charge to selected</span></button>
+                        <div class="small text-muted mt-2">Existing payments are not changed.</div>
+                    </form>
+                </div>
+
+                <!-- Fine or discount with saved charges (moved from the Dues page) -->
+                <div id="paneAdjust" class="apply-pane" role="tabpanel" aria-labelledby="tabAdjust" hidden>
+                    <div class="mb-3" th:if="${!#lists.isEmpty(chargePresets)}">
+                        <div class="form-label-fintech mb-1">Saved charges</div>
+                        <div class="preset-chips">
+                            <span class="preset-chip" th:each="preset : ${chargePresets}">
+                                <button type="button" class="preset-chip__use" data-use-preset
+                                        th:attr="data-name=${preset.name},data-amount=${preset.amount},data-type=${preset.type}"
+                                        th:title="'Fill in ' + ${preset.name}">
+                                    <span th:text="${preset.name}"></span>
+                                    <span class="preset-chip__amt" th:classappend="${preset.discount} ? 'discount' : 'fine'"
+                                          th:text="(${preset.discount} ? '−$' : '+$') + ${#numbers.formatDecimal(preset.amount, 1, 'COMMA', 2, 'POINT')}"></span>
+                                </button>
+                                <form th:action="@{/charge-presets/{id}/remove(id=${preset.id})}" method="post" class="m-0 d-inline-flex">
+                                    <input type="hidden" name="back" th:value="${back}">
+                                    <button type="submit" class="preset-chip__remove" th:title="'Delete saved charge ' + ${preset.name}"
+                                            th:attr="aria-label='Delete saved charge ' + ${preset.name}"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                                </form>
+                            </span>
+                        </div>
+                    </div>
+                    <form action="/members/adjustments" method="post" id="memberAdjustmentForm" data-type="FINE" data-duplicate-guard>
+                        <input type="hidden" name="back" th:value="${back}">
+                        <div class="mb-2">
+                            <label class="form-label-fintech" for="adjMember">Member</label>
+                            <select id="adjMember" name="memberId" class="form-select form-select-sm" required>
+                                <option value="" disabled th:selected="${focusMember == null}">Choose a member…</option>
+                                <option th:each="member : ${rosterMembers}" th:value="${member.id}" th:selected="${focusMember != null and focusMember.id == member.id}"
+                                        th:text="${member.name} + ' — $' + ${#numbers.formatDecimal(member.totalOwed, 1, 'COMMA', 2, 'POINT')} + ' owed'"></option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <span class="form-label-fintech d-block" id="adjTypeLabel">Type</span>
+                            <div class="adj-type" role="radiogroup" aria-labelledby="adjTypeLabel">
+                                <input type="radio" class="btn-check" name="type" id="adjFine" value="FINE" checked>
+                                <label class="fine" for="adjFine"><i class="bi bi-plus-circle" aria-hidden="true"></i>Fine / charge</label>
+                                <input type="radio" class="btn-check" name="type" id="adjDiscount" value="DISCOUNT">
+                                <label class="discount" for="adjDiscount"><i class="bi bi-dash-circle" aria-hidden="true"></i>Discount</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label-fintech" for="adjName">Name</label>
+                            <input id="adjName" name="name" class="form-control form-control-sm" maxlength="120" required placeholder="e.g. Missed chapter fine">
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label-fintech" for="adjAmount">Amount ($)</label>
+                                <input id="adjAmount" name="amount" type="number" min="0.01" max="100000" step="0.01" class="form-control form-control-sm tabular-nums" required>
+                            </div>
+                            <div class="col-6 adj-fine-only">
+                                <label class="form-label-fintech" for="adjDueDate">Due date</label>
+                                <input id="adjDueDate" name="dueDate" type="date" class="form-control form-control-sm" title="Leave blank to make it due today">
+                            </div>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="savePreset" value="true" id="adjSavePreset">
+                            <label class="form-check-label small" for="adjSavePreset">Save this charge for future use</label>
+                        </div>
+                        <button type="submit" id="adjSubmit" class="btn btn-fintech-primary w-100" data-loading-label="Saving…">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i><span>Add fine</span>
+                        </button>
+                        <div class="small text-muted mt-2 adj-fine-only">Leave the due date blank to make the fine due today. A past date marks it past due.</div>
+                        <div class="small text-muted mt-2" data-discount-note hidden>Discounts are capped at what the member owes and settle their earliest charges first. They never count as money received.</div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div th:replace="~{fragments :: greekbillCard}"></div>
+</main>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    (function () {
+        const money = function (value) {
+            return '$' + Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+            setTimeout(function () {
+                el.style.transition = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+                el.style.opacity = '0';
+                setTimeout(function () { el.remove(); }, 400);
+            }, parseInt(el.dataset.autoDismiss, 10));
+        });
+
+        // ---- Ledger: status pills and search, on the rows already shown ----
+        const rows = Array.from(document.querySelectorAll('.charge-row'));
+        const search = document.getElementById('chargeSearch');
+        const noMatch = document.getElementById('chargeNoMatch');
+        const filterCount = document.getElementById('chargeFilterCount');
+        let filter = 'all';
+        function applyFilters() {
+            const query = (search ? search.value : '').toLowerCase().trim();
+            let shown = 0;
+            rows.forEach(function (row) {
+                const paid = row.dataset.paid === 'true';
+                const status = filter === 'all' || (filter === 'paid' && paid) || (filter === 'open' && !paid)
+                    || (filter === 'pastdue' && row.dataset.pastdue === 'true');
+                const match = status && (!query || (row.dataset.search || '').includes(query));
+                row.style.display = match ? '' : 'none';
+                if (match) shown++;
+            });
+            if (noMatch) noMatch.hidden = rows.length === 0 || shown > 0;
+            if (filterCount) filterCount.textContent = String((filter === 'all' ? 0 : 1) + (query ? 1 : 0));
+        }
+        document.querySelectorAll('[data-charge-filter]').forEach(function (pill) {
+            pill.addEventListener('click', function () {
+                document.querySelectorAll('[data-charge-filter]').forEach(function (other) { other.classList.toggle('active', other === pill); });
+                filter = pill.dataset.chargeFilter;
+                applyFilters();
+            });
+        });
+        if (search) search.addEventListener('input', applyFilters);
+
+        // ---- Apply panel: three ways to charge, the last one used is remembered ----
+        const tabs = Array.from(document.querySelectorAll('.apply-panel .seg-tab'));
+        function showPane(id) {
+            tabs.forEach(function (tab) {
+                const on = tab.dataset.pane === id;
+                tab.classList.toggle('is-active', on);
+                tab.setAttribute('aria-selected', on ? 'true' : 'false');
+                document.getElementById(tab.dataset.pane).hidden = !on;
+            });
+            try { sessionStorage.setItem('duesdesk:charge-pane', id); } catch (e) { /* private window */ }
+        }
+        tabs.forEach(function (tab) { tab.addEventListener('click', function () { showPane(tab.dataset.pane); }); });
+        try {
+            const remembered = sessionStorage.getItem('duesdesk:charge-pane');
+            if (remembered && document.getElementById(remembered)) showPane(remembered);
+        } catch (e) { /* private window */ }
+
+        // ---- One member: the balance before and after, as the charge is typed ----
+        const singleMember = document.getElementById('singleMember');
+        const singleAmount = document.getElementById('singleAmount');
+        function previewSingle() {
+            const option = singleMember && singleMember.selectedOptions[0];
+            const owed = option && option.dataset.owed !== undefined ? Number(option.dataset.owed) : null;
+            const amount = Number(singleAmount.value || 0);
+            document.getElementById('singleBefore').textContent = owed === null ? '—' : money(owed);
+            document.getElementById('singleAfter').textContent = owed === null ? '—' : money(owed + (amount > 0 ? amount : 0));
+        }
+        if (singleMember && singleAmount) {
+            singleMember.addEventListener('change', previewSingle);
+            singleAmount.addEventListener('input', previewSingle);
+            previewSingle();
+        }
+
+        // ---- Several members: quick picks, a name filter, and the running total ----
+        const checks = Array.from(document.querySelectorAll('.batch-member-check'));
+        const batchAmount = document.getElementById('batchAmount');
+        function updateBatch() {
+            const selected = checks.filter(function (check) { return check.checked; }).length;
+            const amount = Number(batchAmount.value || 0);
+            document.getElementById('batchSelected').textContent = selected + (selected === 1 ? ' member selected' : ' members selected');
+            document.getElementById('batchTotal').textContent = money(selected * (amount > 0 ? amount : 0)) + ' total';
+            if (selected > 0) document.getElementById('batchChargeError').hidden = true;
+        }
+        checks.forEach(function (check) { check.addEventListener('change', updateBatch); });
+        if (batchAmount) batchAmount.addEventListener('input', updateBatch);
+        document.querySelectorAll('[data-pick]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const pick = button.dataset.pick;
+                checks.forEach(function (check) {
+                    const roster = check.closest('.member-pick').dataset.roster;
+                    check.checked = pick === 'all' ? true : pick === 'none' ? false : roster === pick;
+                });
+                updateBatch();
+            });
+        });
+        const batchFilter = document.getElementById('batchFilter');
+        if (batchFilter) {
+            batchFilter.addEventListener('input', function () {
+                const query = batchFilter.value.toLowerCase().trim();
+                document.querySelectorAll('.member-pick').forEach(function (pick) {
+                    pick.style.display = !query || pick.dataset.name.includes(query) ? '' : 'none';
+                });
+            });
+        }
+        const batchForm = document.getElementById('batchChargeForm');
+        if (batchForm) {
+            batchForm.addEventListener('submit', function (event) {
+                const selected = checks.filter(function (check) { return check.checked; });
+                if (selected.length === 0) {
+                    event.preventDefault();
+                    document.getElementById('batchChargeError').hidden = false;
+                    return;
+                }
+                const amount = Number(batchAmount.value);
+                const question = 'Create "' + document.getElementById('batchDescription').value.trim() + '" charges for ' + selected.length +
+                    ' member(s)?\n\nAmount per member: ' + money(amount) + '\nTotal new charges: ' + money(amount * selected.length) +
+                    '\nDue date: ' + document.getElementById('batchDueDate').value + '\nExisting payments will not be changed.';
+                if (!window.confirm(question)) event.preventDefault();
+            });
+        }
+        updateBatch();
+
+        // ---- Fine or discount ----
+        const adjustmentForm = document.getElementById('memberAdjustmentForm');
+        if (adjustmentForm) {
+            const submitLabel = adjustmentForm.querySelector('#adjSubmit span');
+            const discountNote = adjustmentForm.querySelector('[data-discount-note]');
+            const syncType = function () {
+                const discount = adjustmentForm.querySelector('#adjDiscount').checked;
+                adjustmentForm.dataset.type = discount ? 'DISCOUNT' : 'FINE';
+                submitLabel.textContent = discount ? 'Apply discount' : 'Add fine';
+                adjustmentForm.querySelector('#adjName').placeholder = discount ? 'e.g. Early payment discount' : 'e.g. Missed chapter fine';
+                discountNote.hidden = !discount;
+            };
+            adjustmentForm.querySelectorAll('input[name="type"]').forEach(function (radio) { radio.addEventListener('change', syncType); });
+            document.querySelectorAll('[data-use-preset]').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    adjustmentForm.querySelector(chip.dataset.type === 'DISCOUNT' ? '#adjDiscount' : '#adjFine').checked = true;
+                    adjustmentForm.querySelector('#adjName').value = chip.dataset.name;
+                    adjustmentForm.querySelector('#adjAmount').value = Number(chip.dataset.amount).toFixed(2);
+                    adjustmentForm.querySelector('#adjSavePreset').checked = false;
+                    syncType();
+                    const member = adjustmentForm.querySelector('#adjMember');
+                    (member.value ? adjustmentForm.querySelector('#adjSubmit') : (member.previousElementSibling || member)).focus();
+                });
+            });
+            syncType();
+        }
+
+        // ---- Batch posting as a ceremony: a ledger-locking sequence before the post, then the new rows cascade in and
+        // the amount still owed rolls up to its new total. The post itself is unchanged (see duesDeskCeremony). ----
+        const ceremony = window.duesDeskCeremony;
+        if (ceremony) {
+            ceremony.register('batch-charge', {
+                before: function (form) {
+                    const owed = document.getElementById('chargesOwedValue');
+                    return {
+                        description: form.elements.description.value.trim(),
+                        count: checks.filter(function (check) { return check.checked; }).length,
+                        owed: owed ? owed.textContent : null
+                    };
+                },
+                sequence: function () {
+                    const count = checks.filter(function (check) { return check.checked; }).length;
+                    return {
+                        eyebrow: 'Charges', icon: 'bi-lock', duration: 1500,
+                        title: 'Validating member accounts & posting charges…',
+                        sub: count + (count === 1 ? ' member account' : ' member accounts') + ' · ' + money(Number(batchAmount.value) * count) + ' in new charges',
+                        steps: ['Validating ' + count + (count === 1 ? ' member account' : ' member accounts'), 'Posting charges to each dues ledger', 'Locking the ledger'],
+                        doneText: 'Charges posted.'
+                    };
+                }
+            });
+            ceremony.ready(function () {
+                const posted = ceremony.take('batch-charge');
+                const toast = document.querySelector('main > .alert[data-auto-dismiss]');
+                if (!posted || !toast || !/^Added /.test(toast.textContent.trim())) return;
+                const fresh = rows.filter(function (row) {
+                    const desc = row.querySelector('.charge-desc');
+                    return desc && desc.textContent.trim() === posted.description;
+                }).slice(0, posted.count || rows.length);
+                fresh.forEach(function (row) { row.classList.add('ceremony-fresh'); });
+                ceremony.cascade(fresh);
+                ceremony.odometer(document.getElementById('chargesOwedValue'), posted.owed, { delay: 180 });
+            });
+        }
+
+        // ---- Removing a charge says exactly what is reversed ----
+        document.querySelectorAll('form[data-confirm-charge]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!window.confirm('Remove "' + form.dataset.confirmCharge + '" from ' + form.dataset.member + '?\n\n'
+                    + money(form.dataset.remaining) + ' still owed on it comes off their balance. You can undo this from the Activity Log.')) {
+                    event.preventDefault();
+                }
+            });
+        });
+
+    })();
+</script>
+</body>
+</html>

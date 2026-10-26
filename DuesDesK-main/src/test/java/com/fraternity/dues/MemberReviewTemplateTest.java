@@ -55,7 +55,7 @@ class MemberReviewTemplateTest {
         assertTrue(html.contains("href=\"/?page=1#member-member-1\""));
         assertTrue(html.contains("data-fullscreen-target=\"duesLedgerView\""));
         assertTrue(html.contains("class=\"table-responsive roster-table-container\""));
-        assertTrue(html.contains("fullscreenToggle.click()"));
+        assertTrue(html.contains("revealMemberRow"), "Review links glide to the member instead of reloading the page");
         assertTrue(html.contains("tableScroller.scrollTo"));
         assertTrue(html.contains(".ledger-fullscreen.is-fullscreen .roster-table-container.headers-sticky .table-fintech thead th"), "full-screen headers stay pinned only while Headers: Sticky is on");
         assertTrue(html.contains(".roster-table-container {\n        height: auto; min-height: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 0;"));

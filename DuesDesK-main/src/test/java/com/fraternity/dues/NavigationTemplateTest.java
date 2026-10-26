@@ -39,13 +39,13 @@ class NavigationTemplateTest {
         List<NavLink> primaryLinks = links(html, false);
         List<NavLink> financeLinks = links(html, true);
 
-        assertEquals(List.of("Dues", "Rent", "Finance", "Calendar & Bills", "Events", "Import & Export", "Settings"),
+        assertEquals(List.of("Dues", "Charges", "Rent", "Finance", "Calendar & Bills", "Events", "Import & Export", "Settings"),
                 primaryLinks.stream().map(NavLink::label).toList());
-        assertEquals(List.of("/", "/rent", "#", "/calendar", "/presales", "/upload-docs", "/settings"),
+        assertEquals(List.of("/", "/charges", "/rent", "#", "/calendar", "/presales", "/upload-docs", "/settings"),
                 primaryLinks.stream().map(NavLink::href).toList());
-        assertEquals(List.of("Financial Overview", "Cash Flow", "Chair Budgets", "Reports & Handoff"),
+        assertEquals(List.of("Financial Overview", "Cash Flow", "Chair Budgets", "Reports & Handoff", "Activity Log & Undo"),
                 financeLinks.stream().map(NavLink::label).toList());
-        assertEquals(List.of("/numbers", "/numbers/flow", "/chair-budgeting", "/finance-tools"),
+        assertEquals(List.of("/numbers", "/numbers/flow", "/chair-budgeting", "/finance-tools", "/activity"),
                 financeLinks.stream().map(NavLink::href).toList());
     }
 

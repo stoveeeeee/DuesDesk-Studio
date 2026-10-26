@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venmo Email Setup | DuesDesk</title>
+    <link href="/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        /* Setup walkthrough: numbered steps, each its own card */
+        .setup-step { display: flex; gap: 1rem; }
+        .setup-step .step-number { flex: 0 0 auto; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem; background: var(--bg-subtle); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+        .setup-step ol, .setup-step ul { padding-left: 1.2rem; margin-bottom: .5rem; }
+        .setup-step li + li { margin-top: .25rem; }
+        .setup-step .section-title { margin-bottom: .35rem; }
+        .setup-step p:last-child, .setup-step ol:last-child, .setup-step ul:last-child { margin-bottom: 0; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    </style>
+<th:block th:replace="~{fragments :: navStyles}"></th:block>
+<script th:replace="~{fragments :: themeInit}"></script>
+</head>
+<body>
+
+<div th:replace="~{fragments :: appHeader('settings')}"></div>
+
+<main class="container-xxl px-3 px-md-4 py-4 pb-5" style="max-width: 920px;">
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow"><a href="/settings#venmoEmail">Settings</a> · Venmo email import</div>
+            <h2 class="page-title">Set up Venmo email import</h2>
+            <p class="page-lede">About 15 minutes, once. Venmo emails the chapter's Venmo account every time someone pays it. You'll forward only those "paid you" emails to a dedicated chapter Gmail, and DuesDesk reads that Gmail.</p>
+        </div>
+    </div>
+
+    <div class="alert alert-info small" role="note">
+        <strong>Shortcut:</strong> if you can change the email address on the chapter's Venmo account itself, set it to the new chapter Gmail from step 1.
+        Venmo then emails that Gmail directly, so you can skip steps 4 and 5 (forwarding and the filter).
+    </div>
+
+    <div class="d-flex flex-column gap-3">
+        <section class="surface-card card-body-pad setup-step" aria-labelledby="step1">
+            <div class="step-number" aria-hidden="true">1</div>
+            <div>
+                <h3 class="section-title" id="step1">Create a dedicated chapter Gmail</h3>
+                <ol class="small">
+                    <li>Go to <a href="https://accounts.google.com/signup" target="_blank" rel="noopener" data-external-link>accounts.google.com/signup</a> and create an account just for dues, e.g. <code>alphabeta.dues@gmail.com</code>.</li>
+                    <li>Use a recovery phone and email the chapter controls, so the next treasurer can take it over.</li>
+                    <li>Don't use it for anything else. DuesDesk only needs to read Venmo's emails.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="surface-card card-body-pad setup-step" aria-labelledby="step2">
+            <div class="step-number" aria-hidden="true">2</div>
+            <div>
+                <h3 class="section-title" id="step2">Turn on 2-Step Verification for the chapter Gmail</h3>
+                <ol class="small">
+                    <li>Signed in as the chapter Gmail, open <a href="https://myaccount.google.com/security" target="_blank" rel="noopener" data-external-link>myaccount.google.com/security</a>.</li>
+                    <li>Under <strong>How you sign in to Google</strong>, choose <strong>2-Step Verification</strong> and follow the steps. Google requires it before you can create an app password.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="surface-card card-body-pad setup-step" aria-labelledby="step3">
+            <div class="step-number" aria-hidden="true">3</div>
+            <div>
+                <h3 class="section-title" id="step3">Create an app password for DuesDesk</h3>
+                <ol class="small">
+                    <li>Still signed in as the chapter Gmail, open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" data-external-link>myaccount.google.com/apppasswords</a>.</li>
+                    <li>Name it <code>DuesDesk</code> and click <strong>Create</strong>. Google shows a 16-character password once.</li>
+                    <li>Paste it into <a href="/settings#venmoEmail">Settings → Venmo email import → App password</a> (spaces are fine). This is not the normal Gmail password.</li>
+                    <li>If you later change the Gmail password, Google cancels app passwords. Create a new one and paste it in again.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="surface-card card-body-pad setup-step" aria-labelledby="step4">
+            <div class="step-number" aria-hidden="true">4</div>
+            <div>
+                <h3 class="section-title" id="step4">Add the chapter Gmail as a forwarding address</h3>
+                <p class="small text-muted mb-2">Do this in the Gmail that receives the chapter Venmo account's emails (often the treasurer's Gmail).</p>
+                <ol class="small">
+                    <li>In Gmail, click the gear icon → <strong>See all settings</strong> → <strong>Forwarding and POP/IMAP</strong>.</li>
+                    <li>Click <strong>Add a forwarding address</strong>, enter the chapter Gmail <span th:if="${mailbox != null and !mailbox.isEmpty()}">(<code th:text="${mailbox}"></code>)</span>, then <strong>Next</strong> → <strong>Proceed</strong> → <strong>OK</strong>.</li>
+                    <li>Google emails a confirmation to the chapter Gmail. Sign in to the chapter Gmail, open the email from Gmail Team ("Gmail Forwarding Confirmation") and click the confirmation link.</li>
+                    <li>Back on the Forwarding tab, <strong>leave "Disable forwarding" selected</strong> and save. Don't forward all mail; the filter in step 5 forwards only Venmo payments.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="surface-card card-body-pad setup-step" aria-labelledby="step5">
+            <div class="step-number" aria-hidden="true">5</div>
+            <div>
+                <h3 class="section-title" id="step5">Create the filter that forwards only Venmo payments</h3>
+                <ol class="small">
+                    <li>In the same Gmail as step 4, click the <strong>Show search options</strong> slider icon in the search bar.</li>
+                    <li><strong>From:</strong> <code>venmo@venmo.com</code></li>
+                    <li><strong>Subject:</strong> <code>paid you</code></li>
+                    <li>Click <strong>Create filter</strong>, tick <strong>Forward it to</strong>, choose the chapter Gmail, and click <strong>Create filter</strong>.</li>
+                </ol>
+                <p class="small text-muted">Filters only forward new emails. Payments from before today won't be forwarded, which is what you want: you've already recorded them.</p>
+            </div>
+        </section>
+
+        <section class="surface-card card-body-pad setup-step" aria-labelledby="step6">
+            <div class="step-number" aria-hidden="true">6</div>
+            <div>
+                <h3 class="section-title" id="step6">Keep Venmo emails out of the chapter Gmail's spam</h3>
+                <ol class="small">
+                    <li>Signed in as the chapter Gmail, create a filter with <strong>From:</strong> <code>venmo@venmo.com</code>.</li>
+                    <li>Tick <strong>Never send it to Spam</strong> and create the filter. DuesDesk doesn't read the spam folder.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="surface-card card-body-pad setup-step" aria-labelledby="step7">
+            <div class="step-number" aria-hidden="true">7</div>
+            <div>
+                <h3 class="section-title" id="step7">Connect DuesDesk and test it</h3>
+                <ol class="small">
+                    <li>In <a href="/settings#venmoEmail">Settings → Venmo email import</a>, enter the chapter Gmail address and app password, keep the host <code>imap.gmail.com</code>, turn the import on and save.</li>
+                    <li>Click <strong>Test connection</strong>. You should see "Signed in to … and opened [Gmail]/All Mail".</li>
+                    <li>Send the chapter a small Venmo payment from a member's account, wait a minute, and click <strong>Sync now</strong>. It should show up as applied or in <a href="/venmo/unmatched">Unmatched Payments</a>.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="surface-card card-body-pad setup-step" aria-labelledby="step8">
+            <div class="step-number" aria-hidden="true">8</div>
+            <div>
+                <h3 class="section-title" id="step8">Tell members how to pay</h3>
+                <ul class="small">
+                    <li>Each member has a <strong>dues code</strong> (e.g. <code>DUES-JSMITH</code>) on their profile. Ask members to put it in the Venmo note; DuesDesk then applies the payment to them automatically.</li>
+                    <li>Or save a member's <strong>Venmo name</strong> on their profile exactly as Venmo shows it. When you assign an unmatched payment you can also tick "remember this Venmo name".</li>
+                    <li>Anything that doesn't match exactly waits in <a href="/venmo/unmatched">Unmatched Payments</a>. DuesDesk never guesses.</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script>
+    // The desktop window can't follow outside links, so they open in the default browser.
+    document.querySelectorAll('[data-external-link]').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+            if (!window.desktopBridge || !window.desktopBridge.openExternal) return;
+            event.preventDefault();
+            window.desktopBridge.openExternal(link.href);
+        });
+    });
+</script>
+<script th:replace="~{fragments :: themeScript}"></script>
+</body>
+</html>

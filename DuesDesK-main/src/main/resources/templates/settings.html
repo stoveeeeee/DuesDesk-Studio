@@ -8,412 +8,39 @@
     <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-canvas);
-            color: var(--text-secondary);
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* Top Navigation */
-        .app-navbar {
-            background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 0.85rem 0;
-        }
-
-        .brand-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--btn-primary-bg);
-            color: var(--btn-primary-text);
-            border-radius: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-        }
-
-        .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.35rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background-color: var(--bg-subtle);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-subtle);
-        }
-
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background-color: var(--status-success-text);
-        }
-
-        /* Cards & Containers */
-        .surface-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            box-shadow: var(--shadow-card);
-        }
-
-        .kpi-card {
-            padding: 1.25rem 1.35rem;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .kpi-card:hover {
-            border-color: var(--border-strong);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .kpi-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .kpi-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: var(--text-primary);
-            line-height: 1.2;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .kpi-sub {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 0.4rem;
-        }
-
-        .kpi-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-        }
-
-        /* Typography & Utilities */
-        .tabular-nums {
-            font-variant-numeric: tabular-nums;
-        }
-
-        .section-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        .section-subtitle {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin: 0;
-        }
-
-        /* Badges */
-        .badge-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.25rem 0.65rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.01em;
-        }
-
-        .badge-paid {
-            background-color: var(--status-success-bg);
-            color: var(--status-success-text);
-            border: 1px solid var(--status-success-border);
-        }
-
-        .badge-plan {
-            background-color: var(--status-info-bg);
-            color: var(--btn-primary-hover);
-            border: 1px solid var(--status-info-border);
-        }
-
-        .badge-delinquent {
-            background-color: var(--status-danger-bg);
-            color: var(--status-danger-text);
-            border: 1px solid var(--status-danger-border);
-        }
-
-        .badge-muted {
-            background-color: var(--bg-subtle);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-subtle);
-            font-size: 0.7rem;
-            padding: 0.15rem 0.45rem;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-
-        /* Table Styling */
-        .table-fintech {
-            margin-bottom: 0;
-        }
-
-        .table-fintech thead th {
-            background-color: var(--bg-canvas);
-            color: var(--text-muted);
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-subtle);
-            white-space: nowrap;
-        }
-
-        .table-fintech tbody td {
-            padding: 0.85rem 1rem;
-            border-bottom: 1px solid var(--bg-subtle);
-            font-size: 0.875rem;
-            vertical-align: middle;
-        }
-
-        .table-fintech tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .table-fintech tbody tr:hover {
-            background-color: var(--bg-canvas);
-        }
-
-        .history-link {
-            border: 0;
-            padding: 0;
-            background: none;
-            color: var(--text-primary);
-            font: inherit;
-            font-weight: 600;
-            text-align: left;
-            text-decoration: underline;
-            text-decoration-color: var(--border-strong);
-            text-underline-offset: 3px;
-        }
-
-        .history-link:hover {
-            color: var(--btn-primary-hover);
-            text-decoration-color: currentColor;
-        }
-
-        /* Filter Tabs & Search */
-        .filter-pill-group {
-            display: inline-flex;
-            background-color: var(--bg-subtle);
-            padding: 0.2rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-subtle);
-        }
-
-        .filter-pill {
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 0.78rem;
-            font-weight: 500;
-            padding: 0.3rem 0.7rem;
-            border-radius: 6px;
-            transition: all 0.15s ease;
-        }
-
-        .filter-pill.active {
-            background-color: var(--bg-surface);
-            color: var(--text-primary);
-            font-weight: 600;
-            box-shadow: var(--shadow-card);
-        }
-
-        /* Forms & Inputs */
-        .form-label-fintech {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.35rem;
-        }
-
-        .form-control, .form-select {
-            border-color: var(--border-strong);
-            font-size: 0.875rem;
-            border-radius: 8px;
-            color: var(--text-secondary);
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--btn-primary-bg);
-            box-shadow: 0 0 0 3px var(--focus-ring);
-        }
-
-        /* Buttons */
-        .btn-fintech-primary {
-            background-color: var(--text-primary);
-            color: var(--btn-primary-text);
-            border: 1px solid var(--text-primary);
-            font-weight: 500;
-            font-size: 0.82rem;
-            border-radius: 8px;
-            padding: 0.45rem 0.9rem;
-            transition: all 0.15s ease;
-        }
-
-        .btn-fintech-primary:hover {
-            background-color: var(--text-secondary);
-            color: var(--btn-primary-text);
-        }
-
-        .btn-fintech-danger {
-            background-color: var(--status-danger-text);
-            color: var(--btn-primary-text);
-            border: 1px solid var(--status-danger-text);
-            font-weight: 500;
-            font-size: 0.82rem;
-            border-radius: 8px;
-            padding: 0.45rem 0.9rem;
-        }
-
-        .btn-fintech-danger:hover {
-            background-color: var(--status-danger-text);
-            color: var(--btn-primary-text);
-        }
-
-        .btn-fintech-outline {
-            background-color: var(--bg-surface);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-strong);
-            font-weight: 500;
-            font-size: 0.82rem;
-            border-radius: 8px;
-            padding: 0.45rem 0.85rem;
-        }
-
-        .btn-fintech-outline:hover {
-            background-color: var(--bg-canvas);
-            color: var(--text-primary);
-            border-color: var(--text-placeholder);
-        }
-
-        .btn-action-sm {
-            font-size: 0.76rem;
-            font-weight: 500;
-            padding: 0.28rem 0.6rem;
-            border-radius: 6px;
-        }
-
-        /* Tag Insertion Chips */
-        .tag-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            background-color: var(--bg-subtle);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-            padding: 0.15rem 0.5rem;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.75rem;
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.12s ease;
-        }
-
-        .tag-chip:hover {
-            background-color: var(--status-info-bg);
-            color: var(--btn-primary-hover);
-            border-color: var(--status-info-border);
-        }
-
-        /* SMS Preview Bubble */
-        .sms-preview-box {
-            background-color: var(--bg-canvas);
-            border: 1px dashed var(--border-strong);
-            border-radius: 8px;
-            padding: 0.75rem;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        /* Log Feed */
-        .log-item {
-            padding: 0.85rem 0;
-            border-bottom: 1px solid var(--bg-subtle);
-        }
-
-        .log-item:last-child {
-            border-bottom: none;
-        }
-
-        .surface-card, .kpi-card {
-            animation: card-enter 0.45s ease both;
-        }
-
-        @keyframes card-enter {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
-                scroll-behavior: auto !important;
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
-        }
-        /* Settings layout: section index on the left, focused cards on the right */
-        .settings-nav { position: sticky; top: calc(var(--desktop-header-h, 0px) + 8.5rem); display: flex; flex-direction: column; gap: .15rem; }
-        .settings-nav a { display: flex; align-items: center; gap: .55rem; padding: .5rem .75rem; border-radius: 8px; color: var(--text-secondary); font-size: .86rem; font-weight: 500; text-decoration: none; transition: background-color .12s ease, color .12s ease; }
+        /* Settings: only what the shared design system does not already provide */
+        .surface-card { animation: enter .35s var(--ease-snappy) both; }
+        /* Section index: a left sidebar with a micro-header, pill fill on the current item and a 3px accent bar on its right edge */
+        .settings-nav { position: sticky; top: calc(var(--desktop-header-h, 0px) + 8.5rem); display: flex; flex-direction: column; gap: .15rem; padding: .75rem; }
+        .settings-nav .micro-header { padding: .25rem .75rem .5rem; }
+        .settings-nav a { position: relative; display: flex; align-items: center; gap: .6rem; padding: .6rem .85rem; border-radius: 12px; color: var(--text-secondary); font-size: .86rem; font-weight: 500; text-decoration: none; transition: background-color .12s ease, color .12s ease; }
         .settings-nav a:hover { background: var(--bg-hover); color: var(--text-primary); }
-        .settings-nav a.is-current { background: var(--status-info-bg); color: var(--status-info-text); font-weight: 600; }
-        .settings-nav .bi { font-size: .95rem; opacity: .8; }
+        .settings-nav a.is-current { background: var(--bg-subtle); color: var(--text-primary); font-weight: 700; }
+        .settings-nav a.is-current::after { content: ''; position: absolute; right: 0; top: 22%; bottom: 22%; width: 3px; border-radius: 2px; background: var(--btn-primary-bg); box-shadow: var(--accent-shadow); }
+        .settings-nav .bi { font-size: .95rem; opacity: .8; width: 1.2rem; text-align: center; }
+        .settings-nav a.is-current .bi { color: var(--btn-primary-bg); opacity: 1; }
+        .settings-nav-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+        .settings-cta { margin: .5rem .25rem 0; padding: .9rem; border-radius: 14px; background: var(--shell-bg); color: var(--shell-text); }
+        .settings-cta .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--shell-muted); }
+        .settings-cta .value { font-size: 13px; font-weight: 600; margin: .15rem 0 .6rem; }
         .settings-section { scroll-margin-top: 8.5rem; }
-        .settings-save-bar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem 1.25rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); box-shadow: var(--shadow-pop); }
-        @media (max-width: 991px) { .settings-nav { position: static; flex-direction: row; flex-wrap: wrap; } }
+        .settings-save-bar { position: sticky; bottom: 1rem; z-index: 5; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .85rem 1.25rem; background: var(--glass-bg); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: var(--radius-pill); box-shadow: var(--shadow-pop); }
+        .log-item { display: flex; align-items: flex-start; gap: .75rem; padding: 12px 14px; border-radius: 12px; }
+        .log-item:hover { background: var(--bg-hover); }
+        .log-item + .log-item { position: relative; }
+        .log-item + .log-item::before { content: ''; position: absolute; left: 14px; right: 14px; top: 0; height: 1px; background: var(--border-subtle); }
+        .log-item .log-body { flex: 1 1 auto; min-width: 0; }
+        @media (max-width: 991px) { .settings-nav { position: static; flex-direction: row; flex-wrap: wrap; } .settings-nav .micro-header, .settings-cta { display: none; } }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+        }
     </style>
 <th:block th:replace="~{fragments :: navStyles}"></th:block>
 <script th:replace="~{fragments :: themeInit}"></script>
 </head>
 <body>
 
-<!-- Top Navigation Bar -->
-<div class="app-header-stack">
-<header class="app-navbar mb-4">
-    <div class="container-xxl px-3 px-md-4 header-grid">
-        <div class="d-flex align-items-center">
-            <span class="status-pill" th:if="${settings.autoSendEnabled}">
-                <span class="status-dot"></span>
-                <span>Auto-Scheduler Active (<span th:text="${settings.frequency}"></span>)</span>
-            </span>
-        </div>
-        <div class="d-flex align-items-center gap-3 justify-content-center">
-            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
-            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
-        </div>
-        <div></div>
-    </div>
-</header>
-
-<nav th:replace="~{fragments :: nav('settings')}"></nav>
-</div>
+<div th:replace="~{fragments :: appHeader('settings')}"></div>
 
 <main class="container-xxl px-3 px-md-4 py-4 pb-5">
     <div th:if="${toast}" data-auto-dismiss="4000" class="alert alert-success border-0 shadow-sm rounded-3 py-2 px-3 mb-4" role="alert">
@@ -430,12 +57,20 @@
     <div class="row g-4">
         <!-- On-this-page navigation: stays in view while the settings scroll -->
         <nav class="col-12 col-lg-3" aria-label="Settings sections">
-            <div class="settings-nav">
+            <div class="settings-nav settings-nav-card">
+                <div class="micro-header">On this page</div>
                 <a href="#appearance"><i class="bi bi-palette" aria-hidden="true"></i>Appearance</a>
+                <a href="#notifications"><i class="bi bi-bell" aria-hidden="true"></i>Notifications</a>
                 <a href="#messaging"><i class="bi bi-broadcast" aria-hidden="true"></i>Text messaging</a>
+                <a href="#venmoEmail"><i class="bi bi-envelope-check" aria-hidden="true"></i>Venmo email import</a>
                 <a href="#paymentLinks"><i class="bi bi-link-45deg" aria-hidden="true"></i>Payment links</a>
                 <a href="#treasury"><i class="bi bi-sliders" aria-hidden="true"></i>Treasury policies</a>
                 <a href="#smsLog"><i class="bi bi-journal-text" aria-hidden="true"></i>SMS dispatch log</a>
+                <div class="settings-cta">
+                    <div class="label">Live SMS</div>
+                    <div class="value" th:text="${twilioEnabled} ? 'Twilio connection enabled' : (${twilioLiveConfigured} ? 'Configured from environment' : 'Simulation mode')">Simulation mode</div>
+                    <a href="#messaging" class="btn btn-contrast btn-sm w-100">Manage connection</a>
+                </div>
             </div>
         </nav>
 
@@ -446,12 +81,54 @@
                         <h3 class="section-title" id="appearanceTitle">Appearance</h3>
                         <p class="section-subtitle">Choose how DuesDesk looks. System follows your device setting.</p>
                     </div>
-                    <div class="btn-group" role="group" aria-label="Appearance">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-theme-option="light"><i class="bi bi-sun me-1"></i>Light</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-theme-option="dark"><i class="bi bi-moon-stars me-1"></i>Dark</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-theme-option="system"><i class="bi bi-circle-half me-1"></i>System</button>
+                    <div class="filter-pill-group" role="group" aria-label="Appearance">
+                        <button type="button" class="filter-pill" data-theme-option="light"><i class="bi bi-sun"></i>Light</button>
+                        <button type="button" class="filter-pill" data-theme-option="dark"><i class="bi bi-moon-stars"></i>Dark</button>
+                        <button type="button" class="filter-pill" data-theme-option="system"><i class="bi bi-circle-half"></i>System</button>
                     </div>
                 </div>
+            </section>
+
+            <section class="surface-card settings-section" id="notifications" aria-labelledby="notificationsTitle">
+                <form th:action="@{/settings/notifications}" method="post">
+                    <div class="card-head">
+                        <div>
+                            <h3 class="section-title" id="notificationsTitle">Desktop notifications</h3>
+                            <p class="section-subtitle">Alerts from your computer so nothing slips past: bills coming due, payment plan installments due today, and a missed daily backup. Each alert appears once, and the bell at the top of every page lists the ones still open.</p>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="notificationsEnabled" name="notificationsEnabled" value="true"
+                                   th:checked="${settings.notificationsEnabled}">
+                            <label class="form-check-label small fw-semibold" for="notificationsEnabled">On</label>
+                        </div>
+                    </div>
+                    <div class="card-body-pad">
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" id="notifyBills" name="notifyBills" value="true" th:checked="${settings.notifyBills}">
+                                    <label class="form-check-label small fw-semibold" for="notifyBills">Bills coming due</label>
+                                </div>
+                                <label class="seq-days small text-muted" for="notifyBillDaysAhead">starting <input id="notifyBillDaysAhead" type="number" min="0" max="30" name="notifyBillDaysAhead"
+                                       class="form-control form-control-sm" th:value="${settings.notifyBillDaysAhead}"> days before, and again on the day</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="notifyInstallments" name="notifyInstallments" value="true" th:checked="${settings.notifyInstallments}">
+                                <label class="form-check-label small fw-semibold" for="notifyInstallments">Payment plan installments due today</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="notifyBackup" name="notifyBackup" value="true" th:checked="${settings.notifyBackup}">
+                                <label class="form-check-label small fw-semibold" for="notifyBackup">A missed or failed daily backup</label>
+                                <div class="small text-muted" th:unless="${settings.cloudBackupEnabled}">Turn on the encrypted daily backup under Treasury policies for this alert to apply.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                            <button type="submit" class="btn btn-fintech-primary btn-sm">Save notifications</button>
+                            <button type="button" class="btn btn-fintech-outline btn-sm" data-notify-test><i class="bi bi-bell" aria-hidden="true"></i><span>Send a test notification</span></button>
+                            <span class="small text-muted" id="notifyStatus" role="status"></span>
+                        </div>
+                    </div>
+                </form>
             </section>
 
             <section class="surface-card settings-section" id="messaging" aria-labelledby="twilioTitle">
@@ -460,9 +137,9 @@
                         <h3 class="section-title" id="twilioTitle">Text messaging (Twilio)</h3>
                         <p class="section-subtitle">Connect your Twilio account to send live SMS directly from DuesDesk. Reminder templates and the dispatch schedule are on the <a href="/#smsReminders">Dues page</a>; house announcements and the rent reminder template are on the <a href="/rent#rentCommunications">Rent page</a>.</p>
                     </div>
-                    <span class="badge" th:if="${hasTwilioCredentials}" th:classappend="${twilioEnabled} ? ' bg-success' : ' bg-secondary'"
+                    <span class="badge-status" th:if="${hasTwilioCredentials}" th:classappend="${twilioEnabled} ? ' badge-paid' : ' badge-neutral'"
                           th:text="${twilioEnabled} ? 'Saved connection enabled' : 'Saved connection disabled'"></span>
-                    <span class="badge text-bg-light" th:unless="${hasTwilioCredentials}"
+                    <span class="badge-status" th:unless="${hasTwilioCredentials}" th:classappend="${twilioLiveConfigured} ? ' badge-paid' : ' badge-warning'"
                           th:text="${twilioLiveConfigured} ? 'Live Twilio is configured from your environment.' : 'No live Twilio connection configured; SMS uses simulation mode.'"></span>
                 </div>
                 <div class="card-body-pad">
@@ -497,6 +174,91 @@
                     </form>
                     <form th:if="${hasTwilioCredentials}" id="twilioDisconnectForm" th:action="@{/settings/twilio/disconnect}" method="post"
                           onsubmit="return confirm('Remove the locally saved Twilio credentials?');"></form>
+                </div>
+            </section>
+
+            <section class="surface-card settings-section" id="venmoEmail" aria-labelledby="venmoEmailTitle">
+                <div class="card-head">
+                    <div>
+                        <h3 class="section-title" id="venmoEmailTitle">Venmo email import</h3>
+                        <p class="section-subtitle">Records Venmo payments automatically from "paid you" emails forwarded to a chapter mailbox. Checks on startup and every 10 minutes while DuesDesk is open. New here? Follow the <a href="/venmo/setup">setup walkthrough</a>.</p>
+                    </div>
+                    <span th:if="${venmoEmail != null}" class="badge-status"
+                          th:classappend="${venmoEmail.enabled() and venmoEmail.hasPassword()} ? (${venmoEmail.quiet()} ? ' badge-warning' : ' badge-paid') : ' badge-neutral'"
+                          th:text="${venmoEmail.enabled() and venmoEmail.hasPassword()} ? 'On' : 'Off'">Off</span>
+                </div>
+                <div class="card-body-pad">
+                    <div th:if="${venmoEmail != null}" class="mb-4">
+                        <div th:if="${venmoEmail.quiet()}" class="alert alert-warning small py-2" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i><span th:text="${venmoEmail.quietMessage()}"></span>
+                        </div>
+                        <dl class="row small mb-2">
+                            <dt class="col-sm-4 text-muted fw-normal">Last sync</dt>
+                            <dd class="col-sm-8">
+                                <span th:text="${venmoEmail.lastSyncAt().isEmpty()} ? 'Not since DuesDesk opened' : ${venmoEmail.lastSyncAt()}"></span>
+                                <span th:unless="${venmoEmail.lastSyncMessage().isEmpty()}" class="d-block"
+                                      th:classappend="${venmoEmail.lastSyncOk()} ? ' text-muted' : ' text-danger fw-semibold'"
+                                      th:text="${venmoEmail.lastSyncMessage()}"></span>
+                            </dd>
+                            <dt class="col-sm-4 text-muted fw-normal">Last payment received</dt>
+                            <dd class="col-sm-8" th:text="${venmoEmail.lastPaymentAt().isEmpty()} ? 'None yet' : ${venmoEmail.lastPaymentSummary() + ' · ' + venmoEmail.lastPaymentAt()}">None yet</dd>
+                            <dt class="col-sm-4 text-muted fw-normal">Waiting for a member</dt>
+                            <dd class="col-sm-8"><a href="/venmo/unmatched" th:text="${unmatchedCount + ' unmatched payment' + (unmatchedCount == 1 ? '' : 's')}">Unmatched payments</a></dd>
+                        </dl>
+                        <div class="d-flex flex-wrap gap-2">
+                            <form th:action="@{/settings/venmo-email/sync}" method="post">
+                                <button type="submit" class="btn btn-fintech-primary btn-sm" data-loading-label="Syncing…"
+                                        th:disabled="${!venmoEmail.hasPassword()}"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Sync now</button>
+                            </form>
+                            <form th:action="@{/settings/venmo-email/test}" method="post">
+                                <button type="submit" class="btn btn-fintech-outline btn-sm" data-loading-label="Testing…"
+                                        th:disabled="${!venmoEmail.hasPassword()}">Test connection</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/settings/venmo-email}" method="post" autocomplete="off">
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label-fintech" for="venmoEmailAddress">Chapter mailbox address</label>
+                                <input id="venmoEmailAddress" name="emailAddress" type="email" class="form-control form-control-sm" maxlength="200"
+                                       placeholder="chapterdues@gmail.com" th:value="${settings.venmoEmailAddress}">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label-fintech" for="venmoImapHost">IMAP host</label>
+                                <input id="venmoImapHost" name="imapHost" type="text" class="form-control form-control-sm" maxlength="200"
+                                       th:value="${settings.venmoImapHost}">
+                                <div class="form-text">imap.gmail.com for Gmail.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label-fintech" for="venmoAppPassword">App password</label>
+                                <input id="venmoAppPassword" name="appPassword" type="password" class="form-control form-control-sm" maxlength="300"
+                                       autocomplete="new-password"
+                                       th:placeholder="${venmoEmail != null and venmoEmail.hasPassword()} ? 'Saved (leave blank to keep it)' : '16-character Google app password'">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label-fintech" for="venmoImportFrom">Import emails received on or after</label>
+                                <input id="venmoImportFrom" name="importFrom" type="date" class="form-control form-control-sm" th:value="${settings.venmoEmailImportFrom}">
+                                <div class="form-text">Defaults to today, so payments you already recorded aren't imported again.</div>
+                            </div>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="venmoEmailEnabled" name="enabled" value="true"
+                                   th:checked="${settings.venmoEmailEnabled}">
+                            <label class="form-check-label fw-semibold small" for="venmoEmailEnabled">Import Venmo payments from this mailbox</label>
+                        </div>
+                        <p class="small text-muted" th:if="${venmoEmail != null}">
+                            The app password is encrypted with a key kept in <span th:text="${venmoEmail.credentialStoreName()}">your system's credential store</span>,
+                            and is never written to the data file, exports or backups. DuesDesk only reads the mailbox; it never marks, moves or deletes email.
+                        </p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-fintech-primary btn-sm">Save Venmo Email Settings</button>
+                            <button type="submit" th:if="${venmoEmail != null and venmoEmail.hasPassword()}" form="venmoForgetPasswordForm"
+                                    class="btn btn-outline-danger btn-sm">Remove Saved Password</button>
+                        </div>
+                    </form>
+                    <form id="venmoForgetPasswordForm" th:action="@{/settings/venmo-email/forget-password}" method="post"
+                          onsubmit="return confirm('Remove the saved app password and turn off the Venmo email import?');"></form>
                 </div>
             </section>
 
@@ -584,7 +346,7 @@
                     </div>
                 </section>
 
-                <section class="surface-card" aria-labelledby="backupTitle">
+                <section class="surface-card" id="cloudBackup" style="scroll-margin-top:9rem" aria-labelledby="backupTitle">
                     <div class="card-head">
                         <div>
                             <h3 class="section-title" id="backupTitle">Encrypted daily cloud-folder backup</h3>
@@ -692,7 +454,7 @@
                     <button type="submit" class="btn btn-fintech-primary">Save Treasury Settings</button>
                 </div>
             </form>
-            <form th:action="@{/settings/cloud-backup/run}" method="post" id="snapshotNowForm" class="d-none"></form>
+            <form th:action="@{/settings/cloud-backup/run}" method="post" id="snapshotNowForm" class="d-none" data-ceremony="cloud-backup"></form>
 
             <section class="surface-card settings-section" id="smsLog" aria-labelledby="smsLogTitle">
                 <div class="card-head">
@@ -700,7 +462,7 @@
                         <h3 class="section-title" id="smsLogTitle">SMS Dispatch Log</h3>
                         <p class="section-subtitle">Recent dues and rent messages (latest 50)</p>
                     </div>
-                    <span class="badge rounded-pill bg-light text-dark border tabular-nums" th:text="${#lists.size(smsLogs)} + ' / 50'">0 / 50</span>
+                    <span class="status-pill tabular-nums" th:text="${#lists.size(smsLogs)} + ' / 50'">0 / 50</span>
                 </div>
                 <div class="card-body-pad">
                     <div th:if="${#lists.isEmpty(smsLogs)}" class="empty-note py-3">
@@ -709,17 +471,20 @@
                     </div>
                     <div style="max-height: 360px; overflow-y: auto;" class="pe-1" th:unless="${#lists.isEmpty(smsLogs)}">
                         <div th:each="log : ${smsLogs}" class="log-item">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <div class="fw-semibold small text-dark">
-                                    <span th:text="${log.memberName}"></span>
-                                    <span class="text-muted fw-normal tabular-nums" th:text="'(' + ${log.phoneNumber} + ')'"></span>
+                            <span class="avatar" aria-hidden="true" th:attr="data-avatar-name=${log.memberName}" th:text="${#strings.isEmpty(log.memberName)} ? '?' : ${#strings.substring(log.memberName, 0, 1)}"></span>
+                            <div class="log-body">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                    <div class="row-title">
+                                        <span th:text="${log.memberName}"></span>
+                                        <span class="row-meta d-inline fw-normal" th:text="'(' + ${log.phoneNumber} + ')'"></span>
+                                    </div>
+                                    <span class="badge-status"
+                                          th:classappend="${log.deliveryMode == 'TWILIO LIVE' ? 'badge-paid' : (log.deliveryMode == 'FAILED' ? 'badge-delinquent' : 'badge-plan')}"
+                                          th:text="${log.deliveryMode}"></span>
                                 </div>
-                                <span class="badge-status" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;"
-                                      th:classappend="${log.deliveryMode == 'TWILIO LIVE' ? 'badge-paid' : (log.deliveryMode == 'FAILED' ? 'badge-delinquent' : 'badge-plan')}"
-                                      th:text="${log.deliveryMode}"></span>
+                                <div class="small text-secondary mb-1" style="line-height: 1.4;" th:text="${log.message}"></div>
+                                <div class="row-meta" th:text="${log.timestamp}"></div>
                             </div>
-                            <div class="small text-secondary mb-1" style="line-height: 1.4;" th:text="${log.message}"></div>
-                            <div class="text-muted tabular-nums" style="font-size: 0.72rem;" th:text="${log.timestamp}"></div>
                         </div>
                     </div>
                 </div>
@@ -750,6 +515,36 @@
     })();
     // Section index: highlight the section currently in view.
     (function () {
+        (function () {
+            var test = document.querySelector('[data-notify-test]');
+            var status = document.getElementById('notifyStatus');
+            if (!test || !status) return;
+            var desktop = document.documentElement.classList.contains('desktop-webview') || !!window.desktopBridge;
+            function describe() {
+                if (desktop) { status.textContent = 'Shown by your computer\'s notification center.'; return; }
+                if (!('Notification' in window)) { status.textContent = 'This browser cannot show notifications. The bell at the top still lists alerts.'; return; }
+                status.textContent = Notification.permission === 'granted' ? 'This browser is allowed to show DuesDesk alerts.'
+                    : Notification.permission === 'denied' ? 'This browser blocks notifications for DuesDesk. Allow them in the browser\'s site settings.'
+                    : 'Send a test to let this browser show alerts.';
+            }
+            describe();
+            test.addEventListener('click', function () {
+                if (desktop || window.desktopBridge) {
+                    fetch('/settings/notifications/test', { method: 'POST' }).then(function (response) { return response.json(); })
+                        .then(function (data) {
+                            status.textContent = data.desktop ? 'Sent. It appears in the corner of your screen.' : 'Notifications are not available on this computer.';
+                        }).catch(function () { status.textContent = 'The test could not be sent.'; });
+                    return;
+                }
+                if (!('Notification' in window)) { describe(); return; }
+                Notification.requestPermission().then(function (permission) {
+                    describe();
+                    if (permission !== 'granted') return;
+                    new Notification('DuesDesk notifications are on', { body: 'Bills coming due, installments due today and missed backups will appear like this.' });
+                    if (window.duesDeskCheckNotifications) window.duesDeskCheckNotifications();
+                });
+            });
+        })();
         var links = Array.prototype.slice.call(document.querySelectorAll('.settings-nav a'));
         if (!links.length || !('IntersectionObserver' in window)) return;
         var byId = {};
@@ -799,5 +594,20 @@
     });
 </script>
 <script th:replace="~{fragments :: themeScript}"></script>
+<script>
+    // "Create encrypted snapshot now": a sealing sequence before the post, and a spring check when it is saved.
+    if (window.duesDeskCeremony) {
+        window.duesDeskCeremony.register('cloud-backup', {
+            success: '^Encrypted snapshot saved',
+            sequence: {
+                eyebrow: 'Encrypted backup', icon: 'bi-shield-lock', duration: 1800,
+                title: 'Sealing an encrypted snapshot…',
+                sub: 'Every record is encrypted on this computer before it reaches your sync folder.',
+                steps: ['Encrypting database (AES-256-GCM)…', 'Sealing with the recovery password from the system keychain…', 'Writing the snapshot to your backup folder…'],
+                doneText: 'Snapshot sealed.'
+            }
+        });
+    }
+</script>
 </body>
 </html>

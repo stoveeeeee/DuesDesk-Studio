@@ -36,6 +36,34 @@ public class AppSettings {
     /** Fines and discounts saved from the Dues page's "Member charges & discounts" section. */
     private java.util.List<ChargePreset> savedChargePresets = new java.util.ArrayList<>();
 
+    /** Venmo email import: the chapter mailbox Venmo "paid you" emails are forwarded to. The app password is kept
+     *  encrypted elsewhere (MailCredentialStore), never here. */
+    private boolean venmoEmailEnabled;
+    private String venmoImapHost = "imap.gmail.com";
+    private String venmoEmailAddress = "";
+    /** Emails received before this date (ISO) are left alone, so payments already recorded are not imported again. */
+    private String venmoEmailImportFrom = "";
+
+    /** Automatic reminder sequence. Step 1 uses smsTemplate and reminderDaysBeforeDue; later steps count days after due. */
+    private boolean sequenceFriendlyEnabled = true;
+    private boolean sequenceFirmEnabled = true;
+    private int sequenceFirmDays = 7;
+    private String sequenceFirmTemplate = "{name}, your dues payment of ${dueAmount} was due on {dueDate} and is now past the grace period. Your past-due balance is ${pastDue}. Please pay this week or reply to set up a payment plan: {{pay_links}}";
+    private boolean sequenceNoticeEnabled = true;
+    private int sequenceNoticeDays = 14;
+    private String sequenceNoticeTemplate = "{name}, a formal past-due notice has been issued for your dues account. Past-due balance: ${pastDue} (total balance ${totalOwed}). Please pay or contact the Treasurer right away to keep your account in good standing.";
+    private boolean sequenceReviewEnabled = true;
+    private int sequenceReviewDays = 21;
+
+    /** Desktop (operating system) notifications. */
+    private boolean notificationsEnabled = true;
+    private boolean notifyBills = true;
+    private int notifyBillDaysAhead = 3;
+    private boolean notifyInstallments = true;
+    private boolean notifyBackup = true;
+    /** Alerts already shown, by key, with the date they were shown, so each appears once. */
+    private java.util.Map<String, String> notificationsShown = new java.util.LinkedHashMap<>();
+
     private java.util.List<String> dashboardStats = new java.util.ArrayList<>(
             java.util.List.of("inflow", "balance", "pastdue", "rate", "ihq"));
 
@@ -128,4 +156,45 @@ public class AppSettings {
     public void setReminderDaysBeforeDue(int reminderDaysBeforeDue) { this.reminderDaysBeforeDue = reminderDaysBeforeDue; }
     public int getReminderDaysAfterDue() { return reminderDaysAfterDue; }
     public void setReminderDaysAfterDue(int reminderDaysAfterDue) { this.reminderDaysAfterDue = reminderDaysAfterDue; }
+    public boolean isSequenceFriendlyEnabled() { return sequenceFriendlyEnabled; }
+    public void setSequenceFriendlyEnabled(boolean sequenceFriendlyEnabled) { this.sequenceFriendlyEnabled = sequenceFriendlyEnabled; }
+    public boolean isSequenceFirmEnabled() { return sequenceFirmEnabled; }
+    public void setSequenceFirmEnabled(boolean sequenceFirmEnabled) { this.sequenceFirmEnabled = sequenceFirmEnabled; }
+    public int getSequenceFirmDays() { return sequenceFirmDays; }
+    public void setSequenceFirmDays(int sequenceFirmDays) { this.sequenceFirmDays = sequenceFirmDays; }
+    public String getSequenceFirmTemplate() { return sequenceFirmTemplate == null ? "" : sequenceFirmTemplate; }
+    public void setSequenceFirmTemplate(String sequenceFirmTemplate) { this.sequenceFirmTemplate = sequenceFirmTemplate; }
+    public boolean isSequenceNoticeEnabled() { return sequenceNoticeEnabled; }
+    public void setSequenceNoticeEnabled(boolean sequenceNoticeEnabled) { this.sequenceNoticeEnabled = sequenceNoticeEnabled; }
+    public int getSequenceNoticeDays() { return sequenceNoticeDays; }
+    public void setSequenceNoticeDays(int sequenceNoticeDays) { this.sequenceNoticeDays = sequenceNoticeDays; }
+    public String getSequenceNoticeTemplate() { return sequenceNoticeTemplate == null ? "" : sequenceNoticeTemplate; }
+    public void setSequenceNoticeTemplate(String sequenceNoticeTemplate) { this.sequenceNoticeTemplate = sequenceNoticeTemplate; }
+    public boolean isSequenceReviewEnabled() { return sequenceReviewEnabled; }
+    public void setSequenceReviewEnabled(boolean sequenceReviewEnabled) { this.sequenceReviewEnabled = sequenceReviewEnabled; }
+    public int getSequenceReviewDays() { return sequenceReviewDays; }
+    public void setSequenceReviewDays(int sequenceReviewDays) { this.sequenceReviewDays = sequenceReviewDays; }
+    public boolean isNotificationsEnabled() { return notificationsEnabled; }
+    public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
+    public boolean isNotifyBills() { return notifyBills; }
+    public void setNotifyBills(boolean notifyBills) { this.notifyBills = notifyBills; }
+    public int getNotifyBillDaysAhead() { return notifyBillDaysAhead; }
+    public void setNotifyBillDaysAhead(int notifyBillDaysAhead) { this.notifyBillDaysAhead = notifyBillDaysAhead; }
+    public boolean isNotifyInstallments() { return notifyInstallments; }
+    public void setNotifyInstallments(boolean notifyInstallments) { this.notifyInstallments = notifyInstallments; }
+    public boolean isNotifyBackup() { return notifyBackup; }
+    public void setNotifyBackup(boolean notifyBackup) { this.notifyBackup = notifyBackup; }
+    public java.util.Map<String, String> getNotificationsShown() {
+        if (notificationsShown == null) notificationsShown = new java.util.LinkedHashMap<>();
+        return notificationsShown;
+    }
+    public void setNotificationsShown(java.util.Map<String, String> notificationsShown) { this.notificationsShown = notificationsShown; }
+    public boolean isVenmoEmailEnabled() { return venmoEmailEnabled; }
+    public void setVenmoEmailEnabled(boolean venmoEmailEnabled) { this.venmoEmailEnabled = venmoEmailEnabled; }
+    public String getVenmoImapHost() { return venmoImapHost == null || venmoImapHost.isBlank() ? "imap.gmail.com" : venmoImapHost; }
+    public void setVenmoImapHost(String venmoImapHost) { this.venmoImapHost = venmoImapHost; }
+    public String getVenmoEmailAddress() { return venmoEmailAddress == null ? "" : venmoEmailAddress; }
+    public void setVenmoEmailAddress(String venmoEmailAddress) { this.venmoEmailAddress = venmoEmailAddress; }
+    public String getVenmoEmailImportFrom() { return venmoEmailImportFrom == null ? "" : venmoEmailImportFrom; }
+    public void setVenmoEmailImportFrom(String venmoEmailImportFrom) { this.venmoEmailImportFrom = venmoEmailImportFrom; }
 }

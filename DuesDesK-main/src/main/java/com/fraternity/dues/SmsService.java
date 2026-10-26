@@ -7,16 +7,13 @@ import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
 import org.apache.http.client.config.RequestConfig;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 
 @Service
 public class SmsService {
@@ -61,6 +58,33 @@ public class SmsService {
                 .replace("{dueDate}", dueDate)
                 .replace("{reason}", reason)
                 .replace("{dueAmount}", dueAmount);
+    }
+
+    /** Fills any reminder template (each step of the reminder sequence has its own) for one member and one due item. */
+    public String formatTemplate(String template, Member member, String dueDate, String reason, double amount) {
+        String due = dueDate == null || dueDate.isBlank() ? "as soon as possible" : dueDate;
+        String why = reason == null || reason.isBlank() ? "past-due balance" : reason;
+        return payLinks(template == null ? "" : template, payAmount(member, amount), member.getName() + " - " + why)
+                .replace("{name}", member.getName())
+                .replace("{pastDue}", String.format(java.util.Locale.US, "%.2f", member.getPastDueBalance()))
+                .replace("{totalOwed}", String.format(java.util.Locale.US, "%.2f", member.getTotalOwed()))
+                .replace("{dueDate}", due)
+                .replace("{reason}", why)
+                .replace("{dueAmount}", String.format(java.util.Locale.US, "%.2f", amount));
+    }
+
+    /** What happened to one reminder-sequence text: {@code outcome} is "Text sent", "Simulated text" or why it was not sent. */
+    public record SendOutcome(boolean sent, String outcome) {}
+
+    /** Sends one reminder-sequence text, within the daily SMS allowance. */
+    public synchronized SendOutcome sendSequenceText(Member member, String body) {
+        if (body == null || body.isBlank()) return new SendOutcome(false, "Not sent: the message is empty");
+        synchronized (store) {
+            if (!store.reserveSmsSlot()) return new SendOutcome(false, "Not sent: daily text limit reached");
+        }
+        boolean live = isLiveConfigured();
+        boolean sent = sendReminderLocked(member::setLastTextedDate, member.getName(), member.getPhoneNumber(), body);
+        return sent ? new SendOutcome(true, live ? "Text sent" : "Simulated text") : new SendOutcome(false, "Not sent: the text failed");
     }
 
     public String formatRentMessage(Resident resident) {
@@ -292,72 +316,5 @@ public class SmsService {
             if (sendReminderToMember(candidate.member(), candidate)) sent++;
         }
         return sent;
-    }
-
-    @Scheduled(fixedRate = 30000)
-    public synchronized void checkAutomatedSchedule() {
-        boolean enabled;
-        String frequency;
-        String dayOfWeek;
-        String sendTime;
-        String lastAutoRunDate;
-        synchronized (store) {
-            AppSettings settings = store.getSettings();
-            enabled = settings.isAutoSendEnabled();
-            frequency = settings.getFrequency();
-            dayOfWeek = settings.getDayOfWeek();
-            sendTime = settings.getSendTime();
-            lastAutoRunDate = settings.getLastAutoRunDate();
-        }
-        if (!enabled) return;
-
-        LocalDate today = LocalDate.now();
-        String todayStr = today.toString();
-
-        if (todayStr.equals(lastAutoRunDate)) return;
-
-        LocalTime nowTime = LocalTime.now();
-        LocalTime targetTime;
-        try {
-            targetTime = LocalTime.parse(sendTime);
-        } catch (java.time.format.DateTimeParseException e) {
-            log.warn("Invalid configured SMS dispatch time {}; using 10:00", sendTime);
-            targetTime = LocalTime.of(10, 0);
-        }
-
-        if (nowTime.getHour() == targetTime.getHour() && nowTime.getMinute() == targetTime.getMinute()) {
-            boolean shouldFireToday = false;
-            String freq = frequency == null ? "" : frequency.toUpperCase();
-
-            switch (freq) {
-                case "DAILY":
-                    shouldFireToday = true;
-                    break;
-                case "WEEKLY":
-                    shouldFireToday = today.getDayOfWeek().name().equalsIgnoreCase(dayOfWeek);
-                    break;
-                case "BIWEEKLY":
-                    if (today.getDayOfWeek().name().equalsIgnoreCase(dayOfWeek)) {
-                        if (lastAutoRunDate == null || lastAutoRunDate.isEmpty()) {
-                            shouldFireToday = true;
-                        } else {
-                            LocalDate lastRun = LocalDate.parse(lastAutoRunDate);
-                            shouldFireToday = ChronoUnit.DAYS.between(lastRun, today) >= 14;
-                        }
-                    }
-                    break;
-                case "MONTHLY":
-                    shouldFireToday = (today.getDayOfMonth() == 1);
-                    break;
-            }
-
-            if (shouldFireToday) {
-                sendReminderPreview();
-                synchronized (store) {
-                    store.getSettings().setLastAutoRunDate(todayStr);
-                    store.save();
-                }
-            }
-        }
     }
 }

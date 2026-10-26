@@ -8,31 +8,31 @@
     <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body { font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg-canvas);color:var(--text-secondary); }
-        .banner { background:var(--bg-surface);border-bottom:1px solid var(--border-subtle);padding:1rem 0; }
-        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
-        .panel { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;box-shadow: var(--shadow-card);animation:enter .4s ease backwards; }
+        /* Calendar & Bills: only what the shared design system does not already provide */
+        .panel { animation:enter .35s var(--ease-snappy) backwards; }
         .calendar-grid { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.45rem; }
-        .weekday { color:var(--text-muted);font-weight:700;text-align:center;font-size:.72rem;text-transform:uppercase;padding:.25rem; }
-        .day-cell { min-height:94px;border:1px solid var(--border-subtle);border-radius:10px;background:var(--bg-surface);padding:.4rem;transition:border-color .16s ease,background .16s ease,transform .16s ease; }
-        .day-cell:hover { border-color:var(--border-focus);background:var(--bg-hover);transform:translateY(-1px); }
-        .day-cell.selected { border-color:var(--btn-primary-bg);box-shadow:0 0 0 2px var(--focus-ring);background:var(--status-info-bg); }
-        .day-cell.today .day-number { color:var(--btn-primary-bg);font-weight:800; }
+        .weekday { color:var(--text-muted);font-weight:600;text-align:center;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;padding:.25rem; }
+        /* Dot-indicator calendar: quiet cells, the chosen day carries a vertical indigo capsule. */
+        .day-cell { min-height:94px;border:1px solid transparent;border-radius:14px;background:var(--bg-subtle);padding:.45rem;transition:border-color .16s ease,background .16s ease,transform .16s ease; }
+        .day-cell:hover { border-color:var(--border-strong);background:var(--bg-hover);transform:translateY(-1px); }
+        .day-cell.selected { background:var(--accent-soft);border-color:var(--accent-soft-border); }
+        .day-cell.selected .day-number { background:var(--btn-primary-bg);color:var(--btn-primary-text);box-shadow:var(--accent-shadow); }
+        .day-cell.today .day-number { color:var(--btn-primary-bg);box-shadow:inset 0 0 0 1.5px var(--btn-primary-bg); }
+        .day-cell.selected.today .day-number { color:var(--btn-primary-text); }
         .day-link { width:100%;height:100%;min-height:78px;display:flex;flex-direction:column;align-items:flex-start;gap:.35rem;color:inherit;text-decoration:none; }
         .day-link:focus { outline:none; }
         .day-link:focus-visible { outline:2px solid var(--border-focus); outline-offset:3px; border-radius:6px; }
-        .day-number { font-weight:700;font-size:.85rem; }
+        .day-number { display:inline-grid;place-items:center;min-width:1.7rem;height:2.1rem;padding:0 .45rem;border-radius:999px;font-weight:700;font-size:.85rem;font-variant-numeric:tabular-nums;color:var(--text-primary); }
+        .calendar-legend { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem 1rem; font-size:12px; color:var(--text-muted); }
         .payment-count { background:var(--status-success-bg);color:var(--status-success-text);border-radius:999px;font-size:.68rem;font-weight:700;padding:.18rem .42rem; }
         .day-total { font-size:.68rem;color:var(--text-muted);font-variant-numeric:tabular-nums; }
         .payment-count.out { background:var(--status-danger-bg);color:var(--status-danger-text); }
         .day-total.out { color:var(--status-danger-text); }
         .hide-in .flow-in, .hide-out .flow-out { display:none !important; }
         .flow-toggles { display:flex;gap:1rem;flex-wrap:wrap;align-items:center; }
-        @keyframes enter { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
-
         /* ---- Record a transaction: money in / money out switch ---- */
-        .txn-direction { display:grid; grid-template-columns:1fr 1fr; gap:.25rem; padding:.25rem; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:10px; }
-        .txn-dir { display:flex; align-items:center; justify-content:center; gap:.4rem; margin:0; padding:.45rem .5rem; border-radius:7px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:background-color .15s ease, color .15s ease, box-shadow .2s var(--ease-snappy); }
+        .txn-direction { display:grid; grid-template-columns:1fr 1fr; gap:.25rem; padding:.25rem; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:999px; }
+        .txn-dir { display:flex; align-items:center; justify-content:center; gap:.4rem; margin:0; padding:.45rem .5rem; border-radius:999px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:background-color .15s ease, color .15s ease, box-shadow .2s var(--ease-snappy); }
         .txn-dir:hover { color:var(--text-primary); }
         .btn-check:checked + .txn-dir { background:var(--bg-surface); box-shadow:var(--shadow-card); }
         .btn-check:checked + .txn-dir.in { color:var(--status-success-text); }
@@ -47,9 +47,10 @@
         .mode-badge { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; font-size:11px; font-weight:600; padding:.1rem .5rem; border:1px solid transparent; white-space:nowrap; }
         .mode-badge.auto { background:var(--status-info-bg); color:var(--status-info-text); border-color:var(--status-info-border); }
         .mode-badge.manual { background:var(--status-neutral-bg); color:var(--status-neutral-text); border-color:var(--status-neutral-border); }
-        .bill-reminder { display:flex; align-items:center; gap:.85rem; padding:.75rem 0; border-top:1px solid var(--border-subtle); flex-wrap:wrap; }
-        .bill-reminder:first-of-type { border-top:0; padding-top:.25rem; }
-        .bill-icon { flex:0 0 2.25rem; height:2.25rem; border-radius:50%; display:grid; place-items:center; font-size:1rem; }
+        /* Bill reminders: a vertical timeline spine connects each reminder card */
+        .bill-reminder { display:flex; align-items:center; gap:.85rem; padding:.75rem .9rem; border-top:0; flex-wrap:wrap; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-sub); }
+        .bill-reminder:first-of-type { border-top:1px solid var(--border-subtle); padding-top:.75rem; }
+        .bill-icon { flex:0 0 40px; width:40px; height:40px; border-radius:13px; display:grid; place-items:center; font-size:1rem; }
         .bill-icon.tone-danger { background:var(--status-danger-bg); color:var(--status-danger-text); }
         .bill-icon.tone-warning { background:var(--status-warning-bg); color:var(--status-warning-text); }
         .bill-icon.tone-info { background:var(--status-info-bg); color:var(--status-info-text); }
@@ -63,12 +64,14 @@
         .bill-details summary::-webkit-details-marker { display:none; }
         .bill-details summary:hover { color:var(--text-primary); }
         .bill-details[open] summary { margin-bottom:.4rem; }
-        .bill-row { display:flex; align-items:flex-start; gap:.85rem; padding:.85rem 0; border-top:1px solid var(--border-subtle); flex-wrap:wrap; }
-        .bill-row:first-of-type { border-top:0; padding-top:.25rem; }
+        .bill-row { display:flex; align-items:flex-start; gap:.85rem; padding:14px 16px; border-radius:12px; flex-wrap:wrap; position:relative; transition:background-color .12s ease; }
+        .bill-row:hover { background:var(--bg-hover); }
+        .bill-row + .bill-row::before { content:''; position:absolute; left:16px; right:16px; top:0; height:1px; background:var(--border-subtle); }
+        .bill-row:hover + .bill-row::before, .bill-row:hover::before { opacity:0; }
         .bill-name { color:var(--text-primary); font-weight:600; }
         .bill-meta { font-size:12px; color:var(--text-muted); }
-        .pay-mode { display:grid; grid-template-columns:1fr 1fr; gap:.25rem; padding:.25rem; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:10px; }
-        .pay-mode label { display:flex; align-items:center; justify-content:center; gap:.4rem; margin:0; padding:.45rem .5rem; border-radius:7px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:background-color .15s ease, color .15s ease, box-shadow .2s var(--ease-snappy); }
+        .pay-mode { display:grid; grid-template-columns:1fr 1fr; gap:.25rem; padding:.25rem; background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:999px; }
+        .pay-mode label { display:flex; align-items:center; justify-content:center; gap:.4rem; margin:0; padding:.45rem .5rem; border-radius:999px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:background-color .15s ease, color .15s ease, box-shadow .2s var(--ease-snappy); }
         .pay-mode label:hover { color:var(--text-primary); }
         .pay-mode .btn-check:checked + label { background:var(--bg-surface); color:var(--text-primary); box-shadow:var(--shadow-card); }
         .pay-mode .btn-check:focus-visible + label { box-shadow:0 0 0 3px var(--focus-ring); }
@@ -91,7 +94,7 @@
         #dayPeek .peek-list li { align-items:center; }
         #dayPeek .peek-list .amt { flex:0 0 auto; font-variant-numeric:tabular-nums; font-weight:600; }
         #dayPeek .peek-foot { justify-content:center; }
-        .day-cell.is-peeking { border-color:var(--border-focus);background:var(--bg-hover);box-shadow:0 0 0 3px var(--focus-ring); }
+        .day-cell.is-peeking { border-color:var(--accent-soft-border);background:var(--bg-hover);box-shadow:0 0 0 3px var(--focus-ring); }
         @media(max-width:575px) { .calendar-grid { gap:.2rem; }.day-cell { min-height:68px;padding:.25rem; }.day-link { min-height:58px; }.day-total { display:none; }.payment-count { font-size:.58rem;padding:.12rem .28rem; } }
         @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important; } }
     </style>
@@ -99,29 +102,17 @@
 <script th:replace="~{fragments :: themeInit}"></script>
 </head>
 <body>
-    <div class="app-header-stack">
-    <header class="banner">
-    <div class="container-xxl px-3 px-md-4 header-grid">
-        <div></div>
-        <div class="d-flex align-items-center gap-3 justify-content-center">
-            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
-            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
-        </div>
-        <div></div>
-    </div>
-</header>
-<nav th:replace="~{fragments :: nav('calendar')}"></nav>
-</div>
+    <div th:replace="~{fragments :: appHeader('calendar')}"></div>
 <main class="container-xxl px-3 px-md-4 py-4 pb-5">
     <div th:if="${toast}" data-auto-dismiss="4000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
-    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+    <div class="page-header">
         <div>
             <div class="page-eyebrow">Payment activity</div>
             <h2 class="page-title">Calendar &amp; Bills</h2>
             <p class="page-lede">Hover a day for a quick look, then click the preview to see everything from that day. Use the switches to show or hide inflows and outflows. Set up recurring bills with reminders <a href="#billFormCard">beside the calendar</a>; your bills are listed at the bottom.</p>
         </div>
-        <div class="d-flex align-items-center gap-3 flex-wrap">
-            <div class="flow-toggles" role="group" aria-label="Show on calendar">
+        <div class="page-actions">
+            <div class="flow-toggles glass px-3 py-2" role="group" aria-label="Show on calendar">
                 <div class="form-check form-switch mb-0">
                     <input class="form-check-input" type="checkbox" role="switch" id="toggleInflows" checked>
                     <label class="form-check-label small fw-semibold" for="toggleInflows">Inflows</label>
@@ -131,21 +122,19 @@
                     <label class="form-check-label small fw-semibold" for="toggleOutflows">Outflows</label>
                 </div>
             </div>
-            <div class="badge text-bg-success rounded-pill px-3 py-2 flow-in">
-                <i class="bi bi-check2-circle me-1"></i><span th:text="${monthPaymentCount}"></span> inflows this month
-            </div>
-            <div class="badge text-bg-danger rounded-pill px-3 py-2 flow-out" th:if="${monthOutflowCount > 0}">
-                <i class="bi bi-arrow-up-right-circle me-1"></i><span th:text="${monthOutflowCount}"></span> outflows this month
-            </div>
+            <span class="status-pill badge-paid has-dot flow-in tabular-nums"><span th:text="${monthPaymentCount}"></span>&nbsp;inflows this month</span>
+            <span class="status-pill badge-delinquent has-dot flow-out tabular-nums" th:if="${monthOutflowCount > 0}"><span th:text="${monthOutflowCount}"></span>&nbsp;outflows this month</span>
         </div>
     </div>
     <!-- Bill reminders: bills due within their reminder window, plus manual bills that are overdue -->
     <section id="billReminders" class="panel p-3 p-md-4 mb-4" th:if="${!#lists.isEmpty(billReminders)}" aria-labelledby="billRemindersTitle">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h3 class="h6 fw-bold mb-0" id="billRemindersTitle"><i class="bi bi-bell me-1" aria-hidden="true"></i>Bill reminders</h3>
-            <span class="small text-muted" th:text="${#lists.size(billReminders)} + (${#lists.size(billReminders) == 1} ? ' bill needs attention' : ' bills need attention')"></span>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="section-title mb-0" id="billRemindersTitle">Bill reminders</h3>
+            <span class="badge-urgent" th:classappend="${billReminders.?[overdue].size() > 0} ? ' is-overdue'" th:text="${#lists.size(billReminders)} + (${#lists.size(billReminders) == 1} ? ' bill needs attention' : ' bills need attention')"></span>
         </div>
-        <div class="bill-reminder" th:each="r : ${billReminders}">
+        <div class="timeline">
+        <div class="timeline-item" th:each="r : ${billReminders}" th:classappend="'tone-' + ${r.tone}">
+        <div class="bill-reminder">
             <span class="bill-icon" th:classappend="'tone-' + ${r.tone}"><i class="bi" th:classappend="${r.overdue} ? 'bi-exclamation-triangle' : 'bi-receipt'" aria-hidden="true"></i></span>
             <div class="min-w-0">
                 <div class="bill-name" th:text="${r.bill.name}"></div>
@@ -156,7 +145,7 @@
                           th:text="${r.bill.automatic} ? 'Automatic' : 'Manual'"></span>
                 </div>
                 <div class="bill-when" th:classappend="'tone-' + ${r.tone}">
-                    <span th:text="${r.when}"></span><span class="text-muted fw-normal"
+                    <span class="badge-urgent" th:classappend="${r.overdue} ? ' is-overdue' : (${r.tone == 'info' or r.tone == 'muted'} ? ' is-ok' : '')" th:text="${r.when}"></span><span class="text-muted fw-normal"
                         th:if="${!r.overdue and !r.bill.reminderDays.isEmpty()}"
                         th:text="' · reminder: ' + ${r.leadLabel}"></span>
                 </div>
@@ -194,15 +183,17 @@
                 </form>
             </details>
         </div>
+        </div>
+        </div>
     </section>
 
     <div class="row g-4">
         <section class="col-12 col-xl-8">
             <div class="panel p-3 p-md-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/calendar(month=${previousMonth})}" aria-label="Previous month" data-keep-scroll>Previous</a>
+                    <a class="icon-btn" th:href="@{/calendar(month=${previousMonth})}" aria-label="Previous month" title="Previous month" data-keep-scroll><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
                     <h3 class="h5 fw-bold mb-0" th:text="${monthLabel}"></h3>
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/calendar(month=${nextMonth})}" aria-label="Next month" data-keep-scroll>Next</a>
+                    <a class="icon-btn" th:href="@{/calendar(month=${nextMonth})}" aria-label="Next month" title="Next month" data-keep-scroll><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
                 </div>
                 <div class="calendar-grid mb-2">
                     <div class="weekday">Sun</div><div class="weekday">Mon</div><div class="weekday">Tue</div>
@@ -229,7 +220,7 @@
                         </a>
                     </div>
                 </div>
-                <p class="small text-muted mt-3 mb-0"><span class="payment-count me-1">1</span> inflows <span class="payment-count out ms-2 me-1">1</span> outflows <span class="bill-chip ms-2 me-1"><i class="bi bi-receipt" aria-hidden="true"></i>1</span> bills due &mdash; the amount below each count is the daily total.</p>
+                <div class="calendar-legend mt-3"><span><span class="payment-count me-1">1</span> inflows</span><span><span class="payment-count out me-1">1</span> outflows</span><span><span class="bill-chip me-1"><i class="bi bi-receipt" aria-hidden="true"></i>1</span> bills due</span><span>The amount below each count is the daily total.</span></div>
             </div>
         </section>
         <aside class="col-12 col-xl-4">
@@ -257,28 +248,30 @@
                 <div th:if="${#lists.isEmpty(selectedPayments) and #lists.isEmpty(billSelectedDay)}" class="text-center text-muted py-4">
                     <i class="bi bi-receipt fs-3 d-block mb-2"></i>No transactions on this day.
                 </div>
-                <div th:each="due : ${billSelectedDay}" class="border-top py-3">
-                    <div class="d-flex justify-content-between gap-2">
+                <div th:each="due : ${billSelectedDay}" class="list-row px-0">
+                    <div class="row-id">
+                        <span class="avatar tone-amber" aria-hidden="true"><i class="bi bi-receipt"></i></span>
                         <div>
-                            <div class="fw-semibold" th:text="${due.name}"></div>
+                            <div class="row-title" th:text="${due.name}"></div>
                             <div class="small text-muted">
                                 <span th:text="${due.overdue} ? 'Bill overdue' : 'Bill due'"></span>
                                 <span class="mode-badge ms-1" th:classappend="${due.mode == 'AUTOMATIC'} ? 'auto' : 'manual'"
                                       th:text="${due.mode == 'AUTOMATIC'} ? 'Automatic' : 'Manual'"></span>
                             </div>
                         </div>
-                        <span class="fw-bold text-nowrap text-warning-emphasis" th:text="'$' + ${#numbers.formatDecimal(due.amount, 1, 'COMMA', 2, 'POINT')}"></span>
                     </div>
+                    <span class="amt text-warning" th:text="'$' + ${#numbers.formatDecimal(due.amount, 1, 'COMMA', 2, 'POINT')}"></span>
                 </div>
-                <div th:each="entry : ${selectedPayments}" class="border-top py-3" th:classappend="${entry.payment.amount < 0} ? 'flow-out' : 'flow-in'">
-                    <div class="d-flex justify-content-between gap-2">
-                        <div>
-                            <div class="fw-semibold" th:text="${entry.memberName}"></div>
-                            <div class="small text-muted" th:text="${entry.payment.description} ?: 'Payment received'"></div>
+                <div th:each="entry : ${selectedPayments}" class="list-row px-0" th:classappend="${entry.payment.amount < 0} ? 'flow-out' : 'flow-in'">
+                    <div class="row-id">
+                        <span class="avatar" aria-hidden="true" th:classappend="${entry.payment.amount < 0} ? 'tone-rose' : 'tone-emerald'"><i class="bi" th:classappend="${entry.payment.amount < 0} ? 'bi-arrow-up-right' : 'bi-arrow-down-left'"></i></span>
+                        <div class="min-w-0">
+                            <div class="row-title text-truncate" th:text="${entry.memberName}"></div>
+                            <div class="row-meta" th:text="${entry.payment.description} ?: 'Payment received'"></div>
                         </div>
-                        <span class="fw-bold text-nowrap" th:classappend="${entry.payment.amount < 0} ? 'text-danger' : 'text-success'"
-                              th:text="(${entry.payment.amount < 0} ? '-$' : '+$') + ${#numbers.formatDecimal(entry.payment.amount < 0 ? -entry.payment.amount : entry.payment.amount, 1, 'COMMA', 2, 'POINT')}"></span>
                     </div>
+                    <span class="amt" th:classappend="${entry.payment.amount < 0} ? 'out' : 'in'"
+                          th:text="(${entry.payment.amount < 0} ? '-$' : '+$') + ${#numbers.formatDecimal(entry.payment.amount < 0 ? -entry.payment.amount : entry.payment.amount, 1, 'COMMA', 2, 'POINT')}"></span>
                 </div>
                     </div>
                   </div>
@@ -298,6 +291,7 @@
                     <div class="hover-expand-card__body">
                 <p class="small text-muted mb-3 mt-2">Log money coming in or going out. It shows on this calendar and in Cash Flow. Member dues also update that member's balance. For a charge that repeats, set up a <a href="#billFormCard">recurring bill</a> instead.</p>
                 <form action="/calendar/transactions" method="post" id="recordTransactionForm" data-direction="in" data-duplicate-guard
+                      data-ceremony-after="confirm" data-ceremony-success="^(Dues payment of .* recorded|Inflow of .* recorded)"
                       th:attr="data-dues-category=${memberDuesCategory}">
                     <input type="hidden" name="idempotencyKey" th:value="${paymentRequestId}">
                     <div class="txn-direction mb-3" role="radiogroup" aria-label="Transaction type">
@@ -340,7 +334,7 @@
                     </div>
                     <label class="form-label small fw-semibold" for="txnDescription">Description (optional)</label>
                     <input id="txnDescription" type="text" name="description" maxlength="200" class="form-control form-control-sm mb-3" placeholder="e.g. October dues, formal venue deposit">
-                    <button type="submit" id="txnSubmit" class="btn btn-primary w-100" data-loading-label="Saving…">
+                    <button type="submit" id="txnSubmit" class="btn btn-fintech-primary w-100" data-loading-label="Saving…">
                         <span id="txnSubmitLabel">Save inflow</span>
                     </button>
                 </form>
@@ -438,13 +432,14 @@
         <section class="col-12">
             <div class="panel p-3 p-md-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h3 class="h6 fw-bold mb-0"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Your recurring bills</h3>
-                    <span class="small text-muted" th:text="${#lists.size(billRows)} + (${#lists.size(billRows) == 1} ? ' bill' : ' bills')"></span>
+                    <h3 class="section-title mb-0">Your recurring bills</h3>
+                    <span class="count-badge" th:text="${#lists.size(billRows)}" th:attr="aria-label=${#lists.size(billRows)} + ' bills'"></span>
                 </div>
                 <div th:if="${#lists.isEmpty(billRows)}" class="text-center text-muted py-5">
                     <i class="bi bi-receipt fs-3 d-block mb-2"></i>No recurring bills yet. Add one on the left and it will show up here and on the calendar.
                 </div>
                 <div class="bill-row" th:each="row : ${billRows}">
+                    <span class="avatar" aria-hidden="true" th:classappend="${row.bill.automatic} ? 'tint-sky' : 'tint-butter'"><i class="bi" th:classappend="${row.bill.automatic} ? 'bi-lightning-charge' : 'bi-receipt'"></i></span>
                     <div class="flex-grow-1 min-w-0">
                         <div class="d-flex flex-wrap align-items-center gap-2">
                             <span class="bill-name" th:text="${row.bill.name}"></span>

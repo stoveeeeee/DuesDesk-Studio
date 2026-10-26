@@ -582,4 +582,79 @@ class DashboardControllerTest {
         assertEquals(30, model.getAttribute("totalMembers"));
         assertEquals(300.0, (Double) model.getAttribute("totalOwed"), 0.001);
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theLedgerShowsOneRosterAtATimeWhileTotalsCoverEveryone() {
+        Store store = mock(Store.class);
+        Member active = new Member("a", "Active Member", "1", 100, 0, 0, "Payment Plan", "Never", false);
+        Member inactive = new Member("i", "Inactive Member", "2", 50, 0, 0, "Payment Plan", "Never", false);
+        inactive.setMembershipStatus("inactive");
+        Member alumnus = new Member("o", "Alumni Member", "3", 25, 0, 0, "Payment Plan", "Never", false);
+        alumnus.setMembershipStatus(Member.ALUMNI);
+        when(store.getMembers()).thenReturn(new ArrayList<>(List.of(active, inactive, alumnus)));
+        when(store.getSettings()).thenReturn(new AppSettings());
+        when(store.getSmsLogs()).thenReturn(List.of());
+        when(store.getFlowEntries()).thenReturn(List.of());
+        DashboardController controller = new DashboardController(store, new SmsService(store));
+
+        Model members = new ExtendedModelMap();
+        controller.dashboard(1, null, members);
+        assertEquals(List.of("a"), ((List<Member>) members.getAttribute("members")).stream().map(Member::getId).toList());
+        assertEquals(Member.MEMBER, members.getAttribute("rosterGroup"));
+        assertEquals(Map.of("Member", 1L, "Inactive", 1L, "Alumni", 1L), members.getAttribute("rosterGroups"));
+        assertEquals(175.0, (Double) members.getAttribute("totalOwed"), 0.001);
+
+        Model alumni = new ExtendedModelMap();
+        controller.dashboard(1, null, "alumni", alumni);
+        assertEquals(List.of("o"), ((List<Member>) alumni.getAttribute("members")).stream().map(Member::getId).toList());
+        assertEquals("Alumni", alumni.getAttribute("rosterGroup"));
+        assertEquals(1, alumni.getAttribute("totalMembers"));
+    }
+
+    @Test
+    void theProfileStatusMovesAMemberBetweenRostersAndReturnsToTheSameView() {
+        Store store = mock(Store.class);
+        Member member = new Member("m1", "Jordan Hayes", "555", 0, 0, 0, "Paid in Full", "Never", false);
+        when(store.findMemberById("m1")).thenReturn(Optional.of(member));
+        when(store.determineStatus(0, 0)).thenReturn("Paid in Full");
+        DashboardController controller = new DashboardController(store, new SmsService(store));
+        RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
+
+        String result = controller.editMember("m1", "Jordan Hayes", "555", 0, 0, 0, null, null, null, "Alumni", "inactive", redirect);
+        assertEquals("redirect:/?group=inactive", result);
+        assertEquals(Member.ALUMNI, member.getMembershipStatus());
+        assertEquals("Updated profile for Jordan Hayes and moved them to Alumni.", redirect.getFlashAttributes().get("toast"));
+        assertEquals(Member.MEMBER, Member.normalizeMembershipStatus("something else"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void inactiveAndAlumniDuesHaveTheirOwnCollectionRateAndUnpaidStats() {
+        Store store = mock(Store.class);
+        Member active = new Member("a", "Active", "1", 100, 0, 0, "Payment Plan", "Never", false);
+        Member inactive = new Member("i", "Inactive", "2", 150, 0, 50, "Payment Plan", "Never", false);
+        inactive.setMembershipStatus(Member.INACTIVE);
+        Member alumnus = new Member("o", "Alumnus", "3", 0, 0, 30, "Paid in Full", "Never", false);
+        alumnus.setMembershipStatus(Member.ALUMNI);
+        AppSettings settings = new AppSettings();
+        settings.setDashboardStats(new ArrayList<>(List.of("inactive-rate", "inactive-unpaid", "alumni-rate", "alumni-unpaid", "rate")));
+        when(store.getMembers()).thenReturn(new ArrayList<>(List.of(active, inactive, alumnus)));
+        when(store.getSettings()).thenReturn(settings);
+        when(store.getSmsLogs()).thenReturn(List.of());
+        when(store.getFlowEntries()).thenReturn(List.of());
+
+        Model model = new ExtendedModelMap();
+        new DashboardController(store, new SmsService(store)).dashboard(1, null, model);
+
+        List<DashboardController.DashStat> boxes = (List<DashboardController.DashStat>) model.getAttribute("statBoxes");
+        assertEquals("Inactive Collection Rate", boxes.get(0).name());
+        assertEquals("25.0%", boxes.get(0).value());
+        assertEquals("Inactive Dues Unpaid", boxes.get(1).name());
+        assertEquals("$150.00", boxes.get(1).value());
+        assertEquals("100.0%", boxes.get(2).value());
+        assertEquals("$0.00", boxes.get(3).value());
+        Map<String, List<DashboardController.DashStat>> catalog = (Map<String, List<DashboardController.DashStat>>) model.getAttribute("statCatalog");
+        assertEquals(4, catalog.get("Inactive & Alumni Dues").size());
+    }
 }

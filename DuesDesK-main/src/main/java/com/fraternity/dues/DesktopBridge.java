@@ -12,11 +12,11 @@ import java.nio.file.Files;
 public class DesktopBridge {
     private final Stage stage;
     private final Store store;
-    private final MemberDocumentService documentService = new MemberDocumentService();
+    private final MemberDocumentService documentService;
     private final BackupEncryptionService backupEncryptionService = new BackupEncryptionService();
     private final FinanceDocumentService financeDocumentService;
     private final FlowReportService flowReportService;
-    private final TableExportService tableExportService = new TableExportService();
+    private final TableExportService tableExportService;
     private final javafx.application.HostServices hostServices;
 
     public DesktopBridge(Stage stage, Store store, javafx.application.HostServices hostServices) {
@@ -25,6 +25,8 @@ public class DesktopBridge {
         this.hostServices = hostServices;
         this.financeDocumentService = new FinanceDocumentService(store);
         this.flowReportService = new FlowReportService(store);
+        this.documentService = new MemberDocumentService(() -> ExecutivePdf.chapterOf(store));
+        this.tableExportService = new TableExportService(() -> ExecutivePdf.chapterOf(store));
     }
 
     /**
@@ -86,7 +88,7 @@ public class DesktopBridge {
         javafx.scene.input.Clipboard.getSystemClipboard().setContent(content);
     }
 
-    public void exportData(String password) {
+    public boolean exportData(String password) {
         try {
             byte[] encryptedData = backupEncryptionService.encrypt(store.exportData(),
                     password == null ? null : password.toCharArray());
@@ -95,16 +97,18 @@ public class DesktopBridge {
             chooser.setInitialFileName(DashboardController.encryptedExportFileName());
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Encrypted DuesDesk backup (*.ddbk)", "*.ddbk"));
             File target = chooser.showSaveDialog(stage);
-            if (target == null) return;
+            if (target == null) return false;
             Files.write(target.toPath(), encryptedData);
-            show(Alert.AlertType.INFORMATION, "Encrypted backup exported to:\n" + target.getAbsolutePath()
+            showSavedLater("Encrypted backup exported to:\n" + target.getAbsolutePath()
                     + "\n\nKeep the password separate from the backup file.");
+            return true;
         } catch (Exception e) {
             show(Alert.AlertType.ERROR, "Export failed: " + e.getMessage());
+            return false;
         }
     }
 
-    public void exportMemberDocument(String memberId, String documentType, String paymentKey) {
+    public boolean exportMemberDocument(String memberId, String documentType, String paymentKey) {
         try {
             Member member = store.findMemberById(memberId)
                     .orElseThrow(() -> new IllegalArgumentException("Member was not found."));
@@ -125,6 +129,14 @@ public class DesktopBridge {
                 bytes = new PaymentPlanAgreementService().agreementPdf(member, store.getSettings(), java.time.LocalDate.now());
                 extension = "pdf";
                 description = "Payment plan agreement";
+            } else if ("notice".equals(type)) {
+                ReminderStep step = member.getReminderLog().stream()
+                        .filter(item -> paymentKey != null && paymentKey.equals(item.getId()) && ReminderStep.NOTICE.equals(item.getStage()))
+                        .findFirst().orElse(null);
+                if (step == null) throw new IllegalArgumentException("That past-due notice was not found.");
+                bytes = new PastDueNoticeService().noticePdf(member, step, store.getSettings());
+                extension = "pdf";
+                description = "Past-due notice";
             } else if ("receipt".equals(type)) {
                 PaymentRecord payment = member.getPaymentHistory() == null ? null : member.getPaymentHistory().stream()
                         .filter(item -> paymentKey != null && paymentKey.equals(item.getIdempotencyKey()))
@@ -139,20 +151,23 @@ public class DesktopBridge {
 
             FileChooser chooser = new FileChooser();
             chooser.setTitle("Save " + description);
-            String suffix = "receipt".equals(type) ? "receipt" : "agreement".equals(type) ? "payment-plan-agreement" : "statement";
+            String suffix = "receipt".equals(type) ? "receipt" : "agreement".equals(type) ? "payment-plan-agreement"
+                    : "notice".equals(type) ? "past-due-notice" : "statement";
             chooser.setInitialFileName(fileName(member.getName()) + "-" + suffix + "." + extension);
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
                     extension.toUpperCase(java.util.Locale.ROOT) + " file", "*." + extension));
             File target = chooser.showSaveDialog(stage);
-            if (target == null) return;
+            if (target == null) return false;
             Files.write(target.toPath(), bytes);
-            show(Alert.AlertType.INFORMATION, description + " saved to:\n" + target.getAbsolutePath());
+            showSavedLater(description + " saved to:\n" + target.getAbsolutePath());
+            return true;
         } catch (Exception e) {
             show(Alert.AlertType.ERROR, "Document export failed: " + e.getMessage());
+            return false;
         }
     }
 
-    public void exportFinanceDocument(String documentType, String password) {
+    public boolean exportFinanceDocument(String documentType, String password) {
         try {
             String type = documentType == null ? "" : documentType;
             byte[] bytes;
@@ -191,11 +206,13 @@ public class DesktopBridge {
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
                     extension.toUpperCase(java.util.Locale.ROOT) + " file", "*." + extension));
             File target = chooser.showSaveDialog(stage);
-            if (target == null) return;
+            if (target == null) return false;
             Files.write(target.toPath(), bytes);
-            show(Alert.AlertType.INFORMATION, description + " saved to:\n" + target.getAbsolutePath());
+            showSavedLater(description + " saved to:\n" + target.getAbsolutePath());
+            return true;
         } catch (Exception e) {
             show(Alert.AlertType.ERROR, "Finance document export failed: " + e.getMessage());
+            return false;
         }
     }
 
@@ -203,7 +220,7 @@ public class DesktopBridge {
      * Saves the Inflow/Outflow table as "csv" or "pdf" for a time period (same parameters as the page), narrowed
      * by the page's quick filter ({@code kind}) and search text ({@code query}) when given.
      */
-    public void exportFlowReport(String format, String period, String from, String to, String kind, String query) {
+    public boolean exportFlowReport(String format, String period, String from, String to, String kind, String query) {
         try {
             boolean pdf = "pdf".equals(format);
             FlowReportService.Period selected = FlowReportService.resolvePeriod(period, from, to, java.time.LocalDate.now());
@@ -215,16 +232,41 @@ public class DesktopBridge {
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
                     extension.toUpperCase(java.util.Locale.ROOT) + " file", "*." + extension));
             File target = chooser.showSaveDialog(stage);
-            if (target == null) return;
+            if (target == null) return false;
             Files.write(target.toPath(), bytes);
-            show(Alert.AlertType.INFORMATION, "Cash Flow " + (pdf ? "report" : "spreadsheet") + " saved to:\n" + target.getAbsolutePath());
+            showSavedLater("Cash Flow " + (pdf ? "report" : "spreadsheet") + " saved to:\n" + target.getAbsolutePath());
+            return true;
         } catch (Exception e) {
             show(Alert.AlertType.ERROR, "Cash Flow export failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Saves the "Template for Greekbill charges" PDF for a period (same parameters as the page). */
+    public boolean exportGreekBillTemplate(String period, String from, String to) {
+        try {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            GreekBillTemplateService service = new GreekBillTemplateService(store);
+            GreekBillTemplateService.Period selected = GreekBillTemplateService.resolvePeriod(period, from, to, today,
+                    store.getSettings().getLastRolloverDate());
+            byte[] bytes = service.pdf(service.build(selected, today));
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Save " + GreekBillTemplateService.TITLE);
+            chooser.setInitialFileName(GreekBillTemplateService.fileName(selected, today));
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF file", "*.pdf"));
+            File target = chooser.showSaveDialog(stage);
+            if (target == null) return false;
+            Files.write(target.toPath(), bytes);
+            showSavedLater(GreekBillTemplateService.TITLE + " saved to:\n" + target.getAbsolutePath());
+            return true;
+        } catch (Exception e) {
+            show(Alert.AlertType.ERROR, "Template export failed: " + e.getMessage());
+            return false;
         }
     }
 
     /** Saves a table as a PDF; {@code json} is the table as the full-screen view shows it (see TableExportService.TableData). */
-    public void exportTablePdf(String json) {
+    public boolean exportTablePdf(String json) {
         try {
             TableExportService.TableData table = new com.fasterxml.jackson.databind.ObjectMapper()
                     .readValue(json, TableExportService.TableData.class);
@@ -234,11 +276,13 @@ public class DesktopBridge {
             chooser.setInitialFileName(TableExportService.fileName(table.title(), java.time.LocalDate.now()));
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF file", "*.pdf"));
             File target = chooser.showSaveDialog(stage);
-            if (target == null) return;
+            if (target == null) return false;
             Files.write(target.toPath(), bytes);
-            show(Alert.AlertType.INFORMATION, "Table PDF saved to:\n" + target.getAbsolutePath());
+            showSavedLater("Table PDF saved to:\n" + target.getAbsolutePath());
+            return true;
         } catch (Exception e) {
             show(Alert.AlertType.ERROR, "Table export failed: " + e.getMessage());
+            return false;
         }
     }
 
@@ -246,6 +290,16 @@ public class DesktopBridge {
         String name = value == null ? "member" : value.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "-");
         String safe = name.replaceAll("^-|-$", "");
         return safe.isBlank() ? "member" : safe;
+    }
+
+    /**
+     * Shows the "saved to" confirmation a moment after the export call returns, so the page can finish its pending
+     * ring to green check animation first instead of waiting behind a modal dialog.
+     */
+    private void showSavedLater(String message) {
+        javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.millis(1500));
+        pause.setOnFinished(event -> show(Alert.AlertType.INFORMATION, message));
+        pause.play();
     }
 
     private void show(Alert.AlertType type, String message) {

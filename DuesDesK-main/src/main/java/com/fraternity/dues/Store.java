@@ -32,6 +32,15 @@ public class Store {
     private Map<String, Member> membersById = Map.of();
     private Set<String> paymentKeys = Set.of();
     private TwilioCredentials twilioCredentials;
+    private final ActivityRecorder activity = new ActivityRecorder(mapper);
+    /** What the current request or task is doing, for the activity log ("Add charge", "Venmo CSV import"). */
+    private static final ThreadLocal<String> ACTIVITY_SOURCE = new ThreadLocal<>();
+    /** When set, every save on this thread joins one activity batch (a whole reminder-sequence run reads as one action). */
+    private static final ThreadLocal<String> ACTIVITY_BATCH = new ThreadLocal<>();
+    /** Batch id the next save's activity entries use (set by an undo so it can point at its own entries). */
+    private String nextActivityBatchId;
+    static final int ACTIVITY_LOG_LIMIT = 20_000;
+    static final int UNDO_WINDOW_DAYS = 30;
     @org.springframework.beans.factory.annotation.Value("${sms.daily-cap:100}") private int smsDailyCap = 100;
 
     public static class DataContainer {
@@ -50,12 +59,29 @@ public class Store {
         /** Chair budget terms closed out by a semester rollover. */
         public List<ChairBudgetPeriod> chairBudgetHistory = new ArrayList<>();
         public Map<String, String> receiptFiles = new LinkedHashMap<>();
+        /** Every email the Venmo email import has looked at, by Message-ID, so none is ever recorded twice. */
+        public Map<String, ProcessedEmail> processedEmails = new LinkedHashMap<>();
+        /** When the newest Venmo payment email arrived (ISO instant), and a short summary of it. */
+        public String lastVenmoEmailAt = "";
+        public String lastVenmoPaymentSummary = "";
         public String smsUsageDate = "";
         public int smsUsageCount;
+        /** Every recorded change, oldest first (see ActivityRecorder). */
+        public List<ActivityEntry> activityLog = new ArrayList<>();
+        /** When the log began (ISO date-time); changes before this were not recorded. */
+        public String activityLogStartedAt = "";
     }
 
     public record MetricSnapshot(String date, Map<String, Double> values) {}
     public record TwilioCredentials(String accountSid, String authToken, String fromNumber, boolean enabled) {}
+
+    /**
+     * One email the Venmo email import has handled. {@code outcome} is PAYMENT (a Cash Flow entry was added),
+     * DUPLICATE (the payment was already imported, e.g. from a Venmo CSV) or IGNORED (not a Venmo "paid you" email).
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    public record ProcessedEmail(String processedAt, String receivedAt, String outcome, String flowEntryId,
+                                 boolean verified, String detail) {}
 
     @PostConstruct
     public void init() {
@@ -90,12 +116,14 @@ public class Store {
         normalizeMembers();
         // At startup a damaged receipt is skipped, not fatal: it must never stop the app from opening.
         restoreReceiptFilesFromData(false);
+        boolean codesAssigned = assignMissingDuesCodes() > 0;
         refreshMemberIndex();
-        if (autoLinkResidents() > 0) {
+        startActivityLog();
+        if (autoLinkResidents() > 0 || codesAssigned) {
             try {
                 save();
             } catch (RuntimeException e) {
-                log.warn("Unable to save automatic resident links", e);
+                log.warn("Unable to save automatic resident links and dues codes", e);
             }
         }
         captureMetricSnapshot();
@@ -123,6 +151,11 @@ public class Store {
         if (this.data.archivedMembers == null) this.data.archivedMembers = new ArrayList<>();
         if (this.data.chairBudgetHistory == null) this.data.chairBudgetHistory = new ArrayList<>();
         if (this.data.receiptFiles == null) this.data.receiptFiles = new LinkedHashMap<>();
+        if (this.data.processedEmails == null) this.data.processedEmails = new LinkedHashMap<>();
+        if (this.data.lastVenmoEmailAt == null) this.data.lastVenmoEmailAt = "";
+        if (this.data.lastVenmoPaymentSummary == null) this.data.lastVenmoPaymentSummary = "";
+        if (this.data.activityLog == null) this.data.activityLog = new ArrayList<>();
+        if (this.data.activityLogStartedAt == null) this.data.activityLogStartedAt = "";
         for (ChairBudget budget : this.data.chairBudgets) {
             if (budget.getReimbursements() == null) budget.setReimbursements(new ArrayList<>());
             if (normalizeChairAccent(budget.getAccentColor()) == null) {
@@ -158,8 +191,25 @@ public class Store {
     public synchronized void save() {
         ensureNotNull();
         captureMetricSnapshot();
+        com.fasterxml.jackson.databind.node.ObjectNode snapshot = null;
+        List<ActivityEntry> recorded = List.of();
+        String batchId = nextActivityBatchId != null ? nextActivityBatchId : ACTIVITY_BATCH.get();
+        nextActivityBatchId = null;
+        try {
+            snapshot = activity.snapshot(data);
+            recorded = activity.diff(activity.baseline(), snapshot, ACTIVITY_SOURCE.get(), java.time.LocalDateTime.now(), batchId);
+            if (!recorded.isEmpty()) {
+                data.activityLog.addAll(recorded);
+                trimActivityLog();
+            }
+        } catch (RuntimeException e) {
+            // The log must never stop a save.
+            log.warn("Unable to record activity for this save", e);
+            recorded = List.of();
+        }
         Path target = Path.of(DATA_FILE).toAbsolutePath();
         Path temporary = null;
+        boolean written = false;
         try {
             Path parent = target.getParent();
             if (parent != null) Files.createDirectories(parent);
@@ -169,10 +219,17 @@ public class Store {
                 Files.copy(target, backupPath(target), StandardCopyOption.REPLACE_EXISTING);
             }
             moveAtomically(temporary, target);
+            written = true;
         } catch (Exception e) {
             log.error("Unable to save dues data file {}", target, e);
             throw new IllegalStateException("Could not save dues data. Check the data directory and disk space.", e);
         } finally {
+            if (written) {
+                if (snapshot != null) activity.reset(snapshot);
+            } else if (!recorded.isEmpty()) {
+                List<ActivityEntry> unsaved = recorded;
+                data.activityLog.removeIf(entry -> unsaved.stream().anyMatch(item -> item == entry));
+            }
             if (temporary != null) {
                 try {
                     Files.deleteIfExists(temporary);
@@ -181,6 +238,327 @@ public class Store {
                 }
             }
         }
+    }
+
+    // ------------------------------------------------------------------ activity log
+
+    /** Takes the loaded data as the starting point for the log, and notes when logging began. */
+    private void startActivityLog() {
+        activity.reset(activity.snapshot(data));
+        if (data.activityLogStartedAt.isBlank()) {
+            data.activityLogStartedAt = java.time.LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS).toString();
+        }
+    }
+
+    private void trimActivityLog() {
+        int excess = data.activityLog.size() - ACTIVITY_LOG_LIMIT;
+        if (excess <= 0) return;
+        data.activityLog.subList(0, excess).clear();
+        // The log now covers only from its oldest remaining entry.
+        data.activityLogStartedAt = data.activityLog.getFirst().getAt();
+    }
+
+    /** Names what the current thread is doing, for the activity log; null clears it. */
+    public static void setActivitySource(String source) {
+        if (source == null || source.isBlank()) ACTIVITY_SOURCE.remove();
+        else ACTIVITY_SOURCE.set(source);
+    }
+
+    public static String activitySource() {
+        return ACTIVITY_SOURCE.get();
+    }
+
+    /** Runs {@code work} with saves labelled {@code source} in the activity log, then restores the previous label. */
+    public static <T> T withActivitySource(String source, java.util.function.Supplier<T> work) {
+        String previous = ACTIVITY_SOURCE.get();
+        setActivitySource(source);
+        try {
+            return work.get();
+        } finally {
+            setActivitySource(previous);
+        }
+    }
+
+    /** Runs {@code work} with every save it makes recorded as one action in the activity log. */
+    public static <T> T asOneActivity(java.util.function.Supplier<T> work) {
+        String previous = ACTIVITY_BATCH.get();
+        if (previous == null) ACTIVITY_BATCH.set(UUID.randomUUID().toString());
+        try {
+            return work.get();
+        } finally {
+            if (previous == null) ACTIVITY_BATCH.remove();
+        }
+    }
+
+    public synchronized List<ActivityEntry> getActivityLog() {
+        ensureNotNull();
+        return new ArrayList<>(data.activityLog);
+    }
+
+    /** When the log began; changes before this time were not recorded. Null if unknown. */
+    public synchronized java.time.LocalDateTime getActivityLogStartedAt() {
+        ensureNotNull();
+        try {
+            return data.activityLogStartedAt.isBlank() ? null : java.time.LocalDateTime.parse(data.activityLogStartedAt);
+        } catch (java.time.format.DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    public record UndoResult(boolean undone, String message) {}
+
+    /** True when the batch deleted something in the last 30 days that has not been put back, and it can be reversed. */
+    public static boolean undoable(List<ActivityEntry> batch, java.time.LocalDateTime now) {
+        if (batch == null || batch.isEmpty()) return false;
+        String source = batch.getFirst().getSource() == null ? "" : batch.getFirst().getSource();
+        if (source.equals("Semester rollover") || source.equals("Restore backup")) return false;
+        if (batch.stream().anyMatch(entry -> ActivityEntry.ARCHIVED.equals(entry.getAction()))) return false;
+        return batch.stream().anyMatch(entry -> entry.isRemoval() && !entry.isUndone() && entry.getItemJson() != null
+                && !entry.getTime().isBefore(now.minusDays(UNDO_WINDOW_DAYS)));
+    }
+
+    /**
+     * Reverses one recorded action: everything it deleted goes back where it was, anything it added alongside is taken
+     * out, balances move back by exactly what the action moved them, and fields it changed are restored when nothing
+     * has changed them since. The undo is itself recorded in the log.
+     */
+    public synchronized UndoResult undoActivity(String batchId) {
+        ensureNotNull();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        List<ActivityEntry> batch = data.activityLog.stream()
+                .filter(entry -> batchId != null && batchId.equals(entry.getBatchId())).toList();
+        if (batch.isEmpty()) return new UndoResult(false, "That change is no longer in the activity log.");
+        if (!undoable(batch, now)) {
+            return new UndoResult(false, batch.stream().anyMatch(ActivityEntry::isUndone)
+                    ? "That change was already undone."
+                    : "Only deletions from the last " + UNDO_WINDOW_DAYS + " days can be undone.");
+        }
+        Map<String, com.fasterxml.jackson.databind.JsonNode> trees = new LinkedHashMap<>();
+        java.util.function.Function<String, com.fasterxml.jackson.databind.JsonNode> tree =
+                section -> trees.computeIfAbsent(section, key -> mapper.valueToTree(sectionValue(key)));
+        Set<String> adjusted = new HashSet<>();
+        int restored = 0;
+        List<String> restoredNames = new ArrayList<>();
+        try {
+            // Whole records first, so the items that belong to them have somewhere to go back to.
+            List<ActivityEntry> removals = batch.stream()
+                    .filter(entry -> entry.isRemoval() && !entry.isUndone() && entry.getItemJson() != null)
+                    .sorted(Comparator.comparingInt(entry -> entry.getParentId() == null ? 0 : 1)).toList();
+            for (ActivityEntry entry : removals) {
+                com.fasterxml.jackson.databind.node.ArrayNode list = listFor(tree.apply(entry.getSection()), entry);
+                if (list == null) {
+                    return new UndoResult(false, (entry.getMemberName() == null ? "The record this belonged to" : entry.getMemberName())
+                            + " no longer exists, so this can't be put back. Undo that deletion first.");
+                }
+                adjustOwnerBalance(tree.apply(entry.getSection()), entry, adjusted);
+                String key = ActivityRecorder.keyField(entry.getSection(), entry.getCollection());
+                if (findByKey(list, key, entry.getItemKey()) != null) continue;
+                int at = entry.getItemIndex() < 0 ? list.size() : Math.min(entry.getItemIndex(), list.size());
+                list.insert(at, mapper.readTree(entry.getItemJson()));
+                restored++;
+                if (restoredNames.size() < 3) restoredNames.add(entry.getEntityType().toLowerCase(Locale.ROOT) + " \""
+                        + entry.getEntityLabel() + "\"" + (entry.getParentId() != null && entry.getMemberName() != null
+                        ? " for " + entry.getMemberName() : ""));
+            }
+            // Anything the same action added is taken back out.
+            for (ActivityEntry entry : batch) {
+                if (!ActivityEntry.ADDED.equals(entry.getAction()) || entry.isUndone()) continue;
+                com.fasterxml.jackson.databind.node.ArrayNode list = listFor(tree.apply(entry.getSection()), entry);
+                if (list == null) continue;
+                adjustOwnerBalance(tree.apply(entry.getSection()), entry, adjusted);
+                String key = ActivityRecorder.keyField(entry.getSection(), entry.getCollection());
+                for (int i = 0; i < list.size(); i++) {
+                    if (entry.getItemKey() != null && entry.getItemKey().equals(list.get(i).path(key).asText(null))) {
+                        list.remove(i);
+                        break;
+                    }
+                }
+            }
+            // Fields it changed go back when nothing has changed them since.
+            for (ActivityEntry entry : batch) {
+                if (!ActivityEntry.CHANGED.equals(entry.getAction()) || entry.isUndone()) continue;
+                com.fasterxml.jackson.databind.node.ObjectNode target = locate(tree.apply(entry.getSection()), entry);
+                if (target == null) continue;
+                for (ActivityEntry.FieldChange change : entry.getChanges()) {
+                    com.fasterxml.jackson.databind.JsonNode current = target.get(change.getField());
+                    String currentRaw = current == null || current.isNull() ? null : current.toString();
+                    String after = change.getRawAfter() == null || "null".equals(change.getRawAfter()) ? null : change.getRawAfter();
+                    if (!Objects.equals(currentRaw, after)) continue;
+                    if (change.getRawBefore() == null) target.remove(change.getField());
+                    else target.set(change.getField(), mapper.readTree(change.getRawBefore()));
+                }
+            }
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            log.warn("Unable to read an activity log entry for undo", e);
+            return new UndoResult(false, "That change could not be undone because its saved copy is unreadable.");
+        }
+        if (restored == 0) return new UndoResult(false, "Everything this change deleted is already back.");
+
+        // Apply the rebuilt sections; keep the old ones to fall back on if the save fails.
+        DataContainer previous = new DataContainer();
+        previous.members = data.members;
+        previous.archivedMembers = data.archivedMembers;
+        previous.residents = data.residents;
+        previous.flowEntries = data.flowEntries;
+        previous.recurringBills = data.recurringBills;
+        previous.chairBudgets = data.chairBudgets;
+        previous.presaleCampaigns = data.presaleCampaigns;
+        previous.settings = data.settings;
+        previous.counterpartyAliases = data.counterpartyAliases;
+        trees.forEach(this::applySection);
+        String undoBatch = UUID.randomUUID().toString();
+        String nowText = now.truncatedTo(java.time.temporal.ChronoUnit.SECONDS).toString();
+        batch.forEach(entry -> {
+            entry.setUndoneAt(nowText);
+            entry.setUndoneBatchId(undoBatch);
+        });
+        ensureNotNull();
+        normalizeMembers();
+        refreshMemberIndex();
+        nextActivityBatchId = undoBatch;
+        String source = "Undo: " + (batch.getFirst().getSource() == null ? "change" : batch.getFirst().getSource());
+        try {
+            withActivitySource(source, () -> {
+                save();
+                return null;
+            });
+        } catch (RuntimeException e) {
+            data.members = previous.members;
+            data.archivedMembers = previous.archivedMembers;
+            data.residents = previous.residents;
+            data.flowEntries = previous.flowEntries;
+            data.recurringBills = previous.recurringBills;
+            data.chairBudgets = previous.chairBudgets;
+            data.presaleCampaigns = previous.presaleCampaigns;
+            data.settings = previous.settings;
+            data.counterpartyAliases = previous.counterpartyAliases;
+            batch.forEach(entry -> {
+                entry.setUndoneAt(null);
+                entry.setUndoneBatchId(null);
+            });
+            refreshMemberIndex();
+            throw e;
+        }
+        String what = String.join(", ", restoredNames) + (restored > restoredNames.size()
+                ? " and " + (restored - restoredNames.size()) + " more" : "");
+        return new UndoResult(true, "Restored " + what + ".");
+    }
+
+    private Object sectionValue(String section) {
+        return switch (section) {
+            case "members" -> data.members;
+            case "archivedMembers" -> data.archivedMembers;
+            case "residents" -> data.residents;
+            case "flowEntries" -> data.flowEntries;
+            case "recurringBills" -> data.recurringBills;
+            case "chairBudgets" -> data.chairBudgets;
+            case "presaleCampaigns" -> data.presaleCampaigns;
+            case "settings" -> data.settings;
+            case "counterpartyAliases" -> data.counterpartyAliases;
+            default -> throw new IllegalArgumentException("Unknown data section " + section);
+        };
+    }
+
+    private void applySection(String section, com.fasterxml.jackson.databind.JsonNode node) {
+        switch (section) {
+            case "members" -> data.members = mapper.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<List<Member>>() {});
+            case "archivedMembers" -> data.archivedMembers = mapper.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<List<Member>>() {});
+            case "residents" -> data.residents = mapper.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<List<Resident>>() {});
+            case "flowEntries" -> data.flowEntries = mapper.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<List<FlowEntry>>() {});
+            case "recurringBills" -> data.recurringBills = mapper.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<List<RecurringBill>>() {});
+            case "chairBudgets" -> data.chairBudgets = mapper.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<List<ChairBudget>>() {});
+            case "presaleCampaigns" -> data.presaleCampaigns = mapper.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<List<PresaleCampaign>>() {});
+            case "settings" -> data.settings = mapper.convertValue(node, AppSettings.class);
+            case "counterpartyAliases" -> data.counterpartyAliases = mapper.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<LinkedHashMap<String, String>>() {});
+            default -> throw new IllegalArgumentException("Unknown data section " + section);
+        }
+    }
+
+    /** The list an entry's item lives in, or null when the record it belongs to no longer exists. */
+    private com.fasterxml.jackson.databind.node.ArrayNode listFor(com.fasterxml.jackson.databind.JsonNode root, ActivityEntry entry) {
+        if (root instanceof com.fasterxml.jackson.databind.node.ObjectNode object) {
+            return entry.getCollection() == null ? null : arrayIn(object, entry.getCollection());
+        }
+        if (!(root instanceof com.fasterxml.jackson.databind.node.ArrayNode array)) return null;
+        if (entry.getParentId() == null) return array;
+        com.fasterxml.jackson.databind.node.ObjectNode parent = findByKey(array,
+                ActivityRecorder.keyField(entry.getSection(), null), entry.getParentId());
+        return parent == null ? null : arrayIn(parent, entry.getCollection());
+    }
+
+    private com.fasterxml.jackson.databind.node.ObjectNode locate(com.fasterxml.jackson.databind.JsonNode root, ActivityEntry entry) {
+        if (root instanceof com.fasterxml.jackson.databind.node.ObjectNode object && entry.getCollection() == null) return object;
+        if (entry.getCollection() == null && root instanceof com.fasterxml.jackson.databind.node.ArrayNode array) {
+            return findByKey(array, ActivityRecorder.keyField(entry.getSection(), null), entry.getItemKey());
+        }
+        com.fasterxml.jackson.databind.node.ArrayNode list = listFor(root, entry);
+        return list == null ? null : findByKey(list, ActivityRecorder.keyField(entry.getSection(), entry.getCollection()), entry.getItemKey());
+    }
+
+    /** Moves the owner's balances back by what the action moved them, once per owner. */
+    private void adjustOwnerBalance(com.fasterxml.jackson.databind.JsonNode root, ActivityEntry entry, Set<String> adjusted) {
+        if (entry.getParentId() == null || entry.getParentChanges().isEmpty()) return;
+        if (!(root instanceof com.fasterxml.jackson.databind.node.ArrayNode array)) return;
+        if (!adjusted.add(entry.getSection() + "|" + entry.getParentId())) return;
+        com.fasterxml.jackson.databind.node.ObjectNode parent = findByKey(array,
+                ActivityRecorder.keyField(entry.getSection(), null), entry.getParentId());
+        if (parent == null) return;
+        for (ActivityEntry.FieldChange change : entry.getParentChanges()) {
+            try {
+                double before = Double.parseDouble(change.getRawBefore());
+                double after = Double.parseDouble(change.getRawAfter());
+                double current = parent.path(change.getField()).asDouble();
+                parent.put(change.getField(), Money.cents(Math.max(0, current + (before - after))));
+            } catch (RuntimeException ignored) {
+                // Not a number: nothing to move back.
+            }
+        }
+    }
+
+    private static com.fasterxml.jackson.databind.node.ArrayNode arrayIn(com.fasterxml.jackson.databind.node.ObjectNode parent, String field) {
+        com.fasterxml.jackson.databind.JsonNode existing = parent.get(field);
+        if (existing instanceof com.fasterxml.jackson.databind.node.ArrayNode array) return array;
+        return parent.putArray(field);
+    }
+
+    private static com.fasterxml.jackson.databind.node.ObjectNode findByKey(com.fasterxml.jackson.databind.node.ArrayNode list, String key, String value) {
+        if (list == null || value == null) return null;
+        for (com.fasterxml.jackson.databind.JsonNode item : list) {
+            if (item instanceof com.fasterxml.jackson.databind.node.ObjectNode object && value.equals(object.path(key).asText(null))) {
+                return object;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * After a backup is restored, the log keeps both histories (the restored file's and this computer's) and notes the
+     * restore. Balance reconstruction restarts at the restore, since the restore itself replaced every balance.
+     */
+    private void recordRestore(List<ActivityEntry> previousLog) {
+        Map<String, ActivityEntry> merged = new LinkedHashMap<>();
+        for (ActivityEntry entry : data.activityLog) if (entry.getId() != null) merged.put(entry.getId(), entry);
+        for (ActivityEntry entry : previousLog) if (entry.getId() != null) merged.putIfAbsent(entry.getId(), entry);
+        List<ActivityEntry> log = new ArrayList<>(merged.values());
+        log.sort(Comparator.comparing(ActivityEntry::getTime));
+        String now = java.time.LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS).toString();
+        ActivityEntry note = new ActivityEntry();
+        note.setId(UUID.randomUUID().toString());
+        note.setBatchId(UUID.randomUUID().toString());
+        note.setAt(now);
+        note.setSource("Restore backup");
+        note.setCategory("Imports");
+        note.setAction(ActivityEntry.CHANGED);
+        note.setEntityType("Backup");
+        note.setEntityLabel("Backup file");
+        note.setSummary("Data restored from a backup file: " + data.members.size() + (data.members.size() == 1 ? " member, " : " members, ")
+                + data.residents.size() + (data.residents.size() == 1 ? " resident, " : " residents, ")
+                + data.flowEntries.size() + (data.flowEntries.size() == 1 ? " cash flow entry." : " cash flow entries."));
+        log.add(note);
+        data.activityLog = log;
+        data.activityLogStartedAt = now;
+        trimActivityLog();
+        activity.reset(activity.snapshot(data));
     }
 
     private void restoreBackupOrFail(Path target, Exception originalFailure) {
@@ -290,7 +668,35 @@ public class Store {
         }
     }
 
+    /**
+     * Gives every member without one a unique dues code such as DUES-JSMITH, for Venmo notes. Runs whenever the roster
+     * changes, so the save that follows keeps the codes. Returns how many were assigned.
+     */
+    private int assignMissingDuesCodes() {
+        Set<String> taken = new HashSet<>();
+        for (Member member : data.members) {
+            if (!member.getDuesCode().isBlank()) taken.add(member.getDuesCode().trim().toUpperCase(Locale.ROOT));
+        }
+        int assigned = 0;
+        for (Member member : data.members) {
+            if (!member.getDuesCode().isBlank()) continue;
+            String code = PaymentMatcher.generateDuesCode(member, taken);
+            taken.add(code);
+            member.setDuesCode(code);
+            assigned++;
+        }
+        return assigned;
+    }
+
+    /** True when another member already uses {@code duesCode} (ignoring case). */
+    public synchronized boolean duesCodeTaken(String duesCode, String exceptMemberId) {
+        String key = duesCode == null ? "" : duesCode.trim().toUpperCase(Locale.ROOT);
+        return !key.isEmpty() && data.members.stream().anyMatch(member -> !Objects.equals(member.getId(), exceptMemberId)
+                && key.equals(member.getDuesCode().trim().toUpperCase(Locale.ROOT)));
+    }
+
     private void refreshMemberIndex() {
+        assignMissingDuesCodes();
         Map<String, Member> index = new HashMap<>();
         Set<String> recordedPaymentKeys = new HashSet<>();
         for (Member member : data.members) {
@@ -1552,6 +1958,7 @@ public class Store {
         }
         if (imported == null) throw new IllegalArgumentException("That backup file is empty.");
         DataContainer previous = data;
+        List<ActivityEntry> previousLog = previous.activityLog == null ? List.of() : new ArrayList<>(previous.activityLog);
         data = imported;
         try {
             ensureNotNull();
@@ -1559,10 +1966,12 @@ public class Store {
             restoreReceiptFilesFromData(true);
             refreshMemberIndex();
             autoLinkResidents();
+            recordRestore(previousLog);
             save();
         } catch (RuntimeException e) {
             data = previous;
             refreshMemberIndex();
+            activity.reset(activity.snapshot(data));
             throw e;
         }
     }
@@ -1623,6 +2032,116 @@ public class Store {
             }
         }
         return new int[] {added.size(), duplicates};
+    }
+
+    private static final int MAX_PROCESSED_EMAILS = 20_000;
+
+    public synchronized boolean isEmailProcessed(String messageId) {
+        ensureNotNull();
+        return messageId != null && data.processedEmails.containsKey(messageId);
+    }
+
+    public synchronized boolean hasFlowEntry(String flowEntryId) {
+        ensureNotNull();
+        return data.flowEntries.stream().anyMatch(entry -> entry.getId() != null && entry.getId().equals(flowEntryId));
+    }
+
+    /** The processed email that created {@code flowEntryId}, if it came from the Venmo email import. */
+    public synchronized Optional<ProcessedEmail> processedEmailForEntry(String flowEntryId) {
+        ensureNotNull();
+        return data.processedEmails.values().stream()
+                .filter(email -> flowEntryId != null && flowEntryId.equals(email.flowEntryId())).findFirst();
+    }
+
+    /** The newest receive time among processed emails, used to decide how far back the next sync reads. */
+    public synchronized Optional<java.time.Instant> latestProcessedEmailReceivedAt() {
+        ensureNotNull();
+        java.time.Instant latest = null;
+        for (ProcessedEmail email : data.processedEmails.values()) {
+            if (email.receivedAt() == null || email.receivedAt().isBlank()) continue;
+            try {
+                java.time.Instant at = java.time.Instant.parse(email.receivedAt());
+                if (latest == null || at.isAfter(latest)) latest = at;
+            } catch (DateTimeParseException ignored) {
+                // A malformed time does not move the sync window.
+            }
+        }
+        return Optional.ofNullable(latest);
+    }
+
+    public synchronized String getLastVenmoEmailAt() {
+        ensureNotNull();
+        return data.lastVenmoEmailAt;
+    }
+
+    public synchronized String getLastVenmoPaymentSummary() {
+        ensureNotNull();
+        return data.lastVenmoPaymentSummary;
+    }
+
+    /** Payer name (normalized) to member ID, remembered from confirmed matches. */
+    public synchronized Map<String, String> getCounterpartyAliases() {
+        ensureNotNull();
+        return Map.copyOf(data.counterpartyAliases);
+    }
+
+    /**
+     * Saves one Venmo email sync in a single write: the new Cash Flow entries, every processed Message-ID, and the
+     * newest-payment summary. An entry whose ID is already saved (say, imported from a Venmo CSV) is not added again.
+     * If the save fails nothing is kept, so the same emails are simply read again next time.
+     * Returns the entries actually added.
+     */
+    public synchronized List<FlowEntry> recordProcessedEmails(List<FlowEntry> entries, Map<String, ProcessedEmail> processed,
+                                                              java.time.Instant newestPaymentAt, String newestPaymentSummary) {
+        ensureNotNull();
+        Set<String> existing = data.flowEntries.stream().map(FlowEntry::getId).collect(Collectors.toSet());
+        List<FlowEntry> added = new ArrayList<>();
+        for (FlowEntry entry : entries) {
+            if (existing.add(entry.getId())) added.add(entry);
+        }
+        Map<String, ProcessedEmail> fresh = new LinkedHashMap<>();
+        processed.forEach((messageId, email) -> {
+            if (!data.processedEmails.containsKey(messageId)) fresh.put(messageId, email);
+        });
+        if (added.isEmpty() && fresh.isEmpty()) return List.of();
+
+        String previousEmailAt = data.lastVenmoEmailAt;
+        String previousSummary = data.lastVenmoPaymentSummary;
+        Map<String, ProcessedEmail> previousProcessed = new LinkedHashMap<>(data.processedEmails);
+        data.flowEntries.addAll(added);
+        data.processedEmails.putAll(fresh);
+        while (data.processedEmails.size() > MAX_PROCESSED_EMAILS) {
+            // Oldest first; emails this old are far outside any sync window, so they are never read again.
+            data.processedEmails.remove(data.processedEmails.keySet().iterator().next());
+        }
+        if (newestPaymentAt != null) {
+            java.time.Instant previous = null;
+            try {
+                if (!previousEmailAt.isBlank()) previous = java.time.Instant.parse(previousEmailAt);
+            } catch (DateTimeParseException ignored) {
+                // Replaced below.
+            }
+            if (previous == null || newestPaymentAt.isAfter(previous)) {
+                data.lastVenmoEmailAt = newestPaymentAt.toString();
+                data.lastVenmoPaymentSummary = newestPaymentSummary == null ? "" : newestPaymentSummary;
+            }
+        }
+        try {
+            save();
+        } catch (IllegalStateException e) {
+            data.flowEntries.removeAll(added);
+            data.processedEmails = previousProcessed;
+            data.lastVenmoEmailAt = previousEmailAt;
+            data.lastVenmoPaymentSummary = previousSummary;
+            throw e;
+        }
+        return added;
+    }
+
+    /** A file next to the data file (e.g. ".venmo-mail.secret") for things kept out of the main save and backups. */
+    public synchronized Path companionFile(String suffix) {
+        Path dataFile = Path.of(DATA_FILE).toAbsolutePath();
+        return dataFile.resolveSibling(dataFile.getFileName() + suffix);
     }
 
     public synchronized boolean confirmReconciliation(String flowEntryId, String memberId) {

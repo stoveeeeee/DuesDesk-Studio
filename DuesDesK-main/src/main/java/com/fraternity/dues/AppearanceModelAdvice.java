@@ -16,6 +16,7 @@ public class AppearanceModelAdvice {
     @ModelAttribute
     public void addAppearanceMode(Model model) {
         model.addAttribute("appearanceMode", store.getSettings().getAppearanceMode());
+        model.addAttribute("chapterName", store.getSettings().getChapterName());
     }
 
     @ModelAttribute
@@ -38,6 +39,10 @@ public class AppearanceModelAdvice {
             active = "finance";
         } else if (path.equals("/chair-budgeting")) {
             active = "chair";
+        } else if (path.equals("/charges")) {
+            active = "charges";
+        } else if (path.equals("/activity")) {
+            active = "activity";
         } else if (path.equals("/presales")) {
             active = "presales";
         } else if (path.startsWith("/settings")) {

@@ -1,15 +1,7 @@
 package com.fraternity.dues;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
-import java.awt.Color;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
@@ -243,18 +235,10 @@ public class FlowReportService {
         return out.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private static final float MARGIN = 40;
-    private static final float ROW_HEIGHT = 18;
-    private static final float[] COLUMN_WIDTHS = {70, 120, 220, 140, 70, 92};
     private static final String[] COLUMN_HEADERS = {"Date", "Type", "Description", "Name", "Source", "Amount"};
-    private static final Color INK = new Color(15, 23, 42);
-    private static final Color MUTED = new Color(100, 116, 139);
-    private static final Color GREEN = new Color(21, 128, 61);
-    private static final Color RED = new Color(185, 28, 28);
-    private static final Color HEADER_FILL = new Color(238, 242, 247);
-    private static final Color STRIPE_FILL = new Color(248, 250, 252);
+    private static final float[] COLUMN_SHARE = {0.11f, 0.15f, 0.31f, 0.20f, 0.10f, 0.13f};
 
-    /** Printable export: title, period, totals, then the table across as many landscape pages as needed. */
+    /** Printable export: executive letterhead, KPI scorecard, then the receipt-rule table across as many landscape pages as needed. */
     public byte[] pdf(Period period) throws IOException {
         return pdf(period, null, null);
     }
@@ -265,119 +249,60 @@ public class FlowReportService {
         Totals totals = totals(rows);
         String refinement = refinementLabel(kind, query);
         String heading = refinement.isEmpty() ? period.getDescription() : period.getDescription() + " - " + refinement;
-        PDFont regular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-        PDFont bold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-        PDRectangle landscape = new PDRectangle(PDRectangle.LETTER.getHeight(), PDRectangle.LETTER.getWidth());
-        float top = landscape.getHeight() - MARGIN;
-        float tableWidth = 0;
-        for (float width : COLUMN_WIDTHS) tableWidth += width;
+        long inCount = rows.stream().filter(row -> row.amount() > 0).count();
+        long outCount = rows.stream().filter(row -> row.amount() < 0).count();
 
-        try (PDDocument document = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            PDPage page = new PDPage(landscape);
-            document.addPage(page);
-            PDPageContentStream stream = new PDPageContentStream(document, page);
-            float y = top;
-            text(stream, bold, 16, MARGIN, y - 14, "Cash Flow Report", INK);
-            y -= 34;
-            text(stream, regular, 9.5f, MARGIN, y, heading + "   |   Generated " + LocalDate.now().format(DISPLAY_DATE), MUTED);
-            y -= 22;
-            float x = MARGIN;
-            x = summary(stream, regular, bold, x, y, "Total inflow", money(totals.inflow()), GREEN);
-            x = summary(stream, regular, bold, x, y, "Total outflow", money(totals.outflow()), RED);
-            x = summary(stream, regular, bold, x, y, "Net", (totals.net() < 0 ? "-" : "") + money(Math.abs(totals.net())),
-                    totals.net() < 0 ? RED : GREEN);
-            summary(stream, regular, bold, x, y, "Transactions", String.valueOf(totals.count()), INK);
-            y -= 30;
-            y = tableHeader(stream, bold, y, tableWidth);
+        ExecutivePdf pdf = new ExecutivePdf(ExecutivePdf.chapterOf(store), "Cash Flow", true);
+        pdf.letterhead("Cash Flow Report  |  " + heading, "Cash Flow Report", List.of(
+                new String[] {"Period", period.isBounded() ? period.getRange() : "All time"},
+                new String[] {"Generated", LocalDate.now().format(DISPLAY_DATE)},
+                new String[] {"Transactions", String.valueOf(totals.count())}
+        ), totals.net() < 0 ? "Net outflow" : "Net inflow", totals.net() < 0 ? ExecutivePdf.Tone.DANGER : ExecutivePdf.Tone.SUCCESS);
+        pdf.kpiBand(List.of(
+                new ExecutivePdf.Kpi("Total inflow", money(totals.inflow()), ExecutivePdf.GREEN),
+                new ExecutivePdf.Kpi("Total outflow", money(totals.outflow()), ExecutivePdf.RED),
+                new ExecutivePdf.Kpi("Net", (totals.net() < 0 ? "-" : "") + money(Math.abs(totals.net())), totals.net() < 0 ? ExecutivePdf.RED : ExecutivePdf.GREEN),
+                new ExecutivePdf.Kpi("Transactions", totals.count() + "  (" + inCount + " in / " + outCount + " out)")
+        ));
 
-            if (rows.isEmpty()) {
-                text(stream, regular, 10, MARGIN + 6, y - 12, "No transactions in this period.", MUTED);
-            }
-            for (int i = 0; i < rows.size(); i++) {
-                if (y - ROW_HEIGHT < MARGIN + 18) {
-                    stream.close();
-                    page = new PDPage(landscape);
-                    document.addPage(page);
-                    stream = new PDPageContentStream(document, page);
-                    y = tableHeader(stream, bold, top, tableWidth);
-                }
-                FlowRow row = rows.get(i);
-                if (i % 2 == 1) {
-                    stream.setNonStrokingColor(STRIPE_FILL);
-                    stream.addRect(MARGIN, y - ROW_HEIGHT, tableWidth, ROW_HEIGHT);
-                    stream.fill();
-                }
-                float baseline = y - 12.5f;
-                String[] cells = {dateText(row.date()), row.type(), row.description(), row.party(), row.source()};
-                float cellX = MARGIN;
-                for (int c = 0; c < cells.length; c++) {
-                    text(stream, regular, 8.5f, cellX + 6, baseline, fit(cells[c], regular, 8.5f, COLUMN_WIDTHS[c] - 12),
-                            c == 0 || c == 4 ? MUTED : INK);
-                    cellX += COLUMN_WIDTHS[c];
-                }
-                String amount = (row.amount() < 0 ? "-" : "+") + money(Math.abs(row.amount()));
-                float amountWidth = width(amount, bold, 8.5f);
-                text(stream, bold, 8.5f, cellX + COLUMN_WIDTHS[5] - 6 - amountWidth, baseline, amount, row.amount() < 0 ? RED : GREEN);
-                y -= ROW_HEIGHT;
-            }
-            stream.close();
-
-            int pages = document.getNumberOfPages();
-            for (int p = 0; p < pages; p++) {
-                try (PDPageContentStream footer = new PDPageContentStream(document, document.getPage(p),
-                        PDPageContentStream.AppendMode.APPEND, true, true)) {
-                    text(footer, regular, 8, MARGIN, MARGIN - 16, "DuesDesk  |  Cash Flow  |  " + heading, MUTED);
-                    String pageText = "Page " + (p + 1) + " of " + pages;
-                    text(footer, regular, 8, MARGIN + tableWidth - width(pageText, regular, 8), MARGIN - 16, pageText, MUTED);
-                }
-            }
-            document.save(output);
-            return output.toByteArray();
-        }
-    }
-
-    private float tableHeader(PDPageContentStream stream, PDFont bold, float y, float tableWidth) throws IOException {
-        stream.setNonStrokingColor(HEADER_FILL);
-        stream.addRect(MARGIN, y - ROW_HEIGHT, tableWidth, ROW_HEIGHT);
-        stream.fill();
-        float x = MARGIN;
+        float width = pdf.width();
+        List<ExecutivePdf.Column> columns = new ArrayList<>();
         for (int c = 0; c < COLUMN_HEADERS.length; c++) {
-            String header = COLUMN_HEADERS[c].toUpperCase(Locale.US);
-            float textX = c == COLUMN_HEADERS.length - 1 ? x + COLUMN_WIDTHS[c] - 6 - width(header, bold, 7.5f) : x + 6;
-            text(stream, bold, 7.5f, textX, y - 12, header, MUTED);
-            x += COLUMN_WIDTHS[c];
+            columns.add(new ExecutivePdf.Column(COLUMN_HEADERS[c], width * COLUMN_SHARE[c], c == COLUMN_HEADERS.length - 1));
         }
-        return y - ROW_HEIGHT;
-    }
-
-    private float summary(PDPageContentStream stream, PDFont regular, PDFont bold, float x, float y,
-                          String label, String value, Color color) throws IOException {
-        text(stream, regular, 8.5f, x, y, label, MUTED);
-        text(stream, bold, 13, x, y - 15, value, color);
-        return x + Math.max(width(label, regular, 8.5f), width(value, bold, 13)) + 36;
-    }
-
-    static void text(PDPageContentStream stream, PDFont font, float size, float x, float y,
-                      String value, Color color) throws IOException {
-        stream.beginText();
-        stream.setNonStrokingColor(color);
-        stream.setFont(font, size);
-        stream.newLineAtOffset(x, y);
-        stream.showText(safe(value));
-        stream.endText();
+        List<List<ExecutivePdf.Cell>> body = new ArrayList<>();
+        for (FlowRow row : rows) {
+            boolean in = row.amount() >= 0;
+            body.add(List.of(
+                    ExecutivePdf.Cell.muted(dateText(row.date())),
+                    ExecutivePdf.Cell.pill(nullToEmpty(row.type()).isBlank() ? "Other" : row.type(), in ? ExecutivePdf.Tone.SUCCESS : ExecutivePdf.Tone.DANGER),
+                    ExecutivePdf.Cell.bold(row.description()),
+                    ExecutivePdf.Cell.of(row.party()),
+                    ExecutivePdf.Cell.muted(row.source()),
+                    ExecutivePdf.Cell.colored((row.amount() < 0 ? "-" : "+") + money(Math.abs(row.amount())), row.amount() < 0 ? ExecutivePdf.RED : ExecutivePdf.GREEN)));
+        }
+        pdf.table(columns, body, "No transactions in this period.");
+        if (!rows.isEmpty()) {
+            pdf.space(4);
+            pdf.totals("Notes", List.of(
+                    "Inflows are dues payments and other money received; outflows are bills, expenses and reimbursements recorded in the ledger.",
+                    "Bank and Venmo imports that have not been reconciled into a member payment appear under their own source."
+            ), List.of(), List.of(
+                    new ExecutivePdf.SummaryLine("Total inflow", money(totals.inflow())),
+                    new ExecutivePdf.SummaryLine("Total outflow", "-" + money(totals.outflow())),
+                    new ExecutivePdf.SummaryLine("Net", (totals.net() < 0 ? "-" : "") + money(Math.abs(totals.net())), true)
+            ));
+        }
+        return pdf.finish();
     }
 
     static float width(String value, PDFont font, float size) throws IOException {
-        return font.getStringWidth(safe(value)) / 1000 * size;
+        return ExecutivePdf.width(value, font, size);
     }
 
     /** Shortens text with "..." so it fits its column. */
     static String fit(String value, PDFont font, float size, float maxWidth) throws IOException {
-        String text = safe(value);
-        if (width(text, font, size) <= maxWidth) return text;
-        int end = text.length();
-        while (end > 0 && width(text.substring(0, end) + "...", font, size) > maxWidth) end--;
-        return text.substring(0, end).stripTrailing() + "...";
+        return ExecutivePdf.fit(value, font, size, maxWidth);
     }
 
     private static LocalDate parse(String value) {

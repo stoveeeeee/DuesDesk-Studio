@@ -23,12 +23,13 @@ public class DashboardController {
 
     private final Store store;
     private final SmsService smsService;
-    private final MemberDocumentService documentService = new MemberDocumentService();
+    private final MemberDocumentService documentService;
     private final BackupEncryptionService backupEncryptionService = new BackupEncryptionService();
     private final FinanceDocumentService financeDocumentService;
     private final FlowReportService flowReportService;
-    private final TableExportService tableExportService = new TableExportService();
+    private final TableExportService tableExportService;
     private final CloudBackupService cloudBackupService;
+    private ReminderSequenceService reminderSequence;
 
     public DashboardController(Store store, SmsService smsService) {
         this(store, smsService, null, new FinanceDocumentService(store));
@@ -42,11 +43,30 @@ public class DashboardController {
         this.cloudBackupService = cloudBackupService;
         this.financeDocumentService = financeDocumentService;
         this.flowReportService = new FlowReportService(store);
+        this.documentService = new MemberDocumentService(() -> ExecutivePdf.chapterOf(store));
+        this.tableExportService = new TableExportService(() -> ExecutivePdf.chapterOf(store));
+    }
+
+    /** The automatic reminder sequence, when running inside the app (tests may leave it unset). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setReminderSequence(ReminderSequenceService reminderSequence) {
+        this.reminderSequence = reminderSequence;
+    }
+
+    public String dashboard(int page, String sort, Model model) {
+        return dashboard(page, sort, null, model);
+    }
+
+    /** The ledger shows one roster at a time: active Members (the default), Inactive, or Alumni. */
+    static String rosterGroup(String group) {
+        return Member.normalizeMembershipStatus(group);
     }
 
     @GetMapping("/")
     public String dashboard(@RequestParam(name = "page", defaultValue = "1") int page,
-                            @RequestParam(name = "sort", required = false) String sort, Model model) {
+                            @RequestParam(name = "sort", required = false) String sort,
+                            @RequestParam(name = "group", required = false) String group, Model model) {
+        String rosterGroup = rosterGroup(group);
         // Automatic bills that have come due are recorded first, so the numbers and reminders below are current.
         store.processRecurringBills(LocalDate.now());
         List<Member> allMembers = store.getMembers();
@@ -56,18 +76,36 @@ public class DashboardController {
             allMembers.sort(order);
             model.addAttribute("sort", sort);
         }
+        // The table shows the chosen roster; every total, reminder and attention item still covers everyone.
+        List<Member> groupMembers = allMembers.stream().filter(member -> rosterGroup.equals(member.getMembershipStatus())).toList();
+        Map<String, Long> groupCounts = new LinkedHashMap<>();
+        Member.MEMBERSHIP_STATUSES.forEach(status -> groupCounts.put(status,
+                allMembers.stream().filter(member -> status.equals(member.getMembershipStatus())).count()));
         int pageSize = 25;
-        int totalPages = Math.max(1, (int) Math.ceil(allMembers.size() / (double) pageSize));
+        int totalPages = Math.max(1, (int) Math.ceil(groupMembers.size() / (double) pageSize));
         int currentPage = Math.min(Math.max(1, page), totalPages);
         int firstIndex = (currentPage - 1) * pageSize;
-        List<Member> members = allMembers.subList(firstIndex, Math.min(firstIndex + pageSize, allMembers.size()));
+        List<Member> members = groupMembers.subList(firstIndex, Math.min(firstIndex + pageSize, groupMembers.size()));
+        // The page also carries each other roster's first page, so switching Members / Inactive / Alumni happens in
+        // place without reloading. The chosen roster keeps the requested page.
+        List<Member> ledgerMembers = new ArrayList<>(members);
+        Map<String, RosterPage> rosterPages = new LinkedHashMap<>();
+        for (String status : Member.MEMBERSHIP_STATUSES) {
+            List<Member> list = allMembers.stream().filter(member -> status.equals(member.getMembershipStatus())).toList();
+            int pages = Math.max(1, (int) Math.ceil(list.size() / (double) pageSize));
+            int shownPage = status.equals(rosterGroup) ? currentPage : 1;
+            int first = (shownPage - 1) * pageSize;
+            int last = Math.min(first + pageSize, list.size());
+            if (!status.equals(rosterGroup)) ledgerMembers.addAll(list.subList(first, last));
+            rosterPages.put(status, new RosterPage(status, shownPage, pages, list.size(), first + 1, last));
+        }
         Map<String, List<PaymentMonth>> paymentHistoryByMember = new LinkedHashMap<>();
         Map<String, MemberAccountSummary> accountSummaries = new LinkedHashMap<>();
 
         for (Member member : allMembers) {
             accountSummaries.put(member.getId(), accountSummary(member));
         }
-        for (Member member : members) {
+        for (Member member : ledgerMembers) {
             Map<String, List<PaymentRecord>> paymentsByMonth = new LinkedHashMap<>();
             if (member.getPaymentHistory() != null) {
                 for (PaymentRecord payment : member.getPaymentHistory()) {
@@ -102,7 +140,11 @@ public class DashboardController {
         model.addAttribute("socialClearanceByMember", socialClearance);
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
-        model.addAttribute("totalMembers", allMembers.size());
+        model.addAttribute("totalMembers", groupMembers.size());
+        model.addAttribute("rosterGroup", rosterGroup);
+        model.addAttribute("rosterGroups", groupCounts);
+        model.addAttribute("rosterPages", rosterPages);
+        model.addAttribute("ledgerMembers", ledgerMembers);
         model.addAttribute("hasPreviousPage", currentPage > 1);
         model.addAttribute("hasNextPage", currentPage < totalPages);
         model.addAttribute("paymentHistoryByMember", paymentHistoryByMember);
@@ -446,6 +488,21 @@ public class DashboardController {
                                       int installmentsPaid, int installmentCount,
                                       double installmentPaidAmount, double installmentTotalAmount) {}
 
+    /** One roster (Members, Inactive or Alumni) as the ledger pages it. */
+    public record RosterPage(String group, int currentPage, int totalPages, int total, int firstShown, int lastShown) {
+        public String getLabel() { return Member.MEMBER.equals(group) ? "Members" : group; }
+        public String getParam() { return group.toLowerCase(java.util.Locale.ROOT); }
+        public boolean isHasPrevious() { return currentPage > 1; }
+        public boolean isHasNext() { return currentPage < totalPages; }
+        /** "42 members on the roster", "1 inactive member on the roster", "5 alumni on the roster". */
+        public String getSummary() {
+            String noun = Member.ALUMNI.equals(group) ? "alumni"
+                    : Member.INACTIVE.equals(group) ? (total == 1 ? "inactive member" : "inactive members")
+                    : (total == 1 ? "member" : "members");
+            return total + " " + noun + " on the roster";
+        }
+    }
+
     public record AttentionItem(String title, String detail, String href, String status,
                                 String memberId, int urgency, LocalDate dueDate, double amount) {}
     public record StatusRecipientGroup(String status, long recipientCount) {}
@@ -530,11 +587,25 @@ public class DashboardController {
                     "/calendar#billReminders", overdue > 0 ? "Overdue" : "Due soon", null, overdue > 0 ? 1 : 3,
                     billReminders.getFirst().dueDate(), billTotal));
         }
-        int reminders = smsService.reminderPreview().size();
-        if (reminders > 0) {
-            items.add(new AttentionItem("Reminders ready to review", reminders + " eligible member"
-                    + (reminders == 1 ? "" : "s"), "/#smsReminders", "Needs review",
-                    null, 5, null, reminders));
+        if (reminderSequence != null) {
+            // Accounts the reminder sequence flagged come first: they are waiting on an officer decision.
+            for (Member flagged : reminderSequence.flaggedMembers()) {
+                items.add(new AttentionItem(flagged.getName() + " is flagged for officer review",
+                        flagged.getOfficerReviewReason() == null ? "Flagged by the reminder sequence" : flagged.getOfficerReviewReason(),
+                        memberPageHref(members, flagged, sort), "Officer review", null, 0, null, flagged.getPastDueBalance()));
+            }
+            int steps = reminderSequence.preview(today).size();
+            if (steps > 0) {
+                items.add(new AttentionItem("Reminder steps due today", steps + (steps == 1 ? " member is" : " members are")
+                        + " due for the next reminder step", "/#smsReminders", "Needs review", null, 5, null, steps));
+            }
+        } else {
+            int reminders = smsService.reminderPreview().size();
+            if (reminders > 0) {
+                items.add(new AttentionItem("Reminders ready to review", reminders + " eligible member"
+                        + (reminders == 1 ? "" : "s"), "/#smsReminders", "Needs review",
+                        null, 5, null, reminders));
+            }
         }
         Map<String, String> snoozes = store.getSettings().getAttentionSnoozes();
         return items.stream()
@@ -552,12 +623,18 @@ public class DashboardController {
         return until != null && until.isAfter(today);
     }
 
-    private String memberPageHref(List<Member> members, Member member, String sort) {
+    private String memberPageHref(List<Member> allMembers, Member member, String sort) {
+        // The member is on the roster for their status (Members, Inactive or Alumni), on the page that holds them.
+        List<Member> members = allMembers.stream()
+                .filter(item -> member.getMembershipStatus().equals(item.getMembershipStatus())).toList();
         int index = java.util.stream.IntStream.range(0, members.size())
                 .filter(i -> java.util.Objects.equals(members.get(i).getId(), member.getId()))
                 .findFirst().orElse(0);
         int page = (index / 25) + 1;
-        return "/?page=" + page + (sort == null || sort.isBlank() ? "" : "&sort=" + sort)
+        String group = Member.MEMBER.equals(member.getMembershipStatus()) ? ""
+                : "&group=" + member.getMembershipStatus().toLowerCase(java.util.Locale.ROOT);
+        return "/?page=" + page + group
+                + (sort == null || sort.isBlank() ? "" : "&sort=" + sort)
                 + "#member-" + member.getId();
     }
 
@@ -927,12 +1004,31 @@ public class DashboardController {
         catalog.add(new DashStat("pastdue", g, "Actively Past Due", money(pastDue), late + " delinquent members", null, "bi-exclamation-triangle", "rose"));
         catalog.add(new DashStat("rate", g, "Collection Rate", percent(rate), paid + " Paid · " + plan + " Plan · " + late + " Late",
                 Math.max(0, Math.min(100, rate)), "bi-pie-chart", "slate"));
-        catalog.add(new DashStat("ihq", g, "% of IHQ Bill Paid Off (for semester)",
+        catalog.add(new DashStat("ihq", g, "% Of IHQ Bill Paid",
                 ihq.bill() > 0 ? percent(ihq.percent()) : "—",
                 ihq.bill() > 0 ? money(ihq.paidOff()) + " of " + money(ihq.bill()) : "Set the semester bill to start tracking",
                 ihq.bill() > 0 ? ihq.percent() : null, "bi-pencil", "blue"));
         catalog.add(new DashStat("member-count", g, "Members on Roster", Long.toString(all.size()),
                 "Current roster size", null, "bi-people", "slate"));
+        // Inactive and Alumni dues are tracked apart from active Members: for each, the collection rate (the same
+        // formula as the overall rate, over that group only) and the dues still unpaid.
+        for (String roster : List.of(Member.INACTIVE, Member.ALUMNI)) {
+            List<Member> people = all.stream().filter(m -> roster.equals(m.getMembershipStatus())).toList();
+            double groupInflow = people.stream().mapToDouble(Member::getPaidThisMonth).sum();
+            double groupOwed = people.stream().mapToDouble(Member::getTotalOwed).sum();
+            double groupPool = groupInflow + groupOwed;
+            double groupRate = groupPool > 0 ? groupInflow / groupPool * 100.0 : 100.0;
+            long owing = people.stream().filter(m -> Money.positive(m.getTotalOwed())).count();
+            String key = roster.toLowerCase(java.util.Locale.ROOT);
+            String noun = Member.ALUMNI.equals(roster) ? "alumni" : "inactive members";
+            String groupName = "Inactive & Alumni Dues";
+            catalog.add(new DashStat(key + "-rate", groupName, roster + " Collection Rate", percent(groupRate),
+                    people.isEmpty() ? "No " + noun + " on the roster" : money(groupInflow) + " collected this month · " + people.size() + " " + noun,
+                    people.isEmpty() ? null : Math.max(0, Math.min(100, groupRate)), "bi-pie-chart", "slate"));
+            catalog.add(new DashStat(key + "-unpaid", groupName, roster + " Dues Unpaid", money(groupOwed),
+                    people.isEmpty() ? "No " + noun + " on the roster" : owing + " of " + people.size() + " " + noun + " still owe",
+                    null, "bi-wallet2", Money.positive(groupOwed) ? "rose" : "emerald"));
+        }
         for (MetricGroup group : metricGroups(all)) {
             for (Metric m : group.getMetrics()) {
                 boolean tracked = !"—".equals(m.getValue());
@@ -1192,29 +1288,63 @@ public class DashboardController {
     @PostMapping("/settings")
     public synchronized String updateSettings(@RequestParam String smsTemplate,
                                  @RequestParam(defaultValue = "false") boolean autoSendEnabled,
-                                 @RequestParam String frequency,
-                                 @RequestParam String dayOfWeek,
+                                 @RequestParam(required = false) String frequency,
+                                 @RequestParam(required = false) String dayOfWeek,
                                  @RequestParam String sendTime,
                                  @RequestParam(defaultValue = "3") int reminderDaysBeforeDue,
-                                 @RequestParam(defaultValue = "1") int reminderDaysAfterDue,
+                                 @RequestParam(required = false) Integer reminderDaysAfterDue,
+                                 @RequestParam(required = false) Boolean sequenceFriendlyEnabled,
+                                 @RequestParam(required = false) Boolean sequenceFirmEnabled,
+                                 @RequestParam(required = false) Integer sequenceFirmDays,
+                                 @RequestParam(required = false) String sequenceFirmTemplate,
+                                 @RequestParam(required = false) Boolean sequenceNoticeEnabled,
+                                 @RequestParam(required = false) Integer sequenceNoticeDays,
+                                 @RequestParam(required = false) String sequenceNoticeTemplate,
+                                 @RequestParam(required = false) Boolean sequenceReviewEnabled,
+                                 @RequestParam(required = false) Integer sequenceReviewDays,
+                                 @RequestParam(defaultValue = "false") boolean sequenceForm,
                                  RedirectAttributes redirect) {
+        int afterDue = reminderDaysAfterDue == null ? store.getSettings().getReminderDaysAfterDue() : reminderDaysAfterDue;
         if (smsTemplate.length() > 1600 || reminderDaysBeforeDue < 0 || reminderDaysBeforeDue > 60
-                || reminderDaysAfterDue < 0 || reminderDaysAfterDue > 60) {
+                || afterDue < 0 || afterDue > 60) {
             redirect.addFlashAttribute("toast", "Check the SMS template and choose reminder offsets between 0 and 60 days.");
+            return "redirect:/#smsReminders";
+        }
+        AppSettings current = store.getSettings();
+        int firmDays = sequenceFirmDays == null ? current.getSequenceFirmDays() : sequenceFirmDays;
+        int noticeDays = sequenceNoticeDays == null ? current.getSequenceNoticeDays() : sequenceNoticeDays;
+        int reviewDays = sequenceReviewDays == null ? current.getSequenceReviewDays() : sequenceReviewDays;
+        if (firmDays < 1 || reviewDays > 180 || firmDays >= noticeDays || noticeDays >= reviewDays) {
+            redirect.addFlashAttribute("toast", "Space the reminder steps out: the firm reminder, then the notice, then officer review, each later than the one before (1 to 180 days after the due date).");
+            return "redirect:/#smsReminders";
+        }
+        if ((sequenceFirmTemplate != null && sequenceFirmTemplate.length() > 1600)
+                || (sequenceNoticeTemplate != null && sequenceNoticeTemplate.length() > 1600)) {
+            redirect.addFlashAttribute("toast", "Keep each reminder message under 1,600 characters.");
             return "redirect:/#smsReminders";
         }
         synchronized (store) {
             AppSettings s = store.getSettings();
             s.setSmsTemplate(smsTemplate);
             s.setAutoSendEnabled(autoSendEnabled);
-            s.setFrequency(frequency);
-            s.setDayOfWeek(dayOfWeek);
+            if (frequency != null && !frequency.isBlank()) s.setFrequency(frequency);
+            if (dayOfWeek != null && !dayOfWeek.isBlank()) s.setDayOfWeek(dayOfWeek);
             s.setSendTime(sendTime);
             s.setReminderDaysBeforeDue(reminderDaysBeforeDue);
-            s.setReminderDaysAfterDue(reminderDaysAfterDue);
+            s.setReminderDaysAfterDue(afterDue);
+            // Unticked checkboxes send nothing, so the sequence form says it is the sequence form.
+            if (sequenceForm || sequenceFriendlyEnabled != null) s.setSequenceFriendlyEnabled(Boolean.TRUE.equals(sequenceFriendlyEnabled));
+            if (sequenceForm || sequenceFirmEnabled != null) s.setSequenceFirmEnabled(Boolean.TRUE.equals(sequenceFirmEnabled));
+            if (sequenceForm || sequenceNoticeEnabled != null) s.setSequenceNoticeEnabled(Boolean.TRUE.equals(sequenceNoticeEnabled));
+            if (sequenceForm || sequenceReviewEnabled != null) s.setSequenceReviewEnabled(Boolean.TRUE.equals(sequenceReviewEnabled));
+            s.setSequenceFirmDays(firmDays);
+            s.setSequenceNoticeDays(noticeDays);
+            s.setSequenceReviewDays(reviewDays);
+            if (sequenceFirmTemplate != null && !sequenceFirmTemplate.isBlank()) s.setSequenceFirmTemplate(sequenceFirmTemplate);
+            if (sequenceNoticeTemplate != null && !sequenceNoticeTemplate.isBlank()) s.setSequenceNoticeTemplate(sequenceNoticeTemplate);
             store.save();
         }
-        redirect.addFlashAttribute("toast", "SMS Template & Auto-Scheduler settings saved!");
+        redirect.addFlashAttribute("toast", "Reminder sequence settings saved.");
         return "redirect:/#smsReminders";
     }
 
@@ -1337,6 +1467,23 @@ public class DashboardController {
             redirect.addFlashAttribute("toast", (termName.isBlank() ? "New semester started" : termName.trim() + " started")
                     + (done.isEmpty() ? "." : ": " + String.join(", ", done) + ".")
                     + " A copy of the previous data was saved as " + result.backupFile().getFileName() + ".");
+            // The "New Term Initialized" card on the next page shows where the chapter now stands.
+            FinanceDocumentService.Position position = financeDocumentService.position();
+            Map<String, Object> reveal = new LinkedHashMap<>();
+            reveal.put("termName", termName.isBlank() ? "New semester" : termName.trim());
+            reveal.put("date", LocalDate.now().toString());
+            reveal.put("startingReserves", position.cashOnHand());
+            reveal.put("carriedReceivables", position.receivables());
+            reveal.put("activeMembers", position.activeMembers());
+            reveal.put("rosterSize", position.rosterSize());
+            reveal.put("archived", result.archived());
+            reveal.put("skippedWithBalance", result.skippedWithBalance());
+            reveal.put("consolidatedMembers", result.consolidatedMembers());
+            reveal.put("consolidatedTotal", result.consolidatedTotal());
+            reveal.put("clearedVouches", result.clearedVouches());
+            reveal.put("budgetsReset", result.budgetsReset());
+            reveal.put("backupFile", result.backupFile().getFileName().toString());
+            redirect.addFlashAttribute("rolloverReveal", reveal);
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("toast", e.getMessage());
         } catch (Exception e) {
@@ -1441,6 +1588,15 @@ public class DashboardController {
     public org.springframework.http.ResponseEntity<byte[]> meetingPacket() throws Exception {
         return documentResponse(financeDocumentService.meetingPacketPdf(), "application/pdf",
                 "DuesDesk-meeting-packet-" + LocalDate.now() + ".pdf");
+    }
+
+    /** The treasurer's term in numbers, for the performance card shown with the officer handoff package. */
+    @GetMapping("/finance/term-performance")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<FinanceDocumentService.TermPerformance> termPerformance() {
+        return org.springframework.http.ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(financeDocumentService.termPerformance());
     }
 
     @PostMapping("/finance/handoff-package")
@@ -1797,32 +1953,59 @@ public class DashboardController {
                              @RequestParam double pastDueBalance,
                              @RequestParam double paidThisMonth,
                              @RequestParam(required = false) String email,
+                             @RequestParam(required = false) String venmoDisplayName,
+                             @RequestParam(required = false) String duesCode,
+                             @RequestParam(required = false) String membershipStatus,
+                             @RequestParam(required = false) String returnGroup,
                              RedirectAttributes redirect) {
+        String back = "redirect:/" + (returnGroup == null || Member.MEMBER.equals(rosterGroup(returnGroup)) ? ""
+                : "?group=" + rosterGroup(returnGroup).toLowerCase(java.util.Locale.ROOT));
+        String code = duesCode == null ? null : duesCode.trim().toUpperCase(java.util.Locale.ROOT);
+        if (venmoDisplayName != null && venmoDisplayName.trim().length() > 120) {
+            redirect.addFlashAttribute("toast", "The Venmo name can be at most 120 characters.");
+            return back;
+        }
+        if (code != null && !code.isEmpty() && !code.matches("[A-Z0-9][A-Z0-9-]{2,31}")) {
+            redirect.addFlashAttribute("toast", "Dues codes use 3-32 letters, numbers and dashes, e.g. DUES-JSMITH.");
+            return back;
+        }
+        if (code != null && store.duesCodeTaken(code, id)) {
+            redirect.addFlashAttribute("toast", "Another member already uses the dues code " + code + ".");
+            return back;
+        }
         if (name.isBlank() || name.length() > 120 || phoneNumber.isBlank() || phoneNumber.length() > 40
                 || !Double.isFinite(totalOwed) || !Double.isFinite(pastDueBalance)
                 || !Double.isFinite(paidThisMonth) || totalOwed < 0 || pastDueBalance < 0 || paidThisMonth < 0
                 || pastDueBalance > totalOwed) {
             redirect.addFlashAttribute("toast", "Enter a name and valid non-negative balances (past due cannot exceed total owed).");
-            return "redirect:/";
+            return back;
         }
         if (email != null && !validEmail(email)) {
             redirect.addFlashAttribute("toast", "Enter a valid email address, or leave it blank.");
-            return "redirect:/";
+            return back;
         }
         synchronized (store) {
             store.findMemberById(id).ifPresentOrElse(member -> {
                 if (email != null) member.setEmail(email.trim());
+                if (venmoDisplayName != null) member.setVenmoDisplayName(venmoDisplayName.trim());
+                // Every member keeps a dues code, so a blank field leaves the current one in place.
+                if (code != null && !code.isEmpty()) member.setDuesCode(code);
                 member.setName(name.trim());
                 member.setPhoneNumber(phoneNumber.trim());
                 member.setTotalOwed(totalOwed);
                 member.setPastDueBalance(pastDueBalance);
                 member.setPaidThisMonth(paidThisMonth);
                 member.setStatus(store.determineStatus(totalOwed, pastDueBalance));
+                String previousRoster = member.getMembershipStatus();
+                if (membershipStatus != null) member.setMembershipStatus(membershipStatus);
                 store.save();
-                redirect.addFlashAttribute("toast", "Updated profile for " + name + ".");
+                redirect.addFlashAttribute("toast", previousRoster.equals(member.getMembershipStatus())
+                        ? "Updated profile for " + name + "."
+                        : "Updated profile for " + name + " and moved them to " + (Member.MEMBER.equals(member.getMembershipStatus())
+                            ? "Members" : member.getMembershipStatus()) + ".");
             }, () -> redirect.addFlashAttribute("toast", "Member not found."));
         }
-        return "redirect:/";
+        return back;
     }
 
     /** Blank, or a plausible single email address (used to pre-fill "Open in Email" reminders). */
@@ -1861,16 +2044,39 @@ public class DashboardController {
         return "redirect:/settings#paymentLinks";
     }
 
+    public synchronized String addCharge(String id, String description, double amount, String dueDate, boolean pastDue,
+                                         RedirectAttributes redirect) {
+        return addCharge(id, description, amount, dueDate, pastDue, "", redirect);
+    }
+
+    /** Applies one charge from the Charges page, where the member is chosen in the form rather than the address. */
+    @PostMapping("/charges/apply")
+    public synchronized String applyCharge(@RequestParam(defaultValue = "") String memberId,
+                                           @RequestParam String description,
+                                           @RequestParam double amount,
+                                           @RequestParam(defaultValue = "") String dueDate,
+                                           @RequestParam(defaultValue = "false") boolean pastDue,
+                                           @RequestParam(defaultValue = "") String back,
+                                           RedirectAttributes redirect) {
+        if (memberId.isBlank()) {
+            redirect.addFlashAttribute("toast", "Choose the member to charge.");
+            return "redirect:" + ActivityController.safeBack(back, "/charges");
+        }
+        return addCharge(memberId, description, amount, dueDate, pastDue, back, redirect);
+    }
+
     @PostMapping("/members/{id}/charges")
     public synchronized String addCharge(@PathVariable String id,
                             @RequestParam String description,
                             @RequestParam double amount,
                             @RequestParam(defaultValue = "") String dueDate,
                             @RequestParam(defaultValue = "false") boolean pastDue,
+                            @RequestParam(defaultValue = "") String back,
                             RedirectAttributes redirect) {
+        String done = "redirect:" + ActivityController.safeBack(back, "/charges");
         if (description.isBlank() || description.length() > 200 || !Double.isFinite(amount) || amount <= 0) {
             redirect.addFlashAttribute("toast", "Enter a charge description and an amount greater than zero.");
-            return "redirect:/";
+            return done;
         }
         LocalDate chargeDueDate = LocalDate.now();
         if (!dueDate.isBlank()) {
@@ -1878,7 +2084,7 @@ public class DashboardController {
                 chargeDueDate = LocalDate.parse(dueDate);
             } catch (DateTimeParseException e) {
                 redirect.addFlashAttribute("toast", "Choose a valid due date.");
-                return "redirect:/";
+                return done;
             }
         }
         boolean isPastDue = pastDue || chargeDueDate.isBefore(LocalDate.now());
@@ -1898,7 +2104,7 @@ public class DashboardController {
                 redirect.addFlashAttribute("toast", "Added charge to " + member.getName() + "'s account.");
             }, () -> redirect.addFlashAttribute("toast", "Member not found."));
         }
-        return "redirect:/";
+        return done;
     }
 
     @PostMapping("/charges/batch")
@@ -1906,22 +2112,24 @@ public class DashboardController {
                                                @RequestParam String description,
                                                @RequestParam double amount,
                                                @RequestParam String dueDate,
+                                               @RequestParam(defaultValue = "") String back,
                                                RedirectAttributes redirect) {
+        String done = "redirect:" + ActivityController.safeBack(back, "/charges");
         if (description.isBlank() || description.length() > 200 || !Double.isFinite(amount) || amount <= 0) {
             redirect.addFlashAttribute("toast", "Enter a charge description and an amount greater than zero.");
-            return "redirect:/";
+            return done;
         }
         try {
             LocalDate.parse(dueDate);
         } catch (DateTimeParseException e) {
             redirect.addFlashAttribute("toast", "Choose a valid due date for the batch charge.");
-            return "redirect:/";
+            return done;
         }
         int added = store.addBatchCharges(memberIds, description.trim(), amount, dueDate);
         redirect.addFlashAttribute("toast", added > 0
                 ? "Added " + description.trim() + " to " + added + " member accounts."
                 : "No charges were added. Select valid roster members and try again.");
-        return "redirect:/";
+        return done;
     }
 
     @PostMapping("/members/adjustments")
@@ -1931,6 +2139,7 @@ public class DashboardController {
                                                    @RequestParam(defaultValue = "0") double amount,
                                                    @RequestParam(defaultValue = "") String dueDate,
                                                    @RequestParam(defaultValue = "false") boolean savePreset,
+                                                   @RequestParam(defaultValue = "") String back,
                                                    RedirectAttributes redirect) {
         String adjustmentType = ChargePreset.DISCOUNT.equals(type) ? ChargePreset.DISCOUNT : ChargePreset.FINE;
         Store.AdjustmentResult result = store.addMemberAdjustment(memberId, adjustmentType, name, amount, dueDate, LocalDate.now());
@@ -1941,13 +2150,14 @@ public class DashboardController {
                     : " The preset wasn't saved (limit is " + Store.MAX_CHARGE_PRESETS + ").";
         }
         redirect.addFlashAttribute("toast", message);
-        return "redirect:/";
+        return "redirect:" + ActivityController.safeBack(back, "/charges");
     }
 
     @PostMapping("/charge-presets/{presetId}/remove")
-    public synchronized String removeChargePreset(@PathVariable String presetId, RedirectAttributes redirect) {
+    public synchronized String removeChargePreset(@PathVariable String presetId,
+                                                  @RequestParam(defaultValue = "") String back, RedirectAttributes redirect) {
         redirect.addFlashAttribute("toast", store.removeChargePreset(presetId) ? "Saved charge removed." : "Saved charge not found.");
-        return "redirect:/";
+        return "redirect:" + ActivityController.safeBack(back, "/charges");
     }
 
     @PostMapping("/members/{id}/installments")
@@ -1991,9 +2201,15 @@ public class DashboardController {
         return "redirect:/";
     }
 
+    public synchronized String removeCharge(String id, String chargeId, RedirectAttributes redirect) {
+        return removeCharge(id, chargeId, "", redirect);
+    }
+
     @PostMapping("/members/{id}/charges/{chargeId}/remove")
     public synchronized String removeCharge(@PathVariable String id, @PathVariable String chargeId,
+                               @RequestParam(defaultValue = "") String back,
                                RedirectAttributes redirect) {
+        String done = "redirect:" + ActivityController.safeBack(back, "/charges");
         synchronized (store) {
             store.findMemberById(id).ifPresentOrElse(member -> {
                 if (member.getCharges() == null) member.setCharges(new ArrayList<>());
@@ -2011,7 +2227,7 @@ public class DashboardController {
                 redirect.addFlashAttribute("toast", "Removed charge from " + member.getName() + "'s account.");
             }, () -> redirect.addFlashAttribute("toast", "Member not found."));
         }
-        return "redirect:/";
+        return done;
     }
 
     @PostMapping("/payments")

@@ -8,385 +8,20 @@
     <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-canvas);
-            color: var(--text-secondary);
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* Top Navigation */
-        .app-navbar {
-            background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 0.85rem 0;
-        }
-
-        .brand-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--btn-primary-bg);
-            color: var(--btn-primary-text);
-            border-radius: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-        }
-
-        .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.35rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background-color: var(--bg-subtle);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-subtle);
-        }
-
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background-color: var(--status-success-text);
-        }
-
-        /* Cards & Containers */
-        .surface-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            box-shadow: var(--shadow-card);
-        }
-
-        .kpi-card {
-            padding: 1.25rem 1.35rem;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .kpi-card:hover {
-            border-color: var(--border-strong);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .kpi-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .kpi-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: var(--text-primary);
-            line-height: 1.2;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .kpi-sub {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 0.4rem;
-        }
-
-        /* Typography & Utilities */
-        .tabular-nums {
-            font-variant-numeric: tabular-nums;
-        }
-
-        .section-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        .section-subtitle {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin: 0;
-        }
-
-        /* Badges */
-        .badge-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.25rem 0.65rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.01em;
-        }
-
-        .badge-paid {
-            background-color: var(--status-success-bg);
-            color: var(--status-success-text);
-            border: 1px solid var(--status-success-border);
-        }
-
-        .badge-plan {
-            background-color: var(--status-info-bg);
-            color: var(--btn-primary-hover);
-            border: 1px solid var(--status-info-border);
-        }
-
-        .badge-delinquent {
-            background-color: var(--status-danger-bg);
-            color: var(--status-danger-text);
-            border: 1px solid var(--status-danger-border);
-        }
-
-        .badge-muted {
-            background-color: var(--bg-subtle);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-subtle);
-            font-size: 0.7rem;
-            padding: 0.15rem 0.45rem;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-
-        /* Table Styling */
-        .table-fintech {
-            margin-bottom: 0;
-        }
-
-        .table-fintech thead th {
-            background-color: var(--bg-canvas);
-            color: var(--text-muted);
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-subtle);
-            white-space: nowrap;
-        }
-
-        .table-fintech tbody td {
-            padding: 0.85rem 1rem;
-            border-bottom: 1px solid var(--bg-subtle);
-            font-size: 0.875rem;
-            vertical-align: middle;
-        }
-
-        .table-fintech tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .table-fintech tbody tr:hover {
-            background-color: var(--bg-canvas);
-        }
-
-        .history-link {
-            border: 0;
-            padding: 0;
-            background: none;
-            color: var(--text-primary);
-            font: inherit;
-            font-weight: 600;
-            text-align: left;
-            text-decoration: underline;
-            text-decoration-color: var(--border-strong);
-            text-underline-offset: 3px;
-        }
-
-        .history-link:hover {
-            color: var(--btn-primary-hover);
-            text-decoration-color: currentColor;
-        }
-
-        /* Filter Tabs & Search */
-        .filter-pill-group {
-            display: inline-flex;
-            background-color: var(--bg-subtle);
-            padding: 0.2rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-subtle);
-        }
-
-        .filter-pill {
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 0.78rem;
-            font-weight: 500;
-            padding: 0.3rem 0.7rem;
-            border-radius: 6px;
-            transition: all 0.15s ease;
-        }
-
-        .filter-pill.active {
-            background-color: var(--bg-surface);
-            color: var(--text-primary);
-            font-weight: 600;
-            box-shadow: var(--shadow-card);
-        }
-
-        /* Forms & Inputs */
-        .form-label-fintech {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.35rem;
-        }
-
-        .form-control, .form-select {
-            border-color: var(--border-strong);
-            font-size: 0.875rem;
-            border-radius: 8px;
-            color: var(--text-secondary);
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--btn-primary-bg);
-            box-shadow: 0 0 0 3px var(--focus-ring);
-        }
-
-        /* Buttons */
-        .btn-fintech-primary {
-            background-color: var(--text-primary);
-            color: var(--btn-primary-text);
-            border: 1px solid var(--text-primary);
-            font-weight: 500;
-            font-size: 0.82rem;
-            border-radius: 8px;
-            padding: 0.45rem 0.9rem;
-            transition: all 0.15s ease;
-        }
-
-        .btn-fintech-primary:hover {
-            background-color: var(--text-secondary);
-            color: var(--btn-primary-text);
-        }
-
-        .btn-fintech-danger {
-            background-color: var(--status-danger-text);
-            color: var(--btn-primary-text);
-            border: 1px solid var(--status-danger-text);
-            font-weight: 500;
-            font-size: 0.82rem;
-            border-radius: 8px;
-            padding: 0.45rem 0.9rem;
-        }
-
-        .btn-fintech-danger:hover {
-            background-color: var(--status-danger-text);
-            color: var(--btn-primary-text);
-        }
-
-        .btn-fintech-outline {
-            background-color: var(--bg-surface);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-strong);
-            font-weight: 500;
-            font-size: 0.82rem;
-            border-radius: 8px;
-            padding: 0.45rem 0.85rem;
-        }
-
-        .btn-fintech-outline:hover {
-            background-color: var(--bg-canvas);
-            color: var(--text-primary);
-            border-color: var(--text-placeholder);
-        }
-
-        .btn-action-sm {
-            font-size: 0.76rem;
-            font-weight: 500;
-            padding: 0.28rem 0.6rem;
-            border-radius: 6px;
-        }
-
-        /* Tag Insertion Chips */
-        .tag-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            background-color: var(--bg-subtle);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-            padding: 0.15rem 0.5rem;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.75rem;
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.12s ease;
-        }
-
-        .tag-chip:hover {
-            background-color: var(--status-info-bg);
-            color: var(--btn-primary-hover);
-            border-color: var(--status-info-border);
-        }
-
-        /* SMS Preview Bubble */
-        .sms-preview-box {
-            background-color: var(--bg-canvas);
-            border: 1px dashed var(--border-strong);
-            border-radius: 8px;
-            padding: 0.75rem;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        /* Log Feed */
-        .log-item {
-            padding: 0.85rem 0;
-            border-bottom: 1px solid var(--bg-subtle);
-        }
-
-        .log-item:last-child {
-            border-bottom: none;
-        }
-
-        .surface-card, .kpi-card {
-            animation: card-enter 0.45s ease both;
-        }
-
-        @keyframes card-enter {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
+        /* Rent page: only what the shared design system does not already provide */
+        .table-fintech thead th:first-child, .table-fintech tbody td:first-child { padding-left: 1.35rem; }
+        .table-fintech thead th:last-child, .table-fintech tbody td:last-child { padding-right: 1.35rem; }
+        .surface-card, .kpi-card { animation: enter .35s var(--ease-snappy) both; }
+        .room-chip { display: inline-grid; place-items: center; min-width: 2.4rem; height: 1.6rem; padding: 0 .5rem; border-radius: 999px; background: var(--status-neutral-bg); color: var(--text-secondary); font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
-                scroll-behavior: auto !important;
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
         }
     </style>
 <th:block th:replace="~{fragments :: navStyles}"></th:block>
 <script th:replace="~{fragments :: themeInit}"></script>
 </head>
 <body>
-    <div class="app-header-stack">
-    <header class="app-navbar mb-4">
-    <div class="container-xxl px-3 px-md-4 header-grid">
-        <div></div>
-        <div class="d-flex align-items-center gap-3 justify-content-center">
-            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
-            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
-        </div>
-        <div></div>
-    </div>
-</header>
-<nav th:replace="~{fragments :: nav('rent')}"></nav>
-</div>
+    <div th:replace="~{fragments :: appHeader('rent')}"></div>
 
 <main class="container-xxl px-3 px-md-4 pb-5">
     <div th:if="${toast}" data-auto-dismiss="4000" class="alert alert-success border-0 shadow-sm d-flex align-items-center justify-content-between rounded-3 py-2 px-3 mb-4" role="alert">
@@ -405,33 +40,33 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4 row-cols-1 row-cols-sm-2 row-cols-xl-4">
-        <div class="col">
+    <div class="kpi-bento mb-4">
+        <div>
             <div class="surface-card kpi-card h-100">
-                <div class="kpi-label"><span>Rent Collected (Mo)</span></div>
-                <div class="kpi-value text-success">$<span th:text="${#numbers.formatDecimal(rentCollected, 1, 'COMMA', 2, 'POINT')}">0.00</span></div>
+                <div class="kpi-label"><span>Rent Collected (Mo)</span><span class="kpi-icon tone-emerald" aria-hidden="true"><i class="bi bi-house-check"></i></span></div>
+                <div class="kpi-value text-success" th:text="'$' + ${#numbers.formatDecimal(rentCollected, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
                 <div class="kpi-sub">Of <span class="fw-semibold text-dark">$<span th:text="${#numbers.formatDecimal(rentExpected, 1, 'COMMA', 2, 'POINT')}">0.00</span></span> monthly rent roll</div>
             </div>
         </div>
-        <div class="col">
+        <div>
             <div class="surface-card kpi-card h-100">
-                <div class="kpi-label"><span>Outstanding Rent</span></div>
-                <div class="kpi-value">$<span th:text="${#numbers.formatDecimal(rentOutstanding, 1, 'COMMA', 2, 'POINT')}">0.00</span></div>
+                <div class="kpi-label"><span>Outstanding Rent</span><span class="kpi-icon tone-rose" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span></div>
+                <div class="kpi-value" th:text="'$' + ${#numbers.formatDecimal(rentOutstanding, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
                 <div class="kpi-sub"><span class="fw-semibold text-dark" th:text="${balanceDueCount}">0</span> residents with a balance</div>
             </div>
         </div>
-        <div class="col">
+        <div>
             <div class="surface-card kpi-card h-100">
-                <div class="kpi-label"><span>Residents</span></div>
+                <div class="kpi-label"><span>Residents</span><span class="kpi-icon" aria-hidden="true"><i class="bi bi-people"></i></span></div>
                 <div class="kpi-value" th:text="${#lists.size(residents)}">0</div>
                 <div class="kpi-sub"><span class="fw-semibold text-dark" th:text="${paidUpCount}">0</span> paid up</div>
             </div>
         </div>
-        <div class="col">
+        <div>
             <div class="surface-card kpi-card h-100">
-                <div class="kpi-label"><span>Collection Rate</span></div>
-                <div class="kpi-value"><span th:text="${#numbers.formatDecimal(rentCollectionRate, 1, 1)}">0.0</span>%</div>
-                <div class="kpi-sub"></div>
+                <div class="kpi-label"><span>Collection Rate</span><span class="kpi-icon tone-slate" aria-hidden="true"><i class="bi bi-percent"></i></span></div>
+                <div class="kpi-value"><span th:text="${#numbers.formatDecimal(rentCollectionRate, 1, 1)}">0.0</span><span class="unit">%</span></div>
+                <div class="kpi-sub">Of the monthly rent roll</div>
                 <div class="progress-slim mt-2"><div class="progress-fill tone-success" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Rent collection rate"
                      th:attr="aria-valuenow=${rentCollectionRate > 100 ? 100 : rentCollectionRate}"
                      th:style="'width: ' + ${rentCollectionRate > 100 ? 100 : rentCollectionRate} + '%;'"></div></div>
@@ -444,23 +79,23 @@
             <!-- fullscreen-card: this page fades cards in, and a card that is still "animated" would trap the full-screen table below the header -->
             <div class="surface-card fullscreen-card rent-ledger-card mb-4">
                 <div class="ledger-fullscreen" id="rentLedgerView">
-                <div class="p-3 p-md-4 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3" style="border-color: var(--border-subtle) !important;">
+                <div class="card-head">
                     <div>
                         <h2 class="section-title">House Rent Ledger</h2>
                         <p class="section-subtitle">Balances, payments, and reminders for each resident</p>
                     </div>
                     <div class="d-flex flex-wrap align-items-center gap-2">
-                        <select class="form-select form-select-sm" style="width:auto;" aria-label="Sort roster" onchange="window.duesDeskRememberScroll &amp;&amp; window.duesDeskRememberScroll(); window.location.assign(window.location.pathname + (this.value ? '?sort=' + encodeURIComponent(this.value) : ''));"><option value="">Sort: Default</option><option value="first" th:selected="${sort == 'first'}">First name (A–Z)</option><option value="last" th:selected="${sort == 'last'}">Last name (A–Z)</option><option value="rent-desc" th:selected="${sort == 'rent-desc'}">Monthly rent: highest</option><option value="rent-asc" th:selected="${sort == 'rent-asc'}">Monthly rent: lowest</option><option value="balance-desc" th:selected="${sort == 'balance-desc'}">Balance due: highest</option><option value="balance-asc" th:selected="${sort == 'balance-asc'}">Balance due: lowest</option><option value="paid-desc" th:selected="${sort == 'paid-desc'}">Paid (Mo): highest</option><option value="paid-asc" th:selected="${sort == 'paid-asc'}">Paid (Mo): lowest</option></select>
-                        <button type="button" class="btn btn-fintech-outline d-inline-flex align-items-center gap-1" data-bs-toggle="collapse" data-bs-target="#addResidentDrawer" aria-expanded="false">
-                            <i class="bi bi-person-plus"></i><span>Add Resident</span>
+                        <select class="form-select form-select-sm pill-select" style="width:auto;" aria-label="Sort roster" onchange="window.duesDeskRememberScroll &amp;&amp; window.duesDeskRememberScroll(); window.location.assign(window.location.pathname + (this.value ? '?sort=' + encodeURIComponent(this.value) : ''));"><option value="">Sort: Default</option><option value="first" th:selected="${sort == 'first'}">First name (A–Z)</option><option value="last" th:selected="${sort == 'last'}">Last name (A–Z)</option><option value="rent-desc" th:selected="${sort == 'rent-desc'}">Monthly rent: highest</option><option value="rent-asc" th:selected="${sort == 'rent-asc'}">Monthly rent: lowest</option><option value="balance-desc" th:selected="${sort == 'balance-desc'}">Balance due: highest</option><option value="balance-asc" th:selected="${sort == 'balance-asc'}">Balance due: lowest</option><option value="paid-desc" th:selected="${sort == 'paid-desc'}">Paid (Mo): highest</option><option value="paid-asc" th:selected="${sort == 'paid-asc'}">Paid (Mo): lowest</option></select>
+                        <button type="button" class="btn btn-fintech-primary d-inline-flex align-items-center gap-1" data-bs-toggle="collapse" data-bs-target="#addResidentDrawer" aria-expanded="false">
+                            <i class="bi bi-plus-lg"></i><span>Add Resident</span>
                         </button>
                         <form th:action="@{/rent/send-bulk}" method="post" class="m-0" id="rentBulkReminderForm"
                               th:attr="data-recipient-count=${reminderRecipientCount},data-total=${reminderBalanceTotal},data-live=${liveSmsEnabled},data-sms-remaining=${smsRemainingToday}">
-                            <button type="submit" class="btn btn-fintech-danger d-inline-flex align-items-center gap-1" th:disabled="${smsRemainingToday == 0 or reminderRecipientCount == 0}" data-loading-label="Sending…">
-                                <i class="bi bi-send-fill"></i><span>Text All With Balance (<span th:text="${reminderRecipientCount}">0</span>)</span>
+                            <button type="submit" class="btn btn-fintech-outline d-inline-flex align-items-center gap-1" th:disabled="${smsRemainingToday == 0 or reminderRecipientCount == 0}" data-loading-label="Sending…">
+                                <i class="bi bi-send"></i><span>Text All With Balance</span><span class="seg-count" th:text="${reminderRecipientCount}">0</span>
                             </button>
                         </form>
-                        <span class="small text-muted" th:text="${smsRemainingToday} + ' SMS left today'"></span>
+                        <span class="status-pill tabular-nums" th:text="${smsRemainingToday} + ' SMS left today'"></span>
                         <!-- Shown only while the table is full screen (.fs-only): copy it for a spreadsheet or save it as a PDF. -->
                         <span class="fs-only" role="group" aria-label="Export this table">
                             <button type="button" class="btn btn-fintech-outline btn-sm d-inline-flex align-items-center gap-1"
@@ -480,8 +115,9 @@
                     </div>
                 </div>
 
-                <div class="collapse border-bottom" id="addResidentDrawer" style="background-color: var(--bg-canvas); border-color: var(--border-subtle) !important;">
-                    <div class="p-3 p-md-4">
+                <div class="collapse drawer-panel" id="addResidentDrawer">
+                    <div class="card-body-pad">
+                        <div class="micro-header mb-3">Add a resident</div>
                         <form th:action="@{/rent/residents}" method="post" data-duplicate-guard>
                             <div class="row g-2 align-items-end">
                                 <div class="col-12 col-md-3"><label class="form-label-fintech">Full Name</label>
@@ -512,17 +148,18 @@
                 </div>
 
                 <!-- Live search + quick filters (client-side table tools; see fragments themeScript) -->
-                <div class="px-3 px-md-4 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2" style="background-color: var(--bg-subtle); border-color: var(--border-subtle) !important;">
+                <div class="filter-strip">
+                    <span class="active-filters">Active filters <span class="count-badge" data-filter-count="rentTable">0</span></span>
                     <div class="filter-pill-group" role="group" aria-label="Filter residents">
                         <button type="button" class="filter-pill active" data-table-filter="rentTable" data-filter="all" data-filter-reset aria-pressed="true">All</button>
                         <button type="button" class="filter-pill" data-table-filter="rentTable" data-filter="balance" aria-pressed="false">Balance due</button>
                         <button type="button" class="filter-pill" data-table-filter="rentTable" data-filter="paid" aria-pressed="false">Paid up</button>
                         <button type="button" class="filter-pill" data-table-filter="rentTable" data-filter="muted" aria-pressed="false">Muted</button>
                     </div>
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="filter-strip-end">
                         <span class="table-count" data-table-count="rentTable" aria-live="polite"></span>
                         <div class="position-relative search-box" style="min-width: 220px;">
-                            <i class="bi bi-search position-absolute text-muted" style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem;" aria-hidden="true"></i>
+                            <i class="bi bi-search" aria-hidden="true"></i>
                             <input type="search" class="form-control form-control-sm ps-4" placeholder="Search residents..."
                                    aria-label="Search residents by name, phone or room" data-table-search="rentTable" data-search-shortcut>
                             <kbd class="search-kbd" aria-hidden="true">/</kbd>
@@ -548,20 +185,25 @@
                         <tr th:each="r : ${residents}" data-row
                             th:attr="data-tags=${(r.balanceDue > 0 ? 'balance' : 'paid') + (r.muteReminders ? ' muted' : '')},data-search=${#strings.toLowerCase(r.name + ' ' + r.phoneNumber + ' ' + (r.room != null ? r.room : ''))}">
                             <td th:attr="data-sort-value=${r.name}">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="fw-semibold" th:text="${r.name}"></span>
-                                    <span th:if="${r.muteReminders}" class="badge-muted" title="Excluded from reminders and announcements"><i class="bi bi-bell-slash"></i> Muted</span>
-                                    <span th:if="${!#lists.isEmpty(r.charges)}" class="badge-muted" title="Custom charges included in this balance"
-                                          th:text="${#lists.size(r.charges)} + (${#lists.size(r.charges)} == 1 ? ' charge' : ' charges')"></span>
-                                </div>
-                                <div class="text-muted tabular-nums" style="font-size: 0.78rem;" th:text="${r.phoneNumber}"></div>
-                                <div class="text-muted" style="font-size: 0.74rem;" th:if="${r.linkedMemberId != null and !#strings.isEmpty(r.linkedMemberId)}"
-                                     th:title="'Linked to this roster member for social clearance'">
-                                    <i class="bi bi-link-45deg" aria-hidden="true"></i><span th:text="${memberNames[r.linkedMemberId] ?: 'Removed member'}"></span>
+                                <div class="row-id">
+                                    <span class="avatar" aria-hidden="true" th:attr="data-avatar-name=${r.name}" th:text="${#strings.substring(r.name, 0, 1)}"></span>
+                                    <div class="min-w-0">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="row-title" th:text="${r.name}"></span>
+                                            <span th:if="${r.muteReminders}" class="badge-muted" title="Excluded from reminders and announcements"><i class="bi bi-bell-slash"></i> Muted</span>
+                                            <span th:if="${!#lists.isEmpty(r.charges)}" class="badge-muted" title="Custom charges included in this balance"
+                                                  th:text="${#lists.size(r.charges)} + (${#lists.size(r.charges)} == 1 ? ' charge' : ' charges')"></span>
+                                        </div>
+                                        <div class="row-meta" th:text="${r.phoneNumber}"></div>
+                                        <div class="row-meta" th:if="${r.linkedMemberId != null and !#strings.isEmpty(r.linkedMemberId)}"
+                                             th:title="'Linked to this roster member for social clearance'">
+                                            <i class="bi bi-link-45deg" aria-hidden="true"></i><span th:text="${memberNames[r.linkedMemberId] ?: 'Removed member'}"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="text-muted" th:text="${r.room} ?: '—'"></td>
-                            <td class="text-end tabular-nums" th:attr="data-sort-value=${r.monthlyRent}">$<span th:text="${#numbers.formatDecimal(r.monthlyRent, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                            <td><span class="room-chip" th:if="${r.room != null and !#strings.isEmpty(r.room)}" th:text="${r.room}"></span><span class="text-muted" th:unless="${r.room != null and !#strings.isEmpty(r.room)}">—</span></td>
+                            <td class="text-end tabular-nums fw-bold text-dark" th:attr="data-sort-value=${r.monthlyRent}">$<span th:text="${#numbers.formatDecimal(r.monthlyRent, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
                             <td class="text-end tabular-nums" th:classappend="${r.balanceDue > 0} ? 'text-danger fw-bold' : 'text-muted'" th:attr="data-sort-value=${r.balanceDue}">$<span th:text="${#numbers.formatDecimal(r.balanceDue, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
                             <td class="text-end tabular-nums text-success fw-medium" th:attr="data-sort-value=${r.paidThisMonth}">$<span th:text="${#numbers.formatDecimal(r.paidThisMonth, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
                             <td><span class="badge-status" th:classappend="${r.balanceDue > 0} ? 'badge-delinquent' : 'badge-paid'" th:text="${r.status}"></span>
@@ -654,7 +296,7 @@
                                         <span class="fw-medium tabular-nums">$<span th:text="${#numbers.formatDecimal(c.amount, 1, 'COMMA', 2, 'POINT')}">0.00</span></span>
                                         <form th:action="@{/rent/residents/{id}/charges/{chargeId}/remove(id=${r.id}, chargeId=${c.id})}" method="post"
                                               th:attr="data-remove-charge=${c.description},data-amount=${c.amount}">
-                                            <button type="submit" class="btn btn-sm btn-fintech-danger">Remove</button>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
                                         </form>
                                     </div>
                                 </li>
@@ -754,7 +396,7 @@
                             <input class="form-check-input" id="selectAllRentResidents" type="checkbox">
                             <label class="small fw-semibold" for="selectAllRentResidents">Select all residents</label>
                         </div>
-                        <div class="row g-2 border rounded-3 p-2 mx-0" style="max-height:180px;overflow:auto;">
+                        <div class="row g-2 sub-card p-2 mx-0" style="max-height:180px;overflow:auto;">
                             <div class="col-12 col-sm-6 col-lg-4" th:each="r : ${residents}">
                                 <div class="form-check">
                                     <input class="form-check-input rent-charge-resident" type="checkbox" name="residentIds"

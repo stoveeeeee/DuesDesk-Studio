@@ -29,8 +29,13 @@ public class DesktopApp extends Application {
     /** Height of the page header (logo bar) used before a page has loaded; matches .banner in fragments.html. */
     private static final double DEFAULT_HEADER_HEIGHT = 66;
 
+    /** The page canvas colours (--bg-canvas in fragments.html), used behind the page while the next one loads. */
+    private static final javafx.scene.paint.Color LIGHT_CANVAS = javafx.scene.paint.Color.web("#F6F8FC");
+    private static final javafx.scene.paint.Color DARK_CANVAS = javafx.scene.paint.Color.web("#0D0E11");
+
     private ConfigurableApplicationContext ctx;
     private DesktopBridge bridge; // strong reference: JavaScript holds it only weakly
+    private OsDesktopNotifier notifier;
 
     @Override
     public void init() {
@@ -46,6 +51,9 @@ public class DesktopApp extends Application {
         String port = ctx.getEnvironment().getProperty("local.server.port", "8080");
 
         WebView web = new WebView();
+        // Paint the window in the page's canvas colour instead of white, so moving between pages never flashes white.
+        boolean darkStart = "dark".equals(ctx.getBean(Store.class).getSettings().getAppearanceMode());
+        web.setPageFill(darkStart ? DARK_CANVAS : LIGHT_CANVAS);
 
         // WebView silently ignores confirm() and alert() unless handlers are set.
         // The dashboard uses confirm() for "send to all" and "delete member".
@@ -61,8 +69,7 @@ public class DesktopApp extends Application {
             alert.initOwner(stage);
             alert.showAndWait();
         });
-
-        bridge = new DesktopBridge(stage, ctx.getBean(Store.class), getHostServices());
+        bridge =new DesktopBridge(stage, ctx.getBean(Store.class), getHostServices());
         web.getEngine().getLoadWorker().stateProperty().addListener((observable, previous, state) -> {
             if (state == javafx.concurrent.Worker.State.SUCCEEDED) {
                 ((netscape.javascript.JSObject) web.getEngine().executeScript("window")).setMember("desktopBridge", bridge);
@@ -93,9 +100,19 @@ public class DesktopApp extends Application {
         }
 
         stage.setTitle("DuesDesk");
-        stage.setScene(new Scene(root, 1280, 800));
+        stage.setScene(new Scene(root, 1280, 800, web.getPageFill()));
         stage.setMaximized(true);   // or stage.setFullScreen(true)
         stage.show();
+
+        // Operating system notifications for bills, installments due today and missed backups. Clicking one brings
+        // the window forward on the page it is about.
+        notifier = new OsDesktopNotifier(href -> javafx.application.Platform.runLater(() -> {
+            stage.setIconified(false);
+            stage.toFront();
+            String path = href == null || !href.startsWith("/") ? "/" : href;
+            web.getEngine().load("http://localhost:" + port + path);
+        }));
+        ctx.getBean(NotificationService.class).setNotifier(notifier);
     }
 
     /**
@@ -114,8 +131,11 @@ public class DesktopApp extends Application {
             web.getEngine().executeScript("document.documentElement.style.setProperty('--desktop-header-h','"
                     + Math.ceil(dragHeight) + "px')");
             Object theme = web.getEngine().executeScript("document.documentElement.getAttribute('data-theme')");
+            boolean dark = "dark".equals(theme);
+            web.setPageFill(dark ? DARK_CANVAS : LIGHT_CANVAS);
             if (web.getScene() != null) {
-                web.getScene().getPreferences().setColorScheme("dark".equals(theme) ? ColorScheme.DARK : ColorScheme.LIGHT);
+                web.getScene().setFill(web.getPageFill());
+                web.getScene().getPreferences().setColorScheme(dark ? ColorScheme.DARK : ColorScheme.LIGHT);
             }
         } catch (RuntimeException e) {
             dragArea.setPrefHeight(DEFAULT_HEADER_HEIGHT);
@@ -125,6 +145,7 @@ public class DesktopApp extends Application {
     @Override
     public void stop() {
         // Closing the window or pressing Cmd+Q lands here and shuts the server down.
+        if (notifier != null) notifier.close();
         if (ctx != null) {
             ctx.close();
         }

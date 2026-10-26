@@ -8,27 +8,21 @@
     <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body { font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg-canvas); color:var(--text-secondary); }
-        .banner { background:var(--bg-surface); border-bottom:1px solid var(--border-subtle); padding:1rem 0; }
-        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
-        .metric-card { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:1.1rem;height:100%; }
-        .metric-value { color:var(--text-primary);font-size:1.35rem;font-weight:700;letter-spacing:-.03em; }
-        .metric-description { color:var(--text-muted);font-size:.82rem;line-height:1.5; }
+        /* Cash Flow page: only what the shared design system does not already provide */
         .metric-status { font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;font-weight:700; }
-        @keyframes enter { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
-        /* Time period + export toolbar */
-        .flow-toolbar { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:14px; padding:.9rem 1.1rem; box-shadow:var(--shadow-card); animation:enter .4s ease backwards; }
+        /* Time period + export toolbar: a frosted strip above the workspace */
+        .flow-toolbar { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; padding:.9rem 1.25rem; animation:enter .35s var(--ease-snappy) both; }
         .flow-period-form { display:flex; align-items:flex-end; gap:.75rem; flex-wrap:wrap; }
         .flow-field { min-width:11rem; }
         .flow-custom-range { display:flex; align-items:flex-end; gap:.75rem; flex-wrap:wrap; animation:peekRowIn .28s var(--ease-snappy) both; }
-        .flow-toolbar-end { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+        .flow-toolbar-end { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
         .flow-period-summary { display:flex; flex-direction:column; align-items:flex-end; font-size:12.5px; line-height:1.35; }
         .metric-period { font-size:11.5px; color:var(--text-muted); margin-top:.15rem; }
-        /* Quick filters above the transactions table (same look as the Dues and Rent ledgers) */
-        .filter-pill-group { display:inline-flex; background-color:var(--bg-subtle); padding:.2rem; border-radius:8px; border:1px solid var(--border-subtle); }
-        .filter-pill { border:none; background:transparent; color:var(--text-secondary); font-size:.78rem; font-weight:500; padding:.3rem .7rem; border-radius:6px; transition:all .15s ease; }
-        .filter-pill.active { background-color:var(--bg-surface); color:var(--text-primary); font-weight:600; box-shadow:var(--shadow-card); }
         .flow-table-tools { display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:.9rem; }
+        .txn-icon { width:32px; height:32px; flex:0 0 32px; border-radius:10px; display:inline-grid; place-items:center; font-size:.85rem; }
+        .txn-icon.in { background:var(--status-success-bg); color:var(--status-success-text); }
+        .txn-icon.out { background:var(--status-danger-bg); color:var(--status-danger-text); }
+        #flowTable tbody td:first-child, #flowTable thead th:first-child { padding-left: .35rem; }
         @media (max-width:575px) { .flow-period-summary { align-items:flex-start; } .flow-field { min-width:0; flex:1 1 9rem; } }
         @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important; } }
     </style>
@@ -36,19 +30,7 @@
 <script th:replace="~{fragments :: themeInit}"></script>
 </head>
 <body>
-    <div class="app-header-stack">
-    <header class="banner">
-    <div class="container-xxl px-3 px-md-4 header-grid">
-        <div></div>
-        <div class="d-flex align-items-center gap-3 justify-content-center">
-            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
-            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
-        </div>
-        <div></div>
-    </div>
-</header>
-<nav th:replace="~{fragments :: nav('flow')}"></nav>
-</div>
+    <div th:replace="~{fragments :: appHeader('flow')}"></div>
 <main class="container-xxl px-3 px-md-4 py-4 pb-5">
     <div th:if="${toast}" data-auto-dismiss="6000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
     <div class="page-header">
@@ -64,11 +46,11 @@
         </div>
     </div>
 
-    <section class="flow-toolbar mb-4" aria-label="Time period and export">
+    <section class="flow-toolbar glass mb-4" aria-label="Time period and export">
         <form id="flowPeriodForm" method="get" action="/numbers/flow" class="flow-period-form">
             <div class="flow-field">
                 <label class="form-label small fw-semibold mb-1" for="flowPeriod"><i class="bi bi-calendar-range me-1" aria-hidden="true"></i>Time period</label>
-                <select id="flowPeriod" name="period" class="form-select form-select-sm">
+                <select id="flowPeriod" name="period" class="form-select form-select-sm pill-select">
                     <option th:each="p : ${periodPresets}" th:value="${p.key}" th:text="${p.value}" th:selected="${p.key == period.key}"></option>
                 </select>
             </div>
@@ -118,10 +100,10 @@
         </div>
     </section>
 
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-md-4"><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Total inflow</span></div><div class="kpi-value text-success tabular-nums" th:text="'$' + ${#numbers.formatDecimal(totalInflow, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
-        <div class="col-12 col-md-4"><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Total outflow</span></div><div class="kpi-value text-danger tabular-nums" th:text="'$' + ${#numbers.formatDecimal(totalOutflow, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
-        <div class="col-12 col-md-4"><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Net</span></div><div class="kpi-value tabular-nums" th:classappend="${net >= 0} ? 'text-success' : 'text-danger'" th:text="(${net < 0} ? '-' : '') + '$' + ${#numbers.formatDecimal(net < 0 ? -net : net, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
+    <div class="kpi-bento mb-4">
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Total inflow</span><span class="kpi-icon tone-emerald" aria-hidden="true"><i class="bi bi-arrow-down-left"></i></span></div><div class="kpi-value text-success tabular-nums" th:text="'$' + ${#numbers.formatDecimal(totalInflow, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Total outflow</span><span class="kpi-icon tone-rose" aria-hidden="true"><i class="bi bi-arrow-up-right"></i></span></div><div class="kpi-value text-danger tabular-nums" th:text="'$' + ${#numbers.formatDecimal(totalOutflow, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-sub" th:text="${period.label}"></div></div></div>
+        <div><div class="surface-card kpi-card h-100"><div class="kpi-label"><span>Net</span><span class="kpi-icon" aria-hidden="true"><i class="bi bi-activity"></i></span></div><div class="kpi-value tabular-nums" th:classappend="${net >= 0} ? 'text-success' : 'text-danger'" th:text="(${net < 0} ? '-' : '') + '$' + ${#numbers.formatDecimal(net < 0 ? -net : net, 1, 'COMMA', 2, 'POINT')}"></div><div class="kpi-foot"><span class="kpi-sub mt-0" th:text="${period.label}"></span><span class="delta-pill" th:classappend="${net >= 0} ? 'up' : 'down'" th:text="${#lists.size(rows)} + (${#lists.size(rows)} == 1 ? ' transaction' : ' transactions')"></span></div></div></div>
     </div>
     <!-- Nothing to review: a slim status line instead of a large empty card -->
     <div th:if="${#lists.isEmpty(reconciliationRows)}" class="surface-card card-body-pad mb-4 d-flex flex-wrap align-items-center gap-2 small text-muted">
@@ -133,9 +115,9 @@
         <div class="card-head">
             <div>
                 <h3 class="section-title" id="reconcileTitle">Pending transaction reconciliation</h3>
-                <p class="section-subtitle">Review incoming bank or Venmo transactions. Suggestions are not applied until you confirm a member match.</p>
+                <p class="section-subtitle">Review incoming bank or Venmo transactions. Suggestions are not applied until you confirm a member match. The same list is on <a href="/venmo/unmatched">Unmatched Payments</a>.</p>
             </div>
-            <span class="badge rounded-pill text-bg-warning" th:text="${#lists.size(reconciliationRows)} + ' pending'"></span>
+            <span class="badge-urgent" th:text="${#lists.size(reconciliationRows)} + ' pending'"></span>
         </div>
         <div class="card-body-pad">
         <div th:if="${#lists.isEmpty(reconciliationRows)}" class="rounded-3 border p-3 small text-muted">
@@ -159,7 +141,8 @@
                             <i class="bi bi-person-check me-1" aria-hidden="true" th:if="${#strings.startsWith(item.matchConfidence, 'Saved payer alias')}"></i><span th:text="${item.matchConfidence}"></span>
                         </span>
                         <form th:action="@{/reconciliation/{id}/confirm(id=${item.entry.id})}" method="post"
-                              th:attr="data-payer=${item.entry.counterparty}">
+                              th:attr="data-payer=${item.entry.counterparty}"
+                              data-ceremony-after="confirm" data-ceremony-success="matched and payment recorded">
                             <div class="d-flex gap-2">
                                 <select name="memberId" class="form-select form-select-sm" required>
                                     <option value="" th:selected="${item.suggestedMember == null}">Choose member…</option>
@@ -210,16 +193,19 @@
         <div class="card-body-pad">
         <!-- Live search + quick filters + click-to-sort (client-side table tools; see fragments themeScript) -->
         <div class="flow-table-tools" th:unless="${#lists.isEmpty(rows)}">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="active-filters">Active filters <span class="count-badge" data-filter-count="flowTable">0</span></span>
             <div class="filter-pill-group" role="group" aria-label="Filter transactions">
                 <button type="button" class="filter-pill active" data-table-filter="flowTable" data-filter="all" data-filter-reset aria-pressed="true">All</button>
                 <button type="button" class="filter-pill" data-table-filter="flowTable" data-filter="in" aria-pressed="false">Money in</button>
                 <button type="button" class="filter-pill" data-table-filter="flowTable" data-filter="out" aria-pressed="false">Money out</button>
                 <button type="button" class="filter-pill" data-table-filter="flowTable" data-filter="dues" aria-pressed="false">Dues payments</button>
             </div>
+            </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="table-count" data-table-count="flowTable" aria-live="polite"></span>
                 <div class="position-relative search-box" style="min-width: 240px;">
-                    <i class="bi bi-search position-absolute text-muted" style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem;" aria-hidden="true"></i>
+                    <i class="bi bi-search" aria-hidden="true"></i>
                     <input type="search" class="form-control form-control-sm ps-4" placeholder="Search transactions..."
                            aria-label="Search transactions by description, name, type or source" data-table-search="flowTable" data-search-shortcut>
                     <kbd class="search-kbd" aria-hidden="true">/</kbd>
@@ -234,9 +220,14 @@
                 <tbody>
                     <tr th:each="r : ${rows}" data-row
                         th:attr="data-tags=${(r.amount >= 0 ? 'in' : 'out') + (r.type == 'Dues payment' ? ' dues' : '')},data-search=${#strings.toLowerCase((r.date ?: '') + ' ' + (r.type ?: '') + ' ' + (r.description ?: '') + ' ' + (r.party ?: '') + ' ' + (r.source ?: ''))}">
-                        <td class="text-nowrap tabular-nums" th:text="${#strings.length(r.date) >= 10 ? #strings.substring(r.date, 0, 10) : r.date}"></td>
-                        <td><span class="badge rounded-pill" th:classappend="${r.amount >= 0} ? 'text-bg-success' : 'text-bg-danger'" th:text="${r.type}"></span></td>
-                        <td th:text="${r.description} ?: '—'"></td>
+                        <td class="text-nowrap tabular-nums">
+                            <span class="row-id">
+                                <span class="txn-icon" th:classappend="${r.amount >= 0} ? 'in' : 'out'" aria-hidden="true"><i class="bi" th:classappend="${r.amount >= 0} ? 'bi-arrow-down-left' : 'bi-arrow-up-right'"></i></span>
+                                <span th:text="${#strings.length(r.date) >= 10 ? #strings.substring(r.date, 0, 10) : r.date}"></span>
+                            </span>
+                        </td>
+                        <td><span class="badge-status" th:classappend="${r.amount >= 0} ? 'badge-paid' : 'badge-delinquent'" th:text="${r.type}"></span></td>
+                        <td class="fw-semibold text-dark" th:text="${r.description} ?: '—'"></td>
                         <td th:text="${r.party} ?: '—'"></td>
                         <td class="text-muted small" th:text="${r.source}"></td>
                         <td class="text-end fw-semibold text-nowrap tabular-nums" th:classappend="${r.amount >= 0} ? 'text-success' : 'text-danger'" th:attr="data-sort-value=${r.amount}"
@@ -338,8 +329,11 @@
             link.addEventListener('click', function (event) {
                 if (!window.desktopBridge) return;
                 event.preventDefault();
-                window.desktopBridge.exportFlowReport(link.dataset.flowExport, link.dataset.period, link.dataset.from,
-                        link.dataset.to, refinement.kind, refinement.q);
+                var toggle = link.closest('.dropdown').querySelector('[data-bs-toggle="dropdown"]');
+                window.duesDeskSaveFlow(toggle, function () {
+                    return window.desktopBridge.exportFlowReport(link.dataset.flowExport, link.dataset.period, link.dataset.from,
+                            link.dataset.to, refinement.kind, refinement.q);
+                });
             });
         });
     })();

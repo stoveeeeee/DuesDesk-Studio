@@ -8,36 +8,17 @@
     <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body { font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg-canvas); color:var(--text-secondary); }
-        .banner { background:var(--bg-surface); border-bottom:1px solid var(--border-subtle); padding:1rem 0; }
-        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
-        .metric-card { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:1.1rem;height:100%; }
-        .metric-value { color:var(--text-primary);font-size:1.35rem;font-weight:700;letter-spacing:-.03em; }
-        .metric-description { color:var(--text-muted);font-size:.82rem;line-height:1.5; }
-        .metric-status { font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;font-weight:700; }
+        /* Import & Export: only what the shared design system does not already provide */
         .download-status { display:none;align-items:center;gap:.5rem; }
         .download-status.is-visible { display:inline-flex; }
-        .download-status .spinner-border { width:1rem;height:1rem;border-width:.15em; }
-        @keyframes enter { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
+        .format-chip { display:inline-block; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.72rem; white-space:normal; padding:.3rem .65rem; border-radius:10px; background:var(--bg-subtle); border:1px solid var(--border-subtle); color:var(--text-secondary); }
         @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important; } }
     </style>
 <th:block th:replace="~{fragments :: navStyles}"></th:block>
 <script th:replace="~{fragments :: themeInit}"></script>
 </head>
 <body>
-    <div class="app-header-stack">
-    <header class="banner">
-    <div class="container-xxl px-3 px-md-4 header-grid">
-        <div></div>
-        <div class="d-flex align-items-center gap-3 justify-content-center">
-            <div class="brand-icon"><i class="bi bi-bank2"></i></div>
-            <h1 class="h6 fw-bold mb-0 text-dark">DuesDesk</h1>
-        </div>
-        <div></div>
-    </div>
-</header>
-<nav th:replace="~{fragments :: nav('upload')}"></nav>
-</div>
+    <div th:replace="~{fragments :: appHeader('upload')}"></div>
 <main class="container-xxl px-3 px-md-4 py-4 pb-5">
     <div th:if="${toast}" data-auto-dismiss="6000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
     <div class="page-header">
@@ -57,7 +38,7 @@
         <div class="col-12 col-lg-4">
             <section class="surface-card h-100 d-flex flex-column" aria-labelledby="greekbillTitle">
                 <div class="card-head justify-content-start">
-                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+                    <span class="icon-tile tint-mint" aria-hidden="true"><i class="bi bi-file-earmark-spreadsheet"></i></span>
                     <div>
                         <h3 class="section-title" id="greekbillTitle">GreekBill balance sync</h3>
                         <p class="section-subtitle">Updates each member's balances</p>
@@ -65,7 +46,7 @@
                 </div>
                 <div class="card-body-pad d-flex flex-column flex-grow-1">
                     <p class="metric-description mb-2">Import a comma- or pipe-delimited export to reconcile balances and automatically calculate monthly inflow.</p>
-                    <p class="mb-3"><span class="badge bg-light text-secondary border font-monospace" style="font-size:.72rem;white-space:normal;">Name, Phone, Total Owed, Past Due, Paid This Month</span></p>
+                    <p class="mb-3"><span class="format-chip">Name, Phone, Total Owed, Past Due, Paid This Month</span></p>
                     <form th:action="@{/upload-csv}" method="post" enctype="multipart/form-data" class="mt-auto d-grid gap-2">
                         <input type="file" name="file" accept=".csv,.txt" class="form-control" aria-label="GreekBill CSV file" required>
                         <button type="submit" class="btn btn-fintech-primary" data-loading-label="Importing…">Upload &amp; reconcile</button>
@@ -76,7 +57,7 @@
         <div class="col-12 col-lg-4">
             <section class="surface-card h-100 d-flex flex-column" aria-labelledby="venmoTitle">
                 <div class="card-head justify-content-start">
-                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-phone"></i></span>
+                    <span class="icon-tile tint-sky" aria-hidden="true"><i class="bi bi-phone"></i></span>
                     <div>
                         <h3 class="section-title" id="venmoTitle">Venmo statement</h3>
                         <p class="section-subtitle">Adds completed payments to Cash Flow</p>
@@ -94,7 +75,7 @@
         <div class="col-12 col-lg-4">
             <section class="surface-card h-100 d-flex flex-column" aria-labelledby="bankTitle">
                 <div class="card-head justify-content-start">
-                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-bank"></i></span>
+                    <span class="icon-tile tint-lavender" aria-hidden="true"><i class="bi bi-bank"></i></span>
                     <div>
                         <h3 class="section-title" id="bankTitle">Bank statement CSV</h3>
                         <p class="section-subtitle">Queues deposits for member matching</p>
@@ -117,7 +98,7 @@
         <div class="col-12 col-lg-6">
             <section class="surface-card h-100" aria-labelledby="exportTitle">
                 <div class="card-head justify-content-start">
-                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-box-arrow-down"></i></span>
+                    <span class="icon-tile tint-butter" aria-hidden="true"><i class="bi bi-box-arrow-down"></i></span>
                     <div>
                         <h3 class="section-title" id="exportTitle">Export data</h3>
                         <p class="section-subtitle">The complete save as an AES-encrypted file</p>
@@ -137,7 +118,7 @@
                         <div class="col-12 d-flex flex-wrap align-items-center gap-2">
                             <button id="exportBtn" type="submit" class="btn btn-fintech-primary" aria-describedby="exportStatus">Export encrypted backup</button>
                             <span id="exportStatus" class="download-status small text-muted" role="status" aria-live="polite">
-                                <span class="spinner-border" aria-hidden="true"></span><span>Preparing export…</span>
+                                <span class="save-indicator" aria-hidden="true"><span class="save-ring"></span><svg viewBox="0 0 16 16" focusable="false"><path d="M4.2 8.4l2.5 2.5 5-5.4"/></svg></span><span data-status-text>Preparing export…</span>
                             </span>
                         </div>
                     </form>
@@ -217,9 +198,26 @@
         exportButton.setAttribute('aria-busy', 'true');
         exportButton.disabled = true;
         exportStatus.classList.add('is-visible');
+        const statusIndicator = exportStatus.querySelector('.save-indicator');
+        const statusText = exportStatus.querySelector('[data-status-text]');
+        let saved = false;
+        function finishSaved(message) {
+            saved = true;
+            statusIndicator.classList.add('is-done');
+            statusText.textContent = message;
+            exportStatus.classList.add('is-saved');
+            window.setTimeout(function () {
+                exportStatus.classList.remove('is-visible', 'is-saved');
+                statusIndicator.classList.remove('is-done');
+                statusText.textContent = 'Preparing export…';
+            }, 2200);
+        }
         try {
             if (window.desktopBridge) {
-                window.desktopBridge.exportData(passwordInput.value);
+                const backupPassword = passwordInput.value;
+                // Two frames let the pending ring paint before the (blocking) save dialog opens.
+                await new Promise(function (resolve) { requestAnimationFrame(function () { requestAnimationFrame(resolve); }); });
+                if (window.desktopBridge.exportData(backupPassword) === true) finishSaved('Encrypted backup saved');
             } else {
                 const response = await fetch('/export-data', {
                     method: 'POST',
@@ -234,13 +232,7 @@
                 link.download = 'DuesDesk-backup-' + new Date().toISOString().slice(0, 10) + '.ddbk';
                 link.click();
                 URL.revokeObjectURL(url);
-                exportStatus.querySelector('span:last-child').textContent = 'Encrypted backup downloaded';
-                exportStatus.querySelector('.spinner-border').hidden = true;
-                window.setTimeout(function () {
-                    exportStatus.classList.remove('is-visible');
-                    exportStatus.querySelector('span:last-child').textContent = 'Preparing export…';
-                    exportStatus.querySelector('.spinner-border').hidden = false;
-                }, 1800);
+                finishSaved('Encrypted backup downloaded');
             }
         } catch (error) {
             window.alert(error.message || 'Encrypted backup export failed.');
@@ -250,9 +242,7 @@
             exportButton.classList.remove('is-busy');
             exportButton.removeAttribute('aria-busy');
             exportButton.disabled = false;
-            if (window.desktopBridge) {
-                exportStatus.classList.remove('is-visible');
-            }
+            if (!saved) exportStatus.classList.remove('is-visible');
         }
     });
 </script>

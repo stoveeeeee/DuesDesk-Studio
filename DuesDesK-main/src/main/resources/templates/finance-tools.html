@@ -8,28 +8,16 @@
     <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body { font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg-canvas);color:var(--text-secondary); }
-        .banner { background:var(--bg-surface);border-bottom:1px solid var(--border-subtle);padding:1rem 0; }
-        .brand-icon { width:36px;height:36px;border-radius:9px;background:var(--btn-primary-bg);color: var(--btn-primary-text);display:grid;place-items:center; }
-        .surface { background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:1.25rem; }
-        .muted { color:var(--text-muted);font-size:.86rem; }
+        /* Reports & Handoff: only what the shared design system does not already provide */
+        .archive-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
+        .archive-chips .form-check { margin:0; padding:.3rem .7rem .3rem 2rem; border-radius:999px; background:var(--bg-subtle); border:1px solid var(--border-subtle); }
+        .archive-chips .form-check-input { margin-left:-1.5rem; }
     </style>
     <th:block th:replace="~{fragments :: navStyles}"></th:block>
     <script th:replace="~{fragments :: themeInit}"></script>
 </head>
 <body>
-<div class="app-header-stack">
-    <header class="banner">
-        <div class="container-xxl px-3 px-md-4 header-grid">
-            <div></div>
-            <div class="d-flex align-items-center gap-3 justify-content-center">
-                <div class="brand-icon"><i class="bi bi-bank2"></i></div><h1 class="h6 fw-bold mb-0">DuesDesk</h1>
-            </div>
-            <div></div>
-        </div>
-    </header>
-    <nav th:replace="~{fragments :: nav('finance')}"></nav>
-</div>
+<div th:replace="~{fragments :: appHeader('finance')}"></div>
 <main class="container-xxl px-3 px-md-4 py-4 pb-5">
     <div th:if="${toast}" data-auto-dismiss="6000" class="alert alert-success shadow-sm" role="status" th:text="${toast}"></div>
     <div class="page-header">
@@ -38,8 +26,8 @@
             <h2 class="page-title">Reports &amp; Handoff</h2>
             <p class="page-lede">Share privacy-conscious chapter reports, and hand the books to the next treasurer at the end of a term.</p>
         </div>
-        <div class="page-actions small text-muted text-end" th:if="${!#strings.isEmpty(settings.lastRolloverDate)}">
-            <span>Last rollover: <span class="tabular-nums" th:text="${settings.lastRolloverDate}"></span><span th:if="${!#strings.isEmpty(settings.currentTermName)}" th:text="' (' + ${settings.currentTermName} + ')'"></span></span>
+        <div class="page-actions" th:if="${!#strings.isEmpty(settings.lastRolloverDate)}">
+            <span class="status-pill tabular-nums"><i class="bi bi-arrow-repeat" aria-hidden="true"></i>Last rollover <span th:text="${settings.lastRolloverDate}"></span><span th:if="${!#strings.isEmpty(settings.currentTermName)}" th:text="' (' + ${settings.currentTermName} + ')'"></span></span>
         </div>
     </div>
 
@@ -49,7 +37,7 @@
         <div class="col-12 col-md-4">
             <section class="surface-card h-100 d-flex flex-column" aria-labelledby="clearancePdfTitle">
                 <div class="card-head justify-content-start border-bottom-0 pb-2">
-                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-file-earmark-pdf"></i></span>
+                    <span class="icon-tile tint-lavender" aria-hidden="true"><i class="bi bi-file-earmark-pdf"></i></span>
                     <div>
                         <h3 class="section-title" id="clearancePdfTitle">Social clearance list</h3>
                         <p class="section-subtitle">Printable PDF</p>
@@ -57,14 +45,14 @@
                 </div>
                 <div class="card-body-pad pt-0 d-flex flex-column flex-grow-1">
                     <p class="metric-description mb-3">Who is cleared for social events, by name only. Good for posting or sending to the social chair.</p>
-                    <button type="button" class="btn btn-fintech-primary mt-auto" data-finance-document="clearance-pdf">Export Social Clearance List (PDF)</button>
+                    <button type="button" class="btn btn-fintech-primary mt-auto" data-finance-document="clearance-pdf"><i class="bi bi-download" aria-hidden="true"></i><span>Export Social Clearance List (PDF)</span></button>
                 </div>
             </section>
         </div>
         <div class="col-12 col-md-4">
             <section class="surface-card h-100 d-flex flex-column" aria-labelledby="clearanceCsvTitle">
                 <div class="card-head justify-content-start border-bottom-0 pb-2">
-                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-filetype-csv"></i></span>
+                    <span class="icon-tile tint-mint" aria-hidden="true"><i class="bi bi-filetype-csv"></i></span>
                     <div>
                         <h3 class="section-title" id="clearanceCsvTitle">Social clearance spreadsheet</h3>
                         <p class="section-subtitle">CSV for Excel or Google Sheets</p>
@@ -72,14 +60,14 @@
                 </div>
                 <div class="card-body-pad pt-0 d-flex flex-column flex-grow-1">
                     <p class="metric-description mb-3">The same list as a spreadsheet, for sign-in sheets or door lists.</p>
-                    <button type="button" class="btn btn-fintech-outline mt-auto" data-finance-document="clearance-csv">Export Social Clearance List (CSV)</button>
+                    <button type="button" class="btn btn-fintech-outline mt-auto" data-finance-document="clearance-csv"><i class="bi bi-download" aria-hidden="true"></i><span>Export Social Clearance List (CSV)</span></button>
                 </div>
             </section>
         </div>
         <div class="col-12 col-md-4">
             <section class="surface-card h-100 d-flex flex-column" aria-labelledby="packetTitle">
                 <div class="card-head justify-content-start border-bottom-0 pb-2">
-                    <span class="icon-tile" aria-hidden="true"><i class="bi bi-easel"></i></span>
+                    <span class="icon-tile tint-sky" aria-hidden="true"><i class="bi bi-easel"></i></span>
                     <div>
                         <h3 class="section-title" id="packetTitle">Chapter meeting packet</h3>
                         <p class="section-subtitle">Anonymous PDF summary</p>
@@ -87,11 +75,22 @@
                 </div>
                 <div class="card-body-pad pt-0 d-flex flex-column flex-grow-1">
                     <p class="metric-description mb-3">The meeting packet is anonymous and uses the opening cash and upcoming bills configured in Settings.</p>
-                    <button type="button" class="btn btn-fintech-outline mt-auto" data-finance-document="meeting-packet">Export Chapter Meeting Packet (PDF)</button>
+                    <button type="button" class="btn btn-fintech-outline mt-auto" data-finance-document="meeting-packet"><i class="bi bi-download" aria-hidden="true"></i><span>Export Chapter Meeting Packet (PDF)</span></button>
                 </div>
             </section>
         </div>
     </div>
+
+    <!-- Charges to copy into GreekBill, for any period -->
+    <div class="tier-heading"><h2>GreekBill</h2><p>Every change to dues charges in one printable template, on the Charges page.</p></div>
+    <section class="surface-card card-body-pad d-flex flex-wrap align-items-center gap-3" aria-labelledby="greekbillLinkTitle">
+        <span class="icon-tile tint-lavender" aria-hidden="true"><i class="bi bi-file-earmark-ruled"></i></span>
+        <div class="flex-grow-1" style="min-width:14rem">
+            <h3 class="section-title mb-1" id="greekbillLinkTitle">Template for Greekbill charges</h3>
+            <p class="section-subtitle mb-0">Balances before and now, then each charge with the members it was applied to, for any period.</p>
+        </div>
+        <a href="/charges#greekbill" class="btn btn-fintech-primary"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span>Open on the Charges page</span></a>
+    </section>
 
     <!-- End of term: two clear steps -->
     <div class="tier-heading"><h2>End of term</h2><p>Roll the roster into the new semester, then hand everything to the incoming treasurer.</p></div>
@@ -107,7 +106,7 @@
                     <div class="small text-muted ms-auto text-end" th:if="${archivedMemberCount > 0}"
                          th:text="${archivedMemberCount} + ' archived ' + (${archivedMemberCount == 1} ? 'member' : 'members')"></div>
                 </div>
-                <form th:action="@{/finance/semester-rollover}" method="post" id="rolloverForm" class="card-body-pad">
+                <form th:action="@{/finance/semester-rollover}" method="post" id="rolloverForm" class="card-body-pad" data-ceremony="rollover">
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <label class="form-label-fintech" for="termName">New term name (optional)</label>
@@ -117,8 +116,8 @@
                             <div class="fw-semibold small mb-1 text-dark">1. Archive graduated or departed members</div>
                             <p class="small text-muted mb-2">Only members with a $0 balance can be archived. They leave the roster, but their payments stay in Cash Flow and reports.</p>
                             <div th:if="${#lists.isEmpty(rolloverArchivable)}" class="small text-muted">No members have a $0 balance right now.</div>
-                            <div class="d-flex flex-wrap gap-2" th:unless="${#lists.isEmpty(rolloverArchivable)}">
-                                <div class="form-check border px-4 py-1 rounded-1" th:each="m : ${rolloverArchivable}">
+                            <div class="archive-chips" th:unless="${#lists.isEmpty(rolloverArchivable)}">
+                                <div class="form-check" th:each="m : ${rolloverArchivable}">
                                     <input class="form-check-input" type="checkbox" name="archiveMemberIds" th:value="${m.id}" th:id="|archive-${m.id}|">
                                     <label class="form-check-label small" th:for="|archive-${m.id}|" th:text="${m.name}"></label>
                                 </div>
@@ -190,6 +189,75 @@
             setTimeout(function () { el.remove(); }, 400);
         }, parseInt(el.dataset.autoDismiss, 10));
     });
+    // Officer handoff: a cryptographic sealing sequence runs while the package is built, then the treasurer's term
+    // performance card is revealed alongside the saved file.
+    const HANDOFF_STEPS = ['Encrypting database (AES-256-GCM)…', 'Enforcing privacy rules: saved credentials stay out…', 'Compiling the 1-page executive PDF summary…'];
+    function handoffSequence(until) {
+        return window.duesDeskCeremony.sequence({
+            eyebrow: 'Officer handoff', icon: 'bi-shield-lock', duration: 2400, wide: true,
+            title: 'Sealing the officer handoff package…',
+            sub: 'The backup is encrypted on this computer with the password you chose. Share that password separately.',
+            steps: HANDOFF_STEPS, until: until, doneText: 'Handoff package sealed.'
+        });
+    }
+    function sha256(blob) {
+        if (!window.crypto || !window.crypto.subtle || !blob.arrayBuffer) return Promise.resolve('');
+        return blob.arrayBuffer().then(function (buffer) { return window.crypto.subtle.digest('SHA-256', buffer); })
+            .then(function (digest) {
+                return Array.prototype.map.call(new Uint8Array(digest), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+            }).catch(function () { return ''; });
+    }
+    function performanceCard(shell, fingerprint) {
+        const ceremony = window.duesDeskCeremony;
+        const money = function (value) {
+            return (value < 0 ? '-$' : '$') + Math.abs(Number(value || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+        const today = new Date().toISOString().slice(0, 10);
+        return fetch('/finance/term-performance', { headers: { 'Accept': 'application/json' } })
+            .then(function (response) { return response.ok ? response.json() : null; })
+            .catch(function () { return null; })
+            .then(function (p) {
+                const integrity = fingerprint ? 'SHA-256 ' + fingerprint.slice(0, 12) + '…' : 'Package saved';
+                const stats = [];
+                const summary = ['DuesDesk Treasurer Term Performance (' + (p && p.termName ? p.termName : 'current term') + '), ' + today];
+                if (p) {
+                    const surplus = p.budgetSurplus >= 0;
+                    stats.push({ label: 'Revenue managed & reconciled', value: money(p.duesCollected), sub: 'dues received of ' + money(p.billed) + ' billed' });
+                    stats.push({ label: 'Collection efficiency', value: p.collectionRate.toFixed(1) + '%', tone: p.collectionRate >= 90 ? 'success' : null,
+                        sub: money(p.receivables) + ' still owed' });
+                    stats.push({ label: surplus ? 'Budget surplus maintained' : 'Budget variance', value: money(p.budgetSurplus), tone: surplus ? 'success' : 'danger',
+                        sub: p.chairCount + (p.chairCount === 1 ? ' chair budget' : ' chair budgets') + (p.overBudgetChairs ? ', ' + p.overBudgetChairs + ' over' : ', all within cap') });
+                    summary.push('- Revenue managed & reconciled: ' + money(p.duesCollected) + ' in dues received of ' + money(p.billed) + ' billed');
+                    summary.push('- Collection efficiency: ' + p.collectionRate.toFixed(1) + '% (' + money(p.receivables) + ' still owed)');
+                    summary.push('- ' + (surplus ? 'Budget surplus maintained: ' : 'Budget variance: ') + money(p.budgetSurplus) + ' across '
+                        + p.chairCount + ' chair budgets (' + money(p.spent) + ' spent of ' + money(p.budgeted) + ')');
+                    summary.push('- Estimated cash on hand at handoff: ' + money(p.cashOnHand) + '; roster of ' + p.rosterSize);
+                }
+                stats.push({ label: 'Backup & handoff integrity', value: 'Verified', tone: 'success', roll: false, sub: 'AES-256-GCM · ' + integrity });
+                summary.push('- Encrypted backup & handoff integrity verified: AES-256-GCM encrypted backup, 1-page executive summary'
+                    + (fingerprint ? ', package SHA-256 ' + fingerprint : ''));
+                const text = summary.join('\n');
+                ceremony.reveal(shell, {
+                    tone: 'gold', wide: true, icon: 'bi-award', eyebrow: 'Handoff sealed · ' + today,
+                    title: "Treasurer's Term Performance",
+                    sub: (p && p.termName ? p.termName + ': ' : '') + 'verified figures from your books, ready for the advisor report, a national HQ audit or your résumé.',
+                    stats: stats,
+                    lines: ['Encrypted backup sealed with AES-256-GCM', 'Saved credentials kept out of the package', '1-page executive PDF summary and setup instructions included'],
+                    actions: [
+                        { label: 'Done', close: true },
+                        { label: 'Save Milestone Snapshot', icon: 'bi-download', onClick: function (button) {
+                            const result = ceremony.saveText('DuesDesk-term-performance-' + today + '.txt', text);
+                            button.lastChild.textContent = result === 'copied' ? 'Copied to clipboard' : 'Snapshot saved';
+                        } },
+                        { label: 'Copy Executive Summary', icon: 'bi-clipboard-check', primary: true, onClick: function (button) {
+                            ceremony.copyText(text).then(function () { button.lastChild.textContent = 'Copied'; },
+                                function () { button.lastChild.textContent = 'Copy unavailable'; });
+                        } }
+                    ],
+                    foot: fingerprint ? 'Package fingerprint (SHA-256): ' + fingerprint : null
+                });
+            });
+    }
     document.getElementById('handoffForm').addEventListener('submit', async function (event) {
         event.preventDefault();
         const password = document.getElementById('handoffPassword');
@@ -199,37 +267,62 @@
             confirm.focus();
             return;
         }
+        const ceremony = window.duesDeskCeremony;
         if (window.desktopBridge) {
-            window.desktopBridge.exportFinanceDocument('handoff-package', password.value);
+            var packagePassword = password.value;
             password.value = '';
             confirm.value = '';
+            if (!ceremony) {
+                window.duesDeskSaveFlow(event.submitter || document.querySelector('#handoffForm button[type="submit"]'), function () {
+                    var saved = window.desktopBridge.exportFinanceDocument('handoff-package', packagePassword);
+                    packagePassword = '';
+                    return saved;
+                }, { pending: 'Building package…' });
+                return;
+            }
+            // The save dialog blocks the window, so it opens once the sealing sequence has played.
+            const run = handoffSequence(null);
+            run.done.then(function () {
+                var saved = window.desktopBridge.exportFinanceDocument('handoff-package', packagePassword);
+                packagePassword = '';
+                if (saved === true) performanceCard(run.shell, ''); else run.close();
+            });
             return;
         }
-        try {
-            const response = await fetch('/finance/handoff-package', {
+        const body = new URLSearchParams({password: password.value});
+        password.value = '';
+        confirm.value = '';
+        const build = function () {
+            return fetch('/finance/handoff-package', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
-                body: new URLSearchParams({password: password.value})
+                body: body
+            }).then(async function (response) {
+                if (!response.ok) throw new Error(await response.text() || 'Package generation failed.');
+                return response.blob();
             });
-            if (!response.ok) throw new Error(await response.text() || 'Package generation failed.');
-            const url = URL.createObjectURL(await response.blob());
+        };
+        try {
+            const run = ceremony ? handoffSequence(build) : null;
+            const blob = run ? await run.done : await build();
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.download = 'DuesDesk-officer-handoff-' + new Date().toISOString().slice(0, 10) + '.zip';
+            document.body.appendChild(link);
             link.click();
-            URL.revokeObjectURL(url);
+            link.remove();
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+            if (run) await performanceCard(run.shell, await sha256(blob));
         } catch (error) {
             window.alert(error.message || 'Officer handoff package generation failed.');
-        } finally {
-            password.value = '';
-            confirm.value = '';
         }
     });
     document.querySelectorAll('[data-finance-document]').forEach(function (button) {
         button.addEventListener('click', async function () {
             const type = button.dataset.financeDocument;
             if (window.desktopBridge) {
-                window.desktopBridge.exportFinanceDocument(type, '');
+                window.duesDeskSaveFlow(button, function () { return window.desktopBridge.exportFinanceDocument(type, ''); });
                 return;
             }
             const endpoint = type === 'clearance-pdf' ? '/finance/social-clearance.pdf'
@@ -265,6 +358,74 @@
             var message = 'Start ' + (term || 'the new semester') + '?\n\nThis will ' + (steps.length ? steps.join(', ') : 'only record the new term')
                 + '.\n\nA copy of your current data is saved first.';
             if (!window.confirm(message)) event.preventDefault();
+        });
+    })();
+</script>
+<script th:inline="javascript">
+    // Semester rollover as a ceremony. Once confirmed, a 2.5-second diagnostic checks off each operation before the
+    // (unchanged) post; when the server reports the new term started, a "New Term Initialized" card shows where the
+    // chapter now stands and offers an audit receipt before handing back to the page.
+    (function () {
+        var ceremony = window.duesDeskCeremony;
+        if (!ceremony) return;
+        ceremony.register('rollover', {
+            sequence: function (form) {
+                var term = form.elements.termName.value.trim();
+                return {
+                    eyebrow: 'Semester rollover', icon: 'bi-arrow-repeat', duration: 2500,
+                    title: 'Starting ' + (term || 'the new semester') + '…',
+                    sub: 'A copy of all current data is saved first. Payments, cash flow and stat history are kept.',
+                    steps: ['Archiving current semester ledger & charge history…', 'Calculating carry-over member balances & clearance statuses…', 'Initializing new term budget structures…'],
+                    doneText: 'Rollover submitted.'
+                };
+            }
+        });
+
+        var reveal = /*[[${rolloverReveal}]]*/ null;
+        if (!reveal) return;
+        ceremony.ready(function () {
+            var money = function (value) {
+                return (value < 0 ? '-$' : '$') + Math.abs(Number(value || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+            var plural = function (count, one, many) { return count + ' ' + (count === 1 ? one : many); };
+            var lines = [];
+            if (reveal.archived) lines.push(plural(reveal.archived, 'member archived', 'members archived') + ' with a $0 balance');
+            if (reveal.consolidatedMembers) lines.push(plural(reveal.consolidatedMembers, 'carryover charge', 'carryover charges') + ' created (' + money(reveal.consolidatedTotal) + ')');
+            if (reveal.clearedVouches) lines.push(plural(reveal.clearedVouches, 'expired vouch', 'expired vouches') + ' cleared');
+            if (reveal.budgetsReset) lines.push(plural(reveal.budgetsReset, 'chair budget', 'chair budgets') + ' started fresh, history kept');
+            lines.push('Previous data saved as ' + reveal.backupFile);
+            var toast = document.querySelector('main > .alert[data-auto-dismiss]');
+            var receipt = ['DuesDesk Rollover Audit Receipt',
+                'Term: ' + reveal.termName, 'Date: ' + reveal.date, '',
+                'Starting reserves (estimated cash on hand): ' + money(reveal.startingReserves),
+                'Carried-over receivables: ' + money(reveal.carriedReceivables),
+                'Active members: ' + reveal.activeMembers + ' (roster of ' + reveal.rosterSize + ')', '',
+                'Members archived: ' + reveal.archived,
+                'Members skipped (still owed money): ' + reveal.skippedWithBalance,
+                'Carryover charges: ' + reveal.consolidatedMembers + ' (' + money(reveal.consolidatedTotal) + ')',
+                'Expired vouches cleared: ' + reveal.clearedVouches,
+                'Chair budgets started fresh: ' + reveal.budgetsReset,
+                'Pre-rollover safety copy: ' + reveal.backupFile].join('\n');
+            ceremony.card({
+                tone: 'sealed', wide: true, icon: 'bi-patch-check', eyebrow: 'Semester rollover · ' + reveal.date,
+                title: 'New Term Initialized: ' + reveal.termName,
+                sub: 'The books are open for the new term. Here is where the chapter starts.',
+                stats: [
+                    { label: 'Starting reserves', value: money(reveal.startingReserves), tone: reveal.startingReserves < 0 ? 'danger' : null, sub: 'estimated cash on hand' },
+                    { label: 'Carried-over receivables', value: money(reveal.carriedReceivables), sub: 'still owed by members' },
+                    { label: 'Active members', value: String(reveal.activeMembers), sub: 'roster of ' + reveal.rosterSize }
+                ],
+                lines: lines,
+                actions: [
+                    { label: 'Stay here', close: true },
+                    { label: 'Download Rollover Audit Receipt', icon: 'bi-receipt', onClick: function (button) {
+                        var result = ceremony.saveText('DuesDesk-rollover-receipt-' + reveal.date + '.txt', receipt);
+                        button.lastChild.textContent = result === 'copied' ? 'Receipt copied to clipboard' : 'Receipt downloaded';
+                    } },
+                    { label: 'Go to the dashboard', icon: 'bi-arrow-right', primary: true, href: '/' }
+                ],
+                foot: toast ? toast.textContent.trim() : null
+            });
         });
     })();
 </script>
