@@ -108,7 +108,9 @@ public class Store {
             if (Files.exists(backup)) {
                 restoreBackupOrFail(file.toPath(), null);
             } else {
-                seedSampleData();
+                // A first launch starts with an empty book: no members, charges or payments until the treasurer adds them.
+                ensureNotNull();
+                save();
             }
         }
 
@@ -709,17 +711,6 @@ public class Store {
         }
         membersById = Map.copyOf(index);
         paymentKeys = Set.copyOf(recordedPaymentKeys);
-    }
-
-    private void seedSampleData() {
-        ensureNotNull();
-        data.members.clear();
-        data.members.add(new Member(UUID.randomUUID().toString(), "Marcus Vance", "555-234-5678", 850.00, 250.00, 150.00, "Delinquent", "Never", false));
-        data.members.add(new Member(UUID.randomUUID().toString(), "Tyler Brooks", "555-345-6789", 400.00, 0.00, 450.00, "Payment Plan", "Never", false));
-        data.members.add(new Member(UUID.randomUUID().toString(), "Ryan Mitchell", "555-456-7890", 900.00, 450.00, 0.00, "Delinquent", "Never", false));
-        data.members.add(new Member(UUID.randomUUID().toString(), "Grant Hayes", "555-567-8901", 0.00, 0.00, 900.00, "Paid in Full", "Never", false));
-        data.members.add(new Member(UUID.randomUUID().toString(), "Cole Henderson", "555-678-9012", 600.00, 200.00, 250.00, "Delinquent", "Never", true));
-        save();
     }
 
     public synchronized List<Member> getMembers() {
